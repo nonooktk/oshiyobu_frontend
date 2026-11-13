@@ -90,7 +90,7 @@ const state = useImageState(id); // 'ready' | 'loading' | 'missing'。missing �
 
 - 取り込み方: `import tech0Full1 from '../assets/img/tech0-full-1-768.webp'`（Vite が、ハッシュつきの URL にする）。`configurePrefetch` の `images` に ID と URL を、`plan` に推しごとの先読みの順を渡します（tech0: `-2`・`-3` の順／krs48・riji・terao: `*-1152`／heisei: 絵の先読みなし）
 - tech0 の 3 枚は、品質を 62・58・52 に下げて 100 KB に収めています（D-40 の「軽くする順」①）。絵を差し替えたら `npm run images` を実行します。
-- ビルドのあとの `npm run check:budget` が、絵の上限と、元絵の形式（jpg・png）のまま配っていないことを検査します
+- ビルドのあとの `npm run check:budget` が、絵の上限と、元絵の形式（jpg・png）のまま配っていないことを検査します。**CI の `verify` では警告だけ**ですが、**配備（`deploy.yml`）では `--strict-images` でエラー**になります。F-2 が WebP に移るまで、ファン向けは jpg を配る警告が出ます（今の dev では 11 件）
 
 ## 決まり
 

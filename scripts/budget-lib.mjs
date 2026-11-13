@@ -39,8 +39,10 @@ export const gzipBytes = (buffer) => gzipSync(buffer).length;
 /**
  * 検査する。manifest は dist/.vite/manifest.json の中身、read(path) は dist からの相対パスで中身（Buffer）を返す、
  * images は scripts/images-config.mjs の一覧、listBundle() は dist/bundle のファイル名の一覧を返す。
+ * strictImages が真のとき、元絵の形式（jpg・png）のまま配っていることをエラーにする（deploy.yml）。偽のときは警告
+ * （ファン向けが WebP に移る前の CI を、赤にしないため）。
  */
-export function evaluate({ manifest, read, images, listBundle, searchText }) {
+export function evaluate({ manifest, read, images, listBundle, searchText, strictImages = false }) {
   const errors = [];
   const warnings = [];
   const report = [];
@@ -89,8 +91,10 @@ export function evaluate({ manifest, read, images, listBundle, searchText }) {
     }
   }
   for (const name of bundle) {
-    if (/\.(jpe?g|png)$/i.test(name))
-      errors.push(`${name}: 元絵の形式のまま配っています（npm run images で WebP にします）`);
+    if (/\.(jpe?g|png)$/i.test(name)) {
+      const message = `${name}: 元絵の形式のまま配っています（npm run images で WebP にします）`;
+      (strictImages ? errors : warnings).push(message);
+    }
   }
   // 元絵（assets-src/）を参照していないこと
   if (searchText('assets-src')) errors.push('配るファイルが assets-src/ を参照しています');

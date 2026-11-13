@@ -31,7 +31,8 @@ jobs:
       - run: npm run build
         env:
           VITE_API_BASE: ${{ vars.VITE_API_BASE }}
-      - run: npm run check:budget
+      # 配備では、元絵の形式（jpg・png）のまま配っていないことも、エラーにする
+      - run: npm run check:budget -- --strict-images
       - run: npm run check:csp
         env:
           VITE_API_BASE: ${{ vars.VITE_API_BASE }}

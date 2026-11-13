@@ -1,5 +1,6 @@
 // 最初に読む JS と CSS（gzip で 200 KB 以下）と、変換後の絵の大きさを、ビルドの成果物（dist/）で検査する（設計 D-40・D-26）。
 //   npm run build の後に、npm run check:budget
+//   --strict-images: 元絵の形式（jpg・png）のまま配っていたら、エラーにする（deploy.yml が付ける。CI は警告だけ）
 // 最初の画面に出る絵の合計（300 KB 以下）は、実ブラウザの通信の記録で測る（e2e/perf.spec.ts。I-87）
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -20,6 +21,8 @@ const walkText = (dir) =>
   );
 
 const { errors, warnings, report } = evaluate({
+  strictImages:
+    process.argv.includes('--strict-images') || process.env.BUDGET_STRICT_IMAGES === '1',
   manifest,
   read,
   images: IMAGES,

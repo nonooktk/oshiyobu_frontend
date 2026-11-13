@@ -655,7 +655,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     popLayer('cancel');
   };
   const doCancel = (): void => {
-    if (state.course === null) {
+    if (state.course === null || view().status.established) {
       closeCancel();
       return;
     }

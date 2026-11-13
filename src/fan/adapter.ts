@@ -6,6 +6,7 @@ export {
   needImage,
   requestMeterFetch,
   startPrefetch,
+  stubResetImages,
   stubResetMeters,
   stubSetServerJoined,
   useEffectiveCondition,

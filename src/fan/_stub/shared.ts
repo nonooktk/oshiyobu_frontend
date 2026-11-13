@@ -148,6 +148,11 @@ export function useImageState(url: string): ImageState {
   );
 }
 
+/** テスト用: 絵の読み込みの記録を空にする。 */
+export function stubResetImages(): void {
+  imageStates.clear();
+}
+
 /** ready の 1 秒後に呼ぶ先読みの入り口。仮の実装では、何もしない。 */
 export function startPrefetch(artistId: ArtistId): void {
   void artistId;

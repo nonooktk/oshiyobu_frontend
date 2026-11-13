@@ -1,6 +1,6 @@
 // ファン向け（/fan/。QR の行き先）。人物（端末の番号から決まる 15 通り）の初めの値で、はじめの画面から始める。
 import { useEffect, useState } from 'react';
-import { startPrefetch } from './adapter';
+import { requestMeterFetch, startPrefetch } from './adapter';
 import { Home } from './components/Home';
 import { DetailPage, LiveRegion, SheetShell, Toast } from './components/Frame';
 import { LazyBody } from './components/Lazy';
@@ -29,10 +29,17 @@ function Screen() {
   const { state, actions } = useFan();
   const { layers, ach, page } = state;
 
+  // ファン向けを開いた直後に、共有メーターの人数を 1 回取りに行く（取得の契機①。設計 D-18）
+  useEffect(() => {
+    requestMeterFetch('open');
+  }, []);
+
   // 押せる状態になった印（速さの測定が読む）と、その 1 秒後の先読み（設計 D-40）
   const oshiId = state.oshiId;
   useEffect(() => {
     performance.mark('oshiyobu:ready');
+  }, []);
+  useEffect(() => {
     const t = setTimeout(() => {
       startPrefetch(oshiId);
       // メニュー配下の画面 → やめる確認・引き継ぎの順に、静かに先読みする

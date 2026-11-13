@@ -40,6 +40,7 @@ export function FxLayer({ fx, inert }: { fx: FxSpec; inert: boolean }) {
   return (
     <div
       className={styles.fx}
+      data-layer="fx"
       aria-hidden="true"
       inert={inert}
       style={vars({
@@ -80,6 +81,7 @@ export function AchLayer({ ach }: { ach: AchSpec }) {
     <div
       className={all ? `${styles.ach} ${styles.achAll}` : styles.ach}
       aria-hidden="true"
+      data-layer="ach"
       style={vars({ '--ach-ms': `${ach.ms}ms`, '--ach-size': `${all ? 100 : 104}px` })}
     >
       <div className={styles.dim} />
@@ -135,6 +137,7 @@ export function GiftLayer({ replay, inert }: { replay: boolean; inert: boolean }
   return (
     <div
       className={replay ? styles.gift : `${styles.gift} ${styles.giftReveal}`}
+      data-layer="gift"
       role="dialog"
       aria-modal="true"
       aria-label={`特典 ${k}/3`}
@@ -178,6 +181,7 @@ export function ThanksLayer({ inert }: { inert: boolean }) {
   return (
     <div
       className={styles.fx}
+      data-layer="thanks"
       role="dialog"
       aria-modal="true"
       aria-label={`${o.name}からの感謝のメッセージ`}
@@ -232,6 +236,7 @@ export function ShareSheet({ mode, inert }: { mode: ShareMode; inert: boolean })
   return (
     <div
       className={styles.sheetBg}
+      data-layer="share"
       inert={inert}
       onClick={(e) => e.target === e.currentTarget && actions.closeShare()}
       role="presentation"

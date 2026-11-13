@@ -114,6 +114,7 @@ export function SheetShell({
   return (
     <div
       className={styles.sheetBg}
+      data-layer="sheet"
       inert={inert}
       role="presentation"
       onClick={(e) => e.target === e.currentTarget && onClose()}

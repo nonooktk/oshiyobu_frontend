@@ -128,8 +128,10 @@ test('429 の Retry-After を、サーバーが公開しているときは尊重
     .filter((r) => r.method === 'GET')
     .map((r) => r.at)
     .slice(before);
-  expect(gets.length).toBeGreaterThanOrEqual(2);
-  gets.slice(1).forEach((at, i) => expect(at - (gets[i] ?? 0)).toBeGreaterThanOrEqual(11_500));
+  // 429 を受けた後の取得の間隔（最後の 3 回）。最初の 1 回は、429 を受ける前の間隔なので数えない
+  const last = gets.slice(-3);
+  expect(last.length).toBe(3);
+  last.slice(1).forEach((at, i) => expect(at - (last[i] ?? 0)).toBeGreaterThanOrEqual(11_500));
 });
 
 test('2 台: A が申し込むと、B のメーターに 3 秒未満で届く。別の公演には届かない（I-61・I-62）', async ({
@@ -141,9 +143,16 @@ test('2 台: A が申し込むと、B のメーターに 3 秒未満で届く。
   await b.goto(HARNESS);
   await other.goto(`${HARNESS}?pid=krs48:FUK-012`);
   await a.goto(HARNESS);
+  // 両方が最初の応答を受けてから始める（最初の応答の resetAt が、reset の検知の基準になる。D-18 の規則 10）
+  await until(a, (s) => s.status === 'ok');
   await until(b, (s) => s.status === 'ok');
   for (let trial = 0; trial < 3; trial += 1) {
-    await control({ resetState: true });
+    // 発表者の reset（resetAt が変わる）。A が検知して、数えた印を消すまで待つ（消えないと、A の申し込みは送られない）
+    await fetch('http://127.0.0.1:4391/api/v1/reset', {
+      method: 'POST',
+      headers: { 'x-presenter-key': 'e2e-dummy-passphrase-123' },
+    });
+    await until(a, (s) => s.joined === 0 && !s.mineCounted && s.resetEpoch === trial + 1, 10_000);
     await until(b, (s) => s.joined === 0 && s.status === 'ok', 10_000);
     await a.getByRole('button', { name: '申し込む' }).click();
     const started = Date.now();

@@ -13,6 +13,7 @@ const state = {
   down: false,
   status: 0,
   retryAfter: null,
+  exposeRetryAfter: false,
   log: [],
 };
 
@@ -55,13 +56,13 @@ createServer(async (req, res) => {
   state.log.push({ method, path: url.pathname, at: Date.now() });
   if (state.down) return void req.socket.destroy();
   await new Promise((resolve) => setTimeout(resolve, state.latency));
-  if (state.status)
-    return json(
-      res,
-      state.status,
-      {},
-      state.retryAfter ? { 'retry-after': String(state.retryAfter) } : {},
-    );
+  if (state.status) {
+    // 本物の API は Retry-After を CORS で公開していない（ブラウザからは読めない）。試験が exposeRetryAfter で、公開する場合も試せる
+    const extra = state.retryAfter ? { 'retry-after': String(state.retryAfter) } : {};
+    if (state.retryAfter && state.exposeRetryAfter)
+      extra['access-control-expose-headers'] = 'retry-after';
+    return json(res, state.status, {}, extra);
+  }
   const m = /^\/api\/v1\/performances\/([^/]+)\/(meter|joins)$/.exec(url.pathname);
   if (m && method === 'GET' && m[2] === 'meter')
     return json(res, 200, {

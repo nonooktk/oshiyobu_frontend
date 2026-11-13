@@ -79,8 +79,15 @@ export {
   API_ERROR_CODES,
   DEVICE_ID_PATTERN,
   isValidDeviceId,
+  parseApiErrorResponse,
   parseJoinResponse,
   parseMeterResponse,
   parseResetResponse,
 } from './schema/meter';
-export type { ApiErrorCode, JoinResponse, MeterResponse, ResetResponse } from './schema/meter';
+export type {
+  ApiErrorCode,
+  ApiErrorResponse,
+  JoinResponse,
+  MeterResponse,
+  ResetResponse,
+} from './schema/meter';

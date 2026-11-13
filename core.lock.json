@@ -1,7 +1,7 @@
 {
   "source": "oshiyobu_backend",
   "repository": "https://github.com/nonooktk/oshiyobu_backend",
-  "commit": "1dff053887eb81fa9757f9c090bea8414a86712b",
-  "coreVersion": "0.1.0",
-  "treeSha256": "841dc1c5e1e748bfd4e18a429b293ad313302b88f10b316ad03b30f9eaa5684f"
+  "commit": "049f6c08cd37da88a8fc7ac4ba33b5ccd01f8392",
+  "coreVersion": "0.2.0",
+  "treeSha256": "c6da2e2557757e791c9b7e7208707e0516a786f039d68f74274b9f7c93a120bf"
 }

@@ -1,0 +1,52 @@
+# 秘匿値（絶対にコミットしない。.env の値を編集するのは統括だけ）
+.env
+.env.*
+*.env
+!.env.example
+
+# 鍵・証明書
+*.pem
+*.pfx
+*.key
+
+# Azure CLI / azd のローカル設定
+.azure/
+
+# 依存パッケージ
+node_modules/
+
+# ビルド出力・キャッシュ（技術スタックの決定後に、足りないものを追記）
+dist/
+build/
+out/
+.next/
+.nuxt/
+.output/
+.svelte-kit/
+.vite/
+.turbo/
+.cache/
+coverage/
+*.tsbuildinfo
+
+# ログ
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS の一時ファイル
+.DS_Store
+Thumbs.db
+Desktop.ini
+._*
+
+# エディタの一時ファイル
+.idea/
+.vscode/
+*.swp
+*~
+
+# Claude Code の個人用の設定（共有する設定は .claude/settings.json に置く）
+.claude/settings.local.json

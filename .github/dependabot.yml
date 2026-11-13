@@ -1,0 +1,15 @@
+# Dependabot の設定（依存の更新 PR を週 1 回出す）
+# npm は、技術スタックの決定後に足す。
+# （package.json ができたら、下に package-ecosystem: "npm" の項目を追加する。
+#   更新の間隔と、minor / patch をまとめる書き方は、下の github-actions と同じにする）
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        update-types:
+          - "minor"
+          - "patch"

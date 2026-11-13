@@ -1,5 +1,6 @@
 // 3 ページの HTML（入り口）の検査。検索に載せない設定（D-22）と、外部の読み込みが無いこと（N-07）
 import { describe, expect, it } from 'vitest';
+import { PAGES } from '../helpers/pages';
 
 const htmlFiles = import.meta.glob(['/index.html', '/fan/index.html', '/presenter/index.html'], {
   query: '?raw',
@@ -7,18 +8,12 @@ const htmlFiles = import.meta.glob(['/index.html', '/fan/index.html', '/presente
   eager: true,
 }) as Record<string, string>;
 
-const entries = [
-  { path: '/index.html', script: '/src/office/main.tsx' },
-  { path: '/fan/index.html', script: '/src/fan/main.tsx' },
-  { path: '/presenter/index.html', script: '/src/presenter/main.tsx' },
-];
-
 describe('3 ページの HTML', () => {
   it('3 ページとも存在する（検査が空振りしていない）', () => {
-    expect(Object.keys(htmlFiles).sort()).toEqual(entries.map((e) => e.path).sort());
+    expect(Object.keys(htmlFiles).sort()).toEqual(PAGES.map((page) => page.html).sort());
   });
 
-  describe.each(entries)('$path', ({ path, script }) => {
+  describe.each(PAGES)('$html', ({ html: path, entry }) => {
     const html = htmlFiles[path] ?? '';
 
     it('日本語のページで、スマホの幅に合わせる', () => {
@@ -33,7 +28,7 @@ describe('3 ページの HTML', () => {
     });
 
     it('自分のページの入り口（main.tsx）だけを読み込む', () => {
-      expect(html).toContain(`<script type="module" src="${script}"></script>`);
+      expect(html).toContain(`<script type="module" src="${entry}"></script>`);
       expect(html).toContain('<div id="root"></div>');
     });
 

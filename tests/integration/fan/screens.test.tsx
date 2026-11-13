@@ -408,3 +408,25 @@ describe('遅れて読む画面と、受け皿（I-119・I-121・I-103・SP-90�
     expect(box.selectionEnd).toBe(box.value.length);
   });
 });
+
+describe('メーターに金額を出さない（A-69・SP-56）', () => {
+  it('ホームのメーター・共有のシートの画像・貢献の達成率の欄に、「円」「万」が出ない', async () => {
+    mountFan('?p=4');
+    passStart();
+    await closeGiftAfterFx();
+    const gauge = screen.getByRole('img', { name: /^支援者\d+人、最低人数/ });
+    expect(`${gauge.getAttribute('aria-label')}${gauge.textContent}`).not.toMatch(/[円万]/);
+    click(/^次のアクション/);
+    click(/^SNSで広める/);
+    const frame = within(layer('share') as HTMLElement).getByRole('img', { name: /^共有用の画像/ });
+    expect(`${frame.getAttribute('aria-label')}${frame.textContent}`).not.toMatch(/[円万]/);
+    click('閉じる');
+    click('‹ ホーム');
+    click('メニュー');
+    await settle();
+    click(/^貢献/);
+    await settle();
+    const card = screen.getByText('全体の達成率と、成立までの不足').closest('div') as HTMLElement;
+    expect(card.textContent).not.toMatch(/[円万]/);
+  });
+});

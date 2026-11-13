@@ -10,7 +10,10 @@ export type Harness = ReturnType<typeof harness>;
  * ストアを作る。join は「サーバーに数えられた」状態を env に反映する（共有の部品の仮実装と同じ動き）。
  * server＝ほかの端末の申し込みを含む、サーバーの件数。
  */
-export function harness(personaNo = 4, opts: { reduceMotion?: boolean; server?: number } = {}) {
+export function harness(
+  personaNo = 4,
+  opts: { reduceMotion?: boolean; server?: number; minPeople?: number } = {},
+) {
   const joins: PerformanceId[] = [];
   const opened: string[] = [];
   const copied: string[] = [];
@@ -38,7 +41,10 @@ export function harness(personaNo = 4, opts: { reduceMotion?: boolean; server?: 
   function sync() {
     const s = store.getState();
     store.setEnv({
-      cond: conditionOf(s.venueId),
+      cond: conditionOf(
+        s.venueId,
+        opts.minPeople === undefined ? {} : { minPeople: opts.minPeople },
+      ),
       pid: performanceIdOf(s.oshiId, s.venueId),
       meter: { serverJoined: server, counted },
     });

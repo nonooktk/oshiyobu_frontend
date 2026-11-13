@@ -1,0 +1,228 @@
+// 口座と預金の 3 つの行動・成立の表示・やめる・条件の変更・リセットの確かめ（上層: A-07・A-26・A-27・A-39・A-61・A-64〜A-66・I-18・I-22・I-25・I-26）。
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { nextViewOf } from '../../../src/fan/domain/view';
+import { harness, passStart } from './helpers';
+
+beforeEach(() => {
+  vi.useFakeTimers();
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe('口座と預金の 3 つの行動（I-22・A-26）', () => {
+  it('預金を積み増すと、次に開くコースの預金までちょうど増え（90,000 → 100,000 → 300,000 → 1,000,000円）、4 回目は押せない', () => {
+    const h = harness(4);
+    const seen: number[] = [];
+    for (let i = 0; i < 3; i++) {
+      h.a.runAcct('deposit', 'acct');
+      seen.push(h.state().acct.deposit);
+    }
+    expect(seen).toEqual([100000, 300000, 1000000]);
+    expect(h.a.acctDone('deposit')).toBe(true);
+    h.a.runAcct('deposit', 'acct');
+    expect(h.state().acct.deposit).toBe(1000000);
+    expect(h.state().acct.times).toBe(3);
+  });
+
+  it('メイン口座にしても預金は変わらない。推し活定期は +5,000円で 1 回だけ（条件には入らない）', () => {
+    const h = harness(4);
+    h.a.runAcct('main', 'acct');
+    expect(h.state().acct).toMatchObject({ pay: true, deposit: 90000 });
+    h.a.runAcct('teiki', 'acct');
+    h.a.runAcct('teiki', 'acct');
+    expect(h.state().acct.deposit).toBe(95000);
+    expect(h.state().done).toMatchObject({ main: true, teiki: true });
+  });
+
+  it('押すたびに、条件の達成のエフェクトが出る。全部そろったときは「そろいました」の種類（A-26・A-27）', () => {
+    const h = harness(4);
+    h.a.go('home');
+    h.a.aimCourse('front');
+    h.a.runAcct('main', 'next');
+    expect(h.state().ach).toMatchObject({ kind: 'one', title: '達成！', small: '条件を1つクリア' });
+    h.a.runAcct('deposit', 'next');
+    expect(h.state().ach).toMatchObject({
+      kind: 'all',
+      title: '条件が',
+      title2: 'そろいました！',
+      sub: '前方の席に申し込めます',
+    });
+    expect(h.state().fresh).toMatchObject({ all: true, act: 'deposit' });
+    // 押すと消える。待っていた ✓ の動きは、すぐ始まる（待ち時間 0）
+    h.a.clearAch();
+    expect(h.state().ach).toBeNull();
+    expect(h.state().ckDelay).toBe(0);
+  });
+
+  it('条件の額を越えない預金の増え（推し活定期の 5,000円）は、「ナイス！」の種類', () => {
+    const h = harness(4);
+    h.a.aimCourse('front');
+    h.a.runAcct('teiki', 'next');
+    expect(h.state().ach).toMatchObject({ kind: 'one', title: 'ナイス！' });
+  });
+
+  it('全画面の演出・特典・シートが開いているあいだは、条件の達成のエフェクトを重ねない', () => {
+    const h = harness(4);
+    h.a.openShare('friend');
+    h.a.runAcct('main', 'acct');
+    expect(h.state().ach).toBeNull();
+  });
+
+  it('動きを減らす設定では、✓ を待たせず（0 秒）、紙吹雪を出さない', () => {
+    const h = harness(4, { reduceMotion: true });
+    h.a.runAcct('main', 'acct');
+    expect(h.state().ckDelay).toBe(0);
+    expect(h.state().ach?.confetti).toHaveLength(0);
+    expect(h.state().ach?.ms).toBe(1200);
+  });
+});
+
+describe('成立の表示（A-07・A-64〜A-66・I-18）', () => {
+  it('最低人数 80 で申し込むと、あと 5 人になる（A-07）', () => {
+    const h = harness(4, { minPeople: 80 });
+    expect(h.view().status).toMatchObject({ supporters: 74, left: 6, pct: 92 });
+    passStart(h);
+    expect(h.view().status).toMatchObject({ supporters: 75, left: 5, pct: 93 });
+  });
+
+  it('最低人数 80 では、74 人（92%）から始めるので、80% の演出は出ない（I-20 の (c)）', () => {
+    const h = harness(4, { minPeople: 80 });
+    passStart(h);
+    vi.advanceTimersByTime(200);
+    const top = h.state().layers[0];
+    expect(top && top.kind === 'fx' && top.fx.title).toBe('ごほうび');
+  });
+
+  it('人数だけ届いたとき（最低人数 80・支援者 80・合計 560,000円）は「人数は集まりました」で、成立ではない（A-65）', () => {
+    const h = harness(4, { minPeople: 80, server: 6 });
+    expect(h.view().status).toMatchObject({
+      supporters: 80,
+      total: 560000,
+      peopleOk: true,
+      amountOk: false,
+      gathered: true,
+      established: false,
+    });
+  });
+
+  it('最低人数 100・支援者 93 は、金額は届いても、あと 7 人で、成立ではない（A-66）', () => {
+    const h = harness(4, { minPeople: 100, server: 19 });
+    expect(h.view().status).toMatchObject({
+      supporters: 93,
+      total: 651000,
+      amountOk: true,
+      peopleOk: false,
+      left: 7,
+      established: false,
+    });
+  });
+
+  it('金額と人数がそろうと成立（93 人・651,000円。A-64）。成立後は、申し込みをやめられない（SP-78）', () => {
+    const h = harness(4, { server: 19 });
+    passStart(h);
+    vi.advanceTimersByTime(300);
+    expect(h.view().status.established).toBe(true);
+    h.a.openCancel();
+    h.a.doCancel();
+    expect(h.state().course).toBe('normal');
+    expect(h.state().layers.some((l) => l.kind === 'cancel')).toBe(false);
+  });
+});
+
+describe('次のアクション（SP-42）', () => {
+  it('申し込む前で条件がそろっていないときは、残りの条件を言い、メイン口座 → 預金 → 推し活定期の順に並べる', () => {
+    const h = harness(4);
+    h.a.aimCourse('front');
+    const v = nextViewOf(h.view());
+    expect(v.hint).toBe('前方の席まで、残りは 預金 10,000円・メイン口座');
+    expect(v.rows.map((r) => r.id)).toEqual(['main', 'deposit', 'teiki']);
+    expect(v.rows[1]?.label).toBe('預金を積み増す ＋10,000円');
+  });
+
+  it('条件がそろうと、先頭に「{コース}に申し込む」が出て、押すと支援者が 74 人から 75 人になる説明が付く', () => {
+    const h = harness(4);
+    h.a.aimCourse('front');
+    h.a.runAcct('main', 'next');
+    h.a.runAcct('deposit', 'next');
+    const v = nextViewOf(h.view());
+    expect(v.rows[0]).toMatchObject({ id: 'apply', label: '前方の席に申し込む' });
+    expect(v.hint).toBe('前方の席（21,000円）に申し込めます');
+  });
+
+  it('申し込んだあとは、仲間を呼ぶ・SNSで広めるだけ。成立後は「仲間に知らせる」（B4）', () => {
+    const h = harness(4);
+    passStart(h);
+    expect(nextViewOf(h.view()).rows.map((r) => r.id)).toEqual(['friend', 'share']);
+    expect(nextViewOf(h.view()).rows[0]?.hint).toBe('仲間を呼ぶと、あと18人が17人に');
+    const h2 = harness(4, { server: 19 });
+    passStart(h2);
+    expect(nextViewOf(h2.view()).rows.map((r) => r.id)).toEqual(['notice']);
+  });
+});
+
+describe('条件の変更・引き継ぎ（A-39・I-26。デモ用の操作）', () => {
+  it('推し・市を変えると、開いた特典・達成の記録・呼んだ仲間・口座は残り、申し込み・目指すコース・80% の済みは取り直す', () => {
+    const h = harness(4);
+    passStart(h);
+    vi.advanceTimersByTime(3500);
+    h.a.closeGift();
+    h.a.runAcct('main', 'acct');
+    h.a.go('opt');
+    h.a.pickPend('oshi', 'krs48');
+    h.a.pickPend('city', '熊本市');
+    h.a.applyChange();
+    const s = h.state();
+    expect(s).toMatchObject({
+      oshiId: 'krs48',
+      city: '熊本市',
+      course: null,
+      aim: null,
+      friends: 0,
+      milestoneShown: false,
+      custom: true,
+    });
+    expect(s.gifts).toEqual([true, false, false]);
+    expect(s.done).toMatchObject({ join: true, main: true });
+    expect(s.acct).toMatchObject({ pay: true, deposit: 90000 });
+    expect(s.carry).toMatchObject({
+      gifts: 1,
+      doneCount: 2,
+      held: 7000,
+      venueName: 'Restaurant Bar CIB',
+    });
+    expect(s.layers.map((l) => l.kind)).toEqual(['carry']);
+    h.a.closeCarry();
+    expect(h.state().page).toBe('home');
+  });
+
+  it('条件がそろっていないコースは選べない（選んでいたら通常の席に戻す）', () => {
+    const h = harness(4);
+    h.a.go('opt');
+    h.a.pickPend('seat', 'front');
+    expect(h.state().pend?.seat).toBe('normal');
+  });
+});
+
+describe('リセット（デモ用。A-61）', () => {
+  it('ファン向けだけが、人物の初めの値のはじめの画面（1 / 3）に戻る。あとから出るはずの演出も止まる', () => {
+    const h = harness(6);
+    passStart(h);
+    vi.advanceTimersByTime(200);
+    h.a.resetFan();
+    const s = h.state();
+    expect(s.page).toBe('start');
+    expect(s.start).toMatchObject({ step: 0, oshiId: 'tech0', city: '久留米市', seat: 'normal' });
+    expect(s).toMatchObject({
+      course: null,
+      gifts: [false, false, false],
+      done: {},
+      called: 0,
+      layers: [],
+    });
+    expect(s.acct).toMatchObject({ deposit: 120000, pay: true }); // 人物 6 の初めの値
+    expect(h.state().toast?.text).toBe('ファン向けを、はじめの画面に戻しました');
+    vi.advanceTimersByTime(5000);
+    expect(h.state().layers).toEqual([]); // 申し込みの演出は、もう出ない
+  });
+});

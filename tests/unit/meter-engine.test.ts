@@ -354,6 +354,36 @@ describe('共有メーターの仕組み', () => {
       expect(engine.getSnapshot(PID).joined).toBe(7);
     });
 
+    it('429 で Retry-After が読めないとき（ブラウザの CORS では公開されない）は、決まった間隔（2 → 4 → 8 → 10 秒）に戻る', async () => {
+      api.joined = 4;
+      engine.subscribe(PID);
+      await advance(POLL_MS + 10);
+      const before = api.gets().length;
+      api.status = 429; // retryAfter なし
+      await advance(40_000);
+      const starts = api
+        .gets()
+        .slice(before)
+        .map((request) => request.at);
+      const gaps = starts
+        .slice(1, 5)
+        .map((at, i) => Math.round((at - (starts[i] ?? 0)) / 100) * 100);
+      expect(gaps).toEqual([2000, 4000, 8000, 10000]);
+      expect(engine.getSnapshot(PID).joined).toBe(4);
+    });
+
+    it.each([400, 401, 404, 413, 415, 500, 503])(
+      '状態 %i の応答でも、例外を出さず、最後の値のまま（状態は failing）',
+      async (status) => {
+        api.joined = 6;
+        engine.subscribe(PID);
+        await advance(POLL_MS + 10);
+        api.status = status;
+        await advance(30_000);
+        expect(engine.getSnapshot(PID)).toMatchObject({ joined: 6, status: 'failing' });
+      },
+    );
+
     it('409（上限）の申し込みは、送信済みとして扱い、再送しない', async () => {
       api.status = 409;
       engine.join(PID);

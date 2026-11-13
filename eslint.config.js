@@ -7,7 +7,16 @@ import tseslint from 'typescript-eslint';
 
 export default defineConfig([
   // 配らない元絵（assets-src）・ビルドの出力・backend の写し（src/core。検査は backend の側で行う）は検査しない
-  globalIgnores(['dist', 'coverage', 'assets-src', 'src/core']),
+  globalIgnores([
+    'dist',
+    'dist-e2e',
+    'coverage',
+    'assets-src',
+    'src/core',
+    'test-results',
+    'playwright-report',
+    'e2e/results',
+  ]),
   js.configs.recommended,
   tseslint.configs.recommended,
   reactHooks.configs.flat['recommended-latest'],
@@ -43,7 +52,13 @@ export default defineConfig([
     rules: { 'no-restricted-globals': 'off' },
   },
   {
-    files: ['vite.config.ts', 'eslint.config.js', 'scripts/**/*.mjs'],
+    files: [
+      'vite.config.ts',
+      'eslint.config.js',
+      'playwright.config.ts',
+      'scripts/**/*.mjs',
+      'e2e/**/*.mjs',
+    ],
     languageOptions: { globals: globals.node },
   },
 ]);

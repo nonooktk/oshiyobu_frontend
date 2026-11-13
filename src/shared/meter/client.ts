@@ -1,5 +1,16 @@
-import { parseJoinResponse, parseMeterResponse, parseResetResponse } from '../../core';
-import type { JoinResponse, MeterResponse, PerformanceId, ResetResponse } from '../../core';
+import {
+  parseApiErrorResponse,
+  parseJoinResponse,
+  parseMeterResponse,
+  parseResetResponse,
+} from '../../core';
+import type {
+  ApiErrorCode,
+  JoinResponse,
+  MeterResponse,
+  PerformanceId,
+  ResetResponse,
+} from '../../core';
 
 // 共有メーター API の呼び出し（設計 D-13・D-16・D-17）。画面の部品から fetch を呼ばない。通信はこのフォルダの中だけ。
 // どの関数も例外を投げない（失敗は戻り値で返す）。応答は core の検査（parse…）を通ったものだけを使う。
@@ -15,8 +26,13 @@ export type Failure =
       readonly ok: false;
       readonly kind: 'http';
       readonly status: number;
-      /** 429 などで、サーバーが待つよう求めた時間（Retry-After。ミリ秒）。無ければ undefined */
+      /**
+       * サーバーが待つよう求めた時間（Retry-After。ミリ秒）。無ければ undefined。
+       * ブラウザからは読めない（CORS で公開していない）ので、ふだんは undefined。そのときは、決まった間隔（2 → 4 → 8 → 10 秒）に戻る
+       */
       readonly retryAfterMs?: number;
+      /** 応答の本文の error（core の決まった名前）。知らない名前・本文なしは null。名前で動きを変えず、状態コードだけで扱う */
+      readonly code: ApiErrorCode | null;
     };
 export type Result<T> = { readonly ok: true; readonly value: T } | Failure;
 
@@ -39,7 +55,12 @@ async function request(
       const seconds = Number(response.headers.get('Retry-After'));
       const retryAfterMs =
         Number.isFinite(seconds) && seconds > 0 ? Math.ceil(seconds * 1000) : undefined;
-      return { ok: false, kind: 'http', status: response.status, retryAfterMs };
+      // 本文は読めなくても、知らない名前でも、落ちない（null）
+      const code = await response
+        .json()
+        .then((body: unknown) => parseApiErrorResponse(body)?.error ?? null)
+        .catch(() => null);
+      return { ok: false, kind: 'http', status: response.status, retryAfterMs, code };
     }
     try {
       return { ok: true, value: await response.json() };

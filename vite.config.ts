@@ -1,3 +1,5 @@
+import { readFileSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
 import { defineConfig, type Plugin } from 'vitest/config';
@@ -28,8 +30,35 @@ function preconnectApi(): Plugin {
   };
 }
 
+// 配信の設定（public/staticwebapp.config.json）の CSP の connect-src に、API の接続先を足す（設計 D-16）。
+// 接続先は、ビルド時の環境変数 VITE_API_BASE。未設定なら、'self' だけのまま（サーバーなしで動く）。
+function swaConnectSrc(): Plugin {
+  const origin = normalizeApiBase(process.env.VITE_API_BASE);
+  let outDir = '';
+  return {
+    name: 'oshiyobu-swa-connect-src',
+    apply: 'build',
+    configResolved(config) {
+      outDir = resolve(config.root, config.build.outDir);
+    },
+    closeBundle() {
+      if (origin === '') return;
+      const file = join(outDir, 'staticwebapp.config.json');
+      const config = JSON.parse(readFileSync(file, 'utf8')) as {
+        globalHeaders: Record<string, string>;
+      };
+      const key = 'content-security-policy';
+      config.globalHeaders[key] = (config.globalHeaders[key] ?? '').replace(
+        "connect-src 'self'",
+        `connect-src 'self' ${origin}`,
+      );
+      writeFileSync(file, `${JSON.stringify(config, null, 2)}\n`);
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react(), preconnectApi()],
+  plugins: [react(), preconnectApi(), swaConnectSrc()],
   // 複数ページなので、SPA 用の「どの URL でも / を返す」動きは使わない（存在しない URL は 404 にする）
   appType: 'mpa',
   build: {

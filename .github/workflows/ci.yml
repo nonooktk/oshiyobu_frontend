@@ -1,12 +1,12 @@
-# PR と main への push で回す検査（設計 D-26）。必須のチェックは verify だけ。
+# PR と、main・dev への push で回す検査（設計 D-26）。必須のチェックは verify だけ。
 # 今は lint・型・テスト・ビルド・core:check（src/core/ が lock のとおりか。CI では commit が local の lock を拒否する）。
-# check-budget・check-csp は、スクリプトができたら verify に足す。
+# check-budget（最初に読む量・絵の大きさ）と check-csp（配信の設定の CSP）も、ビルドのあとに回す。
 name: ci
 
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, dev]
 
 # 既定は読み取りだけ。書き込みが要る job だけ、その job で上げる
 permissions:
@@ -26,4 +26,6 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - run: npm run check:budget
+      - run: npm run check:csp
       - run: npm run core:check

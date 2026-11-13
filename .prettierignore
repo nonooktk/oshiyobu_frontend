@@ -10,3 +10,6 @@ assets-src
 
 # backend の core の写し（手で整形しない。ハッシュが変わる）
 src/core
+
+# 班の方の道具（そのまま置く。整形すると script のハッシュが変わる）
+public/simulator.html

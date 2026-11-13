@@ -3,7 +3,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
 import { defineConfig, type Plugin } from 'vitest/config';
-import { normalizeApiBase } from './src/shared/meter/apiBase';
+import { normalizeApiBase } from './src/shared/meter/apiBase.ts';
 
 // 3 ページ（事務所向け・ファン向け・発表者用）の HTML。複数ページのビルドの入り口（設計 D-01）
 const page = (path: string) => fileURLToPath(new URL(path, import.meta.url));

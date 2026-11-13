@@ -29,6 +29,12 @@ export function App() {
     }
   }, [venueId, costs, minHand]);
 
+  // 最初の画面（地図）が描けて、操作できる時刻に印を打つ（設計 D-40・SP-94。実ブラウザの速さの測定が読む）
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => performance.mark('oshiyobu:ready'));
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   return (
     <div className={styles.page}>
       <div className={styles.wrap}>

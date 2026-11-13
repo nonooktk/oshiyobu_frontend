@@ -50,3 +50,9 @@ Desktop.ini
 
 # Claude Code の個人用の設定（共有する設定は .claude/settings.json に置く）
 .claude/settings.local.json
+
+# 実ブラウザの試験の成果物
+dist-e2e/
+e2e/results/
+test-results/
+playwright-report/

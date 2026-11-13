@@ -75,6 +75,23 @@ const state = useImageState(id); // 'ready' | 'loading' | 'missing'。missing �
 - `loadChunk(name)` は、失敗したら 2・4・8・16 秒後、以後 30 秒おきに再試行します（止めません。エラーの文言も白い画面も出しません）
 - `ChunkBoundary` は、塊が来るまで `frame`（枠と操作）を出し、来たら中身を埋めます。中身の描画で例外が出ても `frame` を残し、1 秒後に描き直します
 
+## 絵の名前と置き場（F-3。`npm run images`）
+
+絵は、元絵（`assets-src/`。配信しない）から、表示の大きさに縮めた WebP を `src/assets/img/` に作ります（一覧と幅・品質・上限は `scripts/images-config.mjs`）。**F-2 は、`assets-src/` の元絵を直接 import せず、次の WebP を使います**（元の JPG は 1 枚 600〜780 KB で、N-20 の 300 KB に収まりません）。
+
+| 用途 | ファイル（`src/assets/img/`） | 幅 | 大きさ | 使う場所・読む時期（設計 D-40） |
+| --- | --- | --- | --- | --- |
+| 推しの丸い絵（5 組） | `artist-tech0.webp`・`artist-krs48.webp`・`artist-rijicho.webp`・`artist-terao.webp`・`artist-heisei.webp` | 192 | 7.7〜14 KB | ピル・見出し・共有カード。**最初の画面で読む** |
+| ロゴ | `logo-wide.webp`（136×48 の 2 倍）・`logo-mark.webp`（32×32 の 2 倍） | 272・64 | 3.9 KB・1.0 KB | 最初の画面 |
+| 推しの大きい絵（tech0 は 3 枚） | `tech0-full-1-768.webp`・`tech0-full-2-768.webp`・`tech0-full-3-768.webp` | 768 | 97〜99 KB | はじめの画面・ホーム・コースのカード・特典。**`-1` だけ最初の画面。`-2`・`-3` は先読み** |
+| 推しの大きい絵（ほかの 3 組） | `krs48-full-768.webp`・`rijicho-full-768.webp`・`terao-full-768.webp` | 768 | 57〜89 KB | 最初の画面で、その人の推しの 1 枚 |
+| 特典の絵（ほかの 3 組） | `krs48-full-1152.webp`・`rijicho-full-1152.webp`・`terao-full-1152.webp` | 1152 | 110〜173 KB | 特典の 3 段階（1 枚を切り抜いて広げる）。**先読み** |
+| 平成の俺 | `heisei-full.webp`（元の大きさ 384px） | 384 | 34 KB | ホーム・特典・カード。先読みは無い |
+
+- 取り込み方: `import tech0Full1 from '../assets/img/tech0-full-1-768.webp'`（Vite が、ハッシュつきの URL にする）。`configurePrefetch` の `images` に ID と URL を、`plan` に推しごとの先読みの順を渡します（tech0: `-2`・`-3` の順／krs48・riji・terao: `*-1152`／heisei: 絵の先読みなし）
+- tech0 の 3 枚は、品質を 62・58・52 に下げて 100 KB に収めています（D-40 の「軽くする順」①）。絵を差し替えたら `npm run images` を実行します。
+- ビルドのあとの `npm run check:budget` が、絵の上限と、元絵の形式（jpg・png）のまま配っていないことを検査します
+
 ## 決まり
 
 - `src/shared/**` を変えたら、下の「更新履歴」に 1 行書きます（F-2 の担当が取り込むため）
@@ -87,3 +104,4 @@ const state = useImageState(id); // 'ready' | 'loading' | 'missing'。missing �
 - F-0b 第 1 の区切り: `core:sync`・`core:check` と `src/core/`（backend 1dff053）／`device`・`persona`・`link`・`condition`・`meter`（スタブ）・`prefetch`・`mount` の `ErrorBoundary` を追加。`package.json` に zustand と `core:sync`・`core:check`、`tsconfig.app.json` に node の型（テスト用）、ESLint に `src/**` の `process`・`Buffer` の禁止と `_` 始まりの未使用引数の許可、`ci.yml` に `core:check` を追加
 - F-1: `src/office/`・`src/presenter/` を実装（`src/shared/` の変更: `meter/index.ts` に `API_CONFIGURED` を追加。F-2 への影響なし）。`vite.config.ts`・`package.json` の変更なし。`src/assets/img/artist-*.webp`（5 組の丸い絵。192px の WebP）と、元絵 `assets-src/artist-*.jpg` を追加（F-3 の `npm run images` で置き換える）
 - F-0b の追加: 共有メーターが、429 の `Retry-After` を尊重して間隔を空け、409（上限）の申し込みは送信済みとして再送しない（I-49）。`useSharedMeter`・`joinPerformance` の型と動きは変わらない
+- F-3: `package.json` に sharp・@playwright/test・`images`・`check:budget`・`check:csp`・`e2e`、`vite.config.ts` に CSP の接続先を足すプラグイン、`public/staticwebapp.config.json` に CSP、`eslint.config.js` と `tsconfig.app.json`（e2e）、`src/core/` を backend 049f6c0（版 0.2.0）に更新。`src/shared/meter/client.ts` が、新しい API のエラー名と、読めない Retry-After を扱う（型と動きは変わらない）。`src/assets/img/` の WebP を作り直し（名前は上の表）

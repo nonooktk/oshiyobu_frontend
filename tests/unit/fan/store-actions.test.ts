@@ -319,3 +319,35 @@ describe('会場の決め方（事務所向けと連動した会場を、勝手�
     expect(h.state().venueId).toBe('riseup');
   });
 });
+
+describe('人数の表示と達成率（I-16・I-17）', () => {
+  it('支援者 74・75・76 人で、あと 19・18・17 人・79・80・81%（A-18・I-16）', () => {
+    const h = harness(4, { server: 0 });
+    const at = (n: number) => {
+      h.setServer(n);
+      return h.view().status;
+    };
+    expect(at(0)).toMatchObject({ supporters: 74, left: 19, pct: 79 });
+    expect(at(1)).toMatchObject({ supporters: 75, left: 18, pct: 80 });
+    expect(at(2)).toMatchObject({ supporters: 76, left: 17, pct: 81 });
+    expect(at(0).fill).toBeCloseTo((74 / 93) * 100, 1);
+  });
+
+  it('最低人数を超えると、あと 0 人のまま、達成率は 100% を超えた数字をそのまま出し、棒は 100% で止まる（I-17）', () => {
+    const h = harness(4, { minPeople: 70, server: 1 });
+    expect(h.view().status).toMatchObject({ supporters: 75, left: 0, pct: 107, fill: 100 });
+  });
+});
+
+describe('共有メーターの取得の依頼（取得の契機。I-122）', () => {
+  it('コースを選ぶ画面（3 / 3）に入ったときに 1 回、公演が変わったときに 1 回、依頼する', () => {
+    const h = harness(4);
+    h.a.startNext(); // 2 / 3
+    expect(h.fetches).toEqual([]);
+    h.a.startPick('oshi', 'krs48');
+    h.a.startNext(); // 3 / 3
+    expect(h.fetches).toEqual(['course-select']);
+    h.a.startNext(); // 申し込む（公演は krs48:cbox に変わる）
+    expect(h.fetches).toEqual(['course-select', 'performance-changed']);
+  });
+});

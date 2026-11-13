@@ -16,6 +16,7 @@ export function harness(
 ) {
   const joins: PerformanceId[] = [];
   const opened: string[] = [];
+  const fetches: string[] = [];
   const copied: string[] = [];
   let server = opts.server ?? 0;
   let counted = false;
@@ -28,7 +29,9 @@ export function harness(
         sync();
       }
     },
-    fetch: () => undefined,
+    fetch: (reason) => {
+      fetches.push(reason);
+    },
     reduceMotion: () => opts.reduceMotion ?? false,
     openWindow: (url) => opened.push(url),
     copyText: async (text) => {
@@ -55,6 +58,7 @@ export function harness(
     store,
     a: store.actions,
     joins,
+    fetches,
     opened,
     copied,
     state: () => store.getState(),

@@ -1,5 +1,5 @@
 import { MAX_COST_YEN } from '../../core';
-import type { CostItemId, ParseResult, VenueId } from '../../core';
+import type { CostItemId, ParseResult } from '../../core';
 
 // 事務所向けの画面の文言（出典: モック index.html と 文言の校正.md。決まった言い方は仕様の「文言」）。
 // 決まった言い方・使わない語は、仕様 SP-81。ここを直すときは、tests/unit/forbidden-words.test.ts の語を使わない
@@ -131,5 +131,3 @@ export function sideNote(isHome: boolean, reach: boolean): readonly [string, str
       : 'この市には、見込みが必要人数に届く会場がありません。必要人数が見込みに最も近い1件だけを出しています。',
   ];
 }
-
-export type { VenueId };

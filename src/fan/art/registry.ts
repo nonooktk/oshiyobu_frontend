@@ -142,9 +142,6 @@ export function cutoutStyle(
   };
 }
 
-/** 全体を見せたいところ（応援コースの上の絵）の段。大きい絵が 3 枚の組は 1 枚目、1 枚の組は全体（3 段目）。 */
-export const publicIdx = (a: ArtistView): number => (a.art.imgs ? 0 : 2);
-
 /** 先読みの絵の登録（共有の部品 `configurePrefetch` に渡す）。絵の ID は、絵のファイルの URL そのもの。 */
 export const PREFETCH_IMAGES: Readonly<Record<string, string>> = Object.fromEntries(
   Object.values(ARTISTS_VIEW)

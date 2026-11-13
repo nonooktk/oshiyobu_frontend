@@ -5,5 +5,3 @@ export const manYen = (n: number): string => `${(n / 10000).toLocaleString('ja-J
 
 /** 折り返さずにひとまとまりで見せたい語（例: 「74人 → 75人」）。 */
 export type Seg = string | { nw: string };
-export const segsToText = (segs: readonly Seg[]): string =>
-  segs.map((s) => (typeof s === 'string' ? s : s.nw)).join('');

@@ -1,6 +1,6 @@
 // ファン向けの状態の型と、初めの値（端末の中だけ。再読み込みで初めに戻る。設計 D-10）。
-import { defaultVenueIdOf, personaByNo, personaPerformanceId, personaVenueId } from '../../core';
-import type { ArtistId, CityName, CourseId, PerformanceId, VenueId } from '../../core';
+import { defaultVenueIdOf, personaByNo, personaVenueId } from '../../core';
+import type { ArtistId, CityName, CourseId, VenueId } from '../../core';
 
 /** 達成した行動 6 つ（SP-45）。 */
 export const ACT_IDS = ['join', 'share', 'friend', 'main', 'deposit', 'teiki'] as const;
@@ -208,11 +208,6 @@ export function startSelOf(fan: Fan): StartSel {
     baseCity: fan.city,
     touched: false,
   };
-}
-
-/** 人物の公演 ID（共有メーターの公演）。 */
-export function performanceOfPersona(personaNo: number): PerformanceId {
-  return personaPerformanceId(personaByNo(personaNo));
 }
 
 /** 市を選び直したときの会場（久留米市は Cボックス、ほかは tech0 の見込みにキャパが最も近い 1 件。SP-49）。 */

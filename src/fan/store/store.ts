@@ -14,7 +14,7 @@ import {
 } from '../../core';
 import type { Condition, CourseId, PerformanceId } from '../../core';
 import { artistView } from '../art/registry';
-import { ACT_IDS, GIFT_ACTS, initialState, startSelOf, venueForCity } from '../domain/state';
+import { ACT_IDS, GIFT_ACTS, initialState, venueForCity } from '../domain/state';
 import type {
   AcctId,
   ActId,
@@ -803,7 +803,6 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     },
     view,
     dispose: clearTimers,
-    startOf: startSelOf,
     pendCond,
     actions: {
       go,

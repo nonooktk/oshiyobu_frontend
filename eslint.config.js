@@ -33,8 +33,14 @@ export default defineConfig([
         'error',
         { name: 'process', message: 'ブラウザの中で動くコードでは使えません' },
         { name: 'Buffer', message: 'ブラウザの中で動くコードでは使えません' },
+        // 通信は src/shared/meter/ の中だけ（設計 D-41 の規則 1。画面の部品から fetch を呼ばない）
+        { name: 'fetch', message: '通信は src/shared/meter/ の中だけで行います' },
       ],
     },
+  },
+  {
+    files: ['src/shared/meter/**/*.ts'],
+    rules: { 'no-restricted-globals': 'off' },
   },
   {
     files: ['vite.config.ts', 'eslint.config.js', 'scripts/**/*.mjs'],

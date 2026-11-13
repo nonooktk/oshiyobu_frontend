@@ -1,12 +1,35 @@
 import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vitest/config';
+import { defineConfig, type Plugin } from 'vitest/config';
+import { normalizeApiBase } from './src/shared/meter/apiBase';
 
 // 3 ページ（事務所向け・ファン向け・発表者用）の HTML。複数ページのビルドの入り口（設計 D-01）
 const page = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 
+// ファン向けの HTML に、API への接続を先に張る指示（preconnect）を入れる（設計 D-16 の K-03・K-17）。
+// 最初の取得・申し込みが、新しい接続の約 3 往復を待たないため。接続先が未設定なら入れない。
+// 接続先は、ビルド時の環境変数 VITE_API_BASE（秘密ではない。.env は読まず、環境の値だけを使う）
+function preconnectApi(): Plugin {
+  const origin = normalizeApiBase(process.env.VITE_API_BASE);
+  return {
+    name: 'oshiyobu-preconnect-api',
+    transformIndexHtml(_html, context) {
+      if (origin === '' || !context.path.startsWith('/fan/')) {
+        return [];
+      }
+      return [
+        {
+          tag: 'link',
+          attrs: { rel: 'preconnect', href: origin, crossorigin: '' },
+          injectTo: 'head-prepend',
+        },
+      ];
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), preconnectApi()],
   // 複数ページなので、SPA 用の「どの URL でも / を返す」動きは使わない（存在しない URL は 404 にする）
   appType: 'mpa',
   build: {

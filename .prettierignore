@@ -7,3 +7,6 @@ assets-src
 *.md
 .claude
 .github
+
+# backend の core の写し（手で整形しない。ハッシュが変わる）
+src/core

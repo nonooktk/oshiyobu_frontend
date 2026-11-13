@@ -96,6 +96,21 @@ export function stubResetMeters(): void {
   emitMeter();
 }
 
+/** reset を検知したときの受け口。counted ＝ 自分の申し込みが、サーバーに数えられていたか。 */
+export type MeterResetInfo = { performanceId: PerformanceId; counted: boolean };
+const resetListeners = new Set<(info: MeterResetInfo) => void>();
+export function subscribeMeterReset(listener: (info: MeterResetInfo) => void): () => void {
+  resetListeners.add(listener);
+  return () => resetListeners.delete(listener);
+}
+/** テスト・確認用: 発表者の reset を、端末が検知した状態を作る（人数は 0 に戻り、数えた印は消える）。 */
+export function stubTriggerReset(performanceId: PerformanceId): void {
+  const entry = meters.get(performanceId) ?? { joined: 0, counted: false };
+  meters.set(performanceId, { joined: 0, counted: false });
+  emitMeter();
+  resetListeners.forEach((listener) => listener({ performanceId, counted: entry.counted }));
+}
+
 /* ---------- 事務所向けとの連動（設計 D-44） ---------- */
 export type OfficeSelection = {
   venueId: VenueId;

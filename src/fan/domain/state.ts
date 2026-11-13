@@ -66,6 +66,8 @@ export type StartSel = {
   seat: CourseId;
   /** 初めの市（これと違う市を選ぶと、ファンの選択を優先する）。 */
   baseCity: CityName;
+  /** 利用者が、推し・市・コースのどれかを選び直したか（事務所向けとの連動で、初めの値を取り替えてよいかの判断）。 */
+  touched: boolean;
 };
 
 /** 「推し・条件の変更」の、選んでいる最中の値。 */
@@ -198,7 +200,14 @@ export function initialState(personaNo: number): FanState {
 
 /** はじめの画面の初めの選び（推し・市は人物の値、コースは通常の席）。 */
 export function startSelOf(fan: Fan): StartSel {
-  return { step: 0, oshiId: fan.oshiId, city: fan.city, seat: 'normal', baseCity: fan.city };
+  return {
+    step: 0,
+    oshiId: fan.oshiId,
+    city: fan.city,
+    seat: 'normal',
+    baseCity: fan.city,
+    touched: false,
+  };
 }
 
 /** 人物の公演 ID（共有メーターの公演）。 */

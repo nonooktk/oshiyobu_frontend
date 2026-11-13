@@ -8,7 +8,9 @@ import {
   courseOffersOf,
   crossedMilestone,
   nextDepositTarget,
+  PERSONA_DEFAULT_NO,
   performanceIdOf,
+  personaByNo,
 } from '../core';
 import type { Condition, CourseId, PerformanceId } from '../core';
 import { artistView } from '../art/registry';
@@ -577,6 +579,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     set({
       start: {
         ...s,
+        touched: true,
         ...(kind === 'oshi' ? { oshiId: v as typeof s.oshiId } : {}),
         ...(kind === 'city' ? { city: v as typeof s.city } : {}),
         ...(kind === 'seat' ? { seat: v as typeof s.seat } : {}),
@@ -645,6 +648,41 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     emit();
     toast('ファン向けを、はじめの画面に戻しました', 4000);
     announce('ファン向けを、はじめの画面に戻しました');
+  };
+  /** 事務所向けの「デモを最初に戻す」を受けたとき（連動）。ファン向けの表示だけ戻す（事務所向けの帯が知らせる）。 */
+  const resetFanQuiet = (): void => {
+    clearTimers();
+    state = { ...initialState(personaNo), live: '' };
+    emit();
+    announce('最初に戻しました');
+  };
+
+  /**
+   * 共有のメーターが初めに戻された（reset）と検知したとき（設計 D-18 の規則 10）。
+   * 数えられていた自分の申し込みは「未申し込み」に戻し（同じコースを押し直して申し込める）、擬似の仲間の加算を消す。
+   * まだ数えられていない申し込み（未送信・再送中）は消さない。達成した行動・開いた特典・呼んだ仲間・口座・演出の済みは変えない。
+   */
+  const serverReset = (counted: boolean): void => {
+    set({ friends: 0, ...(counted ? { course: null } : {}) });
+    if (counted) announce('共有のメーターが初めに戻りました。もう一度申し込めます。');
+  };
+
+  /**
+   * 事務所向けと連動したとき（設計 D-44）。まだ選び直していなければ、はじめの画面の初めの値を、
+   * 推し ＝ tech0・市と会場 ＝ 事務所向けの会場・預金とメイン口座 ＝ 人物 4 に取り替える（申し込み・達成・特典は取り直さない）。
+   */
+  const applyOffice = (venueId: Condition['venueId'] | null): void => {
+    const s = state.start;
+    if (venueId === null || !s || s.touched || state.custom || state.page !== 'start') return;
+    const c = conditionOf(venueId);
+    const p4 = personaByNo(PERSONA_DEFAULT_NO);
+    set({
+      oshiId: 'tech0',
+      city: c.city,
+      venueId,
+      acct: { pay: p4.mainAccount, deposit: p4.depositYen, times: 0 },
+      start: { ...s, oshiId: 'tech0', city: c.city, baseCity: c.city },
+    });
   };
   const openCancel = (): void => pushLayer({ kind: 'cancel' });
   const closeCarry = (): void => {
@@ -783,6 +821,9 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       startBack,
       startNext,
       resetFan,
+      resetFanQuiet,
+      serverReset,
+      applyOffice,
       openCancel,
       closeCancel,
       doCancel,

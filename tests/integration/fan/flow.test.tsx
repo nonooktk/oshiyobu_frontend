@@ -1,6 +1,8 @@
 // ファン向けの基準の流れと、前方の席を目指す流れ（上層: A-15〜A-18・A-24〜A-27・A-34・A-35・A-40・A-41・A-45・A-46・I-23・I-24・I-74）。
 // 通信は無い。共有メーターは、仮の I/F のメモリの値（サーバーへの申し込みの合図は、画面の人数に足されないことを確かめる）。
 import { describe, expect, it, vi } from 'vitest';
+import { stubTriggerReset } from '../../../src/fan/adapter';
+import { resetFan } from '../../../src/fan/link';
 import {
   act,
   btn,
@@ -192,5 +194,28 @@ describe('申し込み済みの再押下・コース変更（A-24・I-24）', ()
     ).toBe(true);
     expect(screen.getAllByRole('button', { name: 'このコースに変える（デモ用）' })).toHaveLength(1);
     expect(screen.getAllByRole('button', { name: '条件がそろうと申し込めます' })).toHaveLength(2);
+  });
+});
+
+describe('共有メーターの reset と連動（I-64・I-126・A-62 のファン向け側）', () => {
+  it('発表者の reset を検知すると 74 人に戻り、「未申し込み」になって、同じコースを押し直して申し込める', async () => {
+    mountFan('?p=4');
+    passStart();
+    await closeGiftAfterFx();
+    expect(meter().getAttribute('aria-label')).toContain('支援者75人');
+    act(() => stubTriggerReset('tech0:cbox'));
+    expect(meter().getAttribute('aria-label')).toContain('支援者74人');
+    expect(screen.getByText('まだチケットと特典は入手できていません！')).toBeTruthy();
+    click(/^次のアクション/);
+    fireEvent.click(screen.getByRole('button', { name: /^通常の席に申し込む/ }));
+    expect(meter().getAttribute('aria-label')).toContain('支援者75人');
+  });
+
+  it('事務所向けの「デモを最初に戻す」を受けた連動（resetFan）で、はじめの画面に戻る', async () => {
+    mountFan('?p=4');
+    passStart();
+    await closeGiftAfterFx();
+    act(() => resetFan());
+    expect(screen.getByRole('heading', { name: '推しを選ぶ' })).toBeTruthy();
   });
 });

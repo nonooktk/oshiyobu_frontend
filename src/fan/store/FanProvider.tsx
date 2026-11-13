@@ -3,6 +3,7 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useState,
@@ -14,9 +15,12 @@ import {
   getDeviceId,
   joinPerformance,
   requestMeterFetch,
+  subscribeMeterReset,
   useEffectiveCondition,
+  useLinkedOffice,
   useSharedMeter,
 } from '../adapter';
+import { registerResetFan } from '../link';
 import type { FanState } from '../domain/state';
 import { viewOf } from '../domain/view';
 import type { FanView } from '../domain/view';
@@ -52,6 +56,20 @@ export function FanProvider({ personaNo, store: given, children }: Props) {
     store.setEnv({ cond, pid, meter: { serverJoined, counted } });
   }, [store, cond, pid, serverJoined, counted]);
   useLayoutEffect(() => () => store.dispose(), [store]);
+  // 共有メーターの reset の検知と、事務所向けの「デモを最初に戻す」を受ける
+  useEffect(() => {
+    const off1 = subscribeMeterReset((info) => store.actions.serverReset(info.counted));
+    const off2 = registerResetFan(store.actions.resetFanQuiet);
+    return () => {
+      off1();
+      off2();
+    };
+  }, [store]);
+  // 事務所向けと連動したら、まだ選び直していない初めの値を、事務所向けの会場に合わせる
+  const officeVenue = useLinkedOffice()?.venueId ?? null;
+  useEffect(() => {
+    store.actions.applyOffice(officeVenue);
+  }, [store, officeVenue]);
   const view = useMemo(
     () => viewOf(state, cond, { serverJoined, counted }),
     [state, cond, serverJoined, counted],

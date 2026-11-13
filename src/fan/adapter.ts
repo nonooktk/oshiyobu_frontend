@@ -8,6 +8,8 @@ export {
   startPrefetch,
   stubResetImages,
   stubResetMeters,
+  stubTriggerReset,
+  subscribeMeterReset,
   stubSetServerJoined,
   useEffectiveCondition,
   useImageState,
@@ -17,6 +19,7 @@ export {
 export type {
   ImageState,
   MeterFetchReason,
+  MeterResetInfo,
   MeterStatus,
   OfficeSelection,
   SharedMeter,

@@ -226,3 +226,68 @@ describe('リセット（デモ用。A-61）', () => {
     expect(h.state().layers).toEqual([]); // 申し込みの演出は、もう出ない
   });
 });
+
+describe('共有メーターの reset を検知したとき（I-126・A-61 の外の reset）', () => {
+  it('数えられた申し込みは「未申し込み」に戻り、擬似の仲間の加算は消える。行動の記録・特典・口座は変わらない', () => {
+    const h = harness(4);
+    passStart(h);
+    vi.advanceTimersByTime(3500);
+    h.a.closeGift();
+    h.a.openShare('friend');
+    h.a.closeShare();
+    vi.advanceTimersByTime(2000);
+    expect(h.view().status.supporters).toBe(76);
+    h.a.serverReset(true);
+    h.setServer(0);
+    const s = h.state();
+    expect(s.course).toBeNull();
+    expect(s.friends).toBe(0);
+    expect(s.called).toBe(1); // 「呼んだ仲間」の記録は変わらない
+    expect(s.done).toMatchObject({ join: true, friend: true });
+    expect(s.gifts[0]).toBe(true);
+    expect(s.acct.deposit).toBe(90000);
+    expect(h.view().status.supporters).toBe(74);
+    // 同じコースを、もう一度押して申し込み直せる。80% の演出は、出した済みなので出ない
+    h.a.applyCourse('normal');
+    expect(h.state().course).toBe('normal');
+  });
+
+  it('まだ数えられていない申し込み（未送信・再送中）は消さない', () => {
+    const h = harness(4);
+    passStart(h);
+    h.a.serverReset(false);
+    expect(h.state().course).toBe('normal');
+  });
+});
+
+describe('事務所向けとの連動（設計 D-44。仮の I/F で、受け口だけ確かめる）', () => {
+  it('まだ選び直していなければ、はじめの画面の初めの値が、事務所向けの会場（熊本市）と人物 4 の口座に替わる（A-17・F-15）', () => {
+    const h = harness(6); // 預金 120,000円・メイン口座あり（人物 6）
+    h.a.applyOffice('KMM-002');
+    const s = h.state();
+    expect(s).toMatchObject({ oshiId: 'tech0', city: '熊本市', venueId: 'KMM-002' });
+    expect(s.start).toMatchObject({
+      city: '熊本市',
+      baseCity: '熊本市',
+      oshiId: 'tech0',
+      touched: false,
+    });
+    expect(s.acct).toMatchObject({ deposit: 90000, pay: false }); // 連動中の初めの値は、人物 4
+  });
+
+  it('利用者が選び直したあとは、事務所向けで会場を選び直しても、ファン向けは切り替わらない（決定 14）', () => {
+    const h = harness(4);
+    h.a.startPick('city', '佐賀市');
+    h.a.applyOffice('KMM-002');
+    expect(h.state().start?.city).toBe('佐賀市');
+    expect(h.state().venueId).toBe('cbox');
+  });
+
+  it('事務所向けの「デモを最初に戻す」を受けると、トーストを出さずに、はじめの画面へ戻る', () => {
+    const h = harness(4);
+    passStart(h);
+    h.a.resetFanQuiet();
+    expect(h.state().page).toBe('start');
+    expect(h.state().toast).toBeNull();
+  });
+});

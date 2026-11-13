@@ -364,7 +364,7 @@
   gap: var(--s1);
   padding: var(--s3);
   background: var(--scrim);
-  color: #fff;
+  color: var(--surface);
   font-size: 14px;
   font-weight: 700;
   text-align: center;
@@ -475,7 +475,7 @@
   height: 24px;
   border-radius: 50%;
   background: var(--primary);
-  color: #fff;
+  color: var(--surface);
   font-size: 12px;
   font-style: normal;
 }
@@ -511,7 +511,7 @@
 }
 .apill[aria-pressed='true'] {
   background: var(--primary);
-  color: #fff;
+  color: var(--surface);
 }
 .apill[aria-pressed='true'] > span:first-child {
   border-color: var(--surface);
@@ -539,7 +539,7 @@
 }
 .chip[aria-pressed='true'] {
   background: var(--primary);
-  color: #fff;
+  color: var(--surface);
 }
 .seatPick {
   display: grid;
@@ -568,7 +568,7 @@
 }
 .seatOpt[aria-pressed='true'] {
   background: var(--primary);
-  color: #fff;
+  color: var(--surface);
 }
 .seatOpt:disabled {
   border-color: var(--line);

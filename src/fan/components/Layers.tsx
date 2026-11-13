@@ -231,7 +231,12 @@ export function ShareSheet({ mode, inert }: { mode: ShareMode; inert: boolean })
   const plain = big ? big.join('') : `ライブ開催まで あと${s.left}人`;
   const text = buildPostText(view);
   const ig = async (): Promise<void> => {
-    await actions.shareTo('ig');
+    const ok = await actions.shareTo('ig');
+    // コピーできないときは、自分でコピーできるよう、投稿文の欄を選択状態にする（SP-90）
+    if (!ok) {
+      area.current?.focus();
+      area.current?.select();
+    }
   };
   return (
     <div

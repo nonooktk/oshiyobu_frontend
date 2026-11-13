@@ -291,3 +291,31 @@ describe('事務所向けとの連動（設計 D-44。仮の I/F で、受け口
     expect(h.state().toast).toBeNull();
   });
 });
+
+describe('申し込み済みのあとのコース変更（SP-75。デモ用の操作）', () => {
+  it('別のコースに変えても、支援者は増えず（75 人のまま）、確保額だけが変わる。送り直しもしない', () => {
+    const h = harness(6); // 預金 120,000円・メイン口座あり → 前方の席まで申し込める
+    passStart(h);
+    vi.advanceTimersByTime(3500);
+    h.a.closeGift();
+    h.a.applyCourse('front');
+    vi.advanceTimersByTime(200);
+    expect(h.state().course).toBe('front');
+    expect(h.view().status.supporters).toBe(75);
+    expect(h.view().my?.price).toBe(21000);
+    expect(h.joins).toHaveLength(1);
+    expect(h.state().toast?.text).toBe(
+      'コースを「前方の席」に変えました。確保は21,000円になりました',
+    );
+  });
+});
+
+describe('会場の決め方（事務所向けと連動した会場を、勝手に替えない）', () => {
+  it('連動した会場（RISE UP）で始まり、市を選び直さなければ、その会場のまま申し込む', () => {
+    const h = harness(4);
+    h.a.applyOffice('riseup');
+    expect(h.state()).toMatchObject({ city: '久留米市', venueId: 'riseup' });
+    passStart(h);
+    expect(h.state().venueId).toBe('riseup');
+  });
+});

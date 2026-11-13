@@ -217,3 +217,7 @@ export function performanceOfPersona(personaNo: number): PerformanceId {
 
 /** 市を選び直したときの会場（久留米市は Cボックス、ほかは tech0 の見込みにキャパが最も近い 1 件。SP-49）。 */
 export const venueOfCity = (city: CityName): VenueId => defaultVenueIdOf(city);
+
+/** いま出している市を選んだままなら、いまの会場のまま（事務所向けと連動した会場を、勝手に替えない）。市が替わったら、その市の会場。 */
+export const venueForCity = (fan: Pick<Fan, 'city' | 'venueId'>, city: CityName): VenueId =>
+  city === fan.city ? fan.venueId : venueOfCity(city);

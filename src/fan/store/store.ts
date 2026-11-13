@@ -14,7 +14,7 @@ import {
 } from '../../core';
 import type { Condition, CourseId, PerformanceId } from '../../core';
 import { artistView } from '../art/registry';
-import { ACT_IDS, GIFT_ACTS, initialState, startSelOf, venueOfCity } from '../domain/state';
+import { ACT_IDS, GIFT_ACTS, initialState, startSelOf, venueForCity } from '../domain/state';
 import type {
   AcctId,
   ActId,
@@ -549,7 +549,9 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     );
     later(reduce() ? 0 : 700, () => unlockGift(2));
   };
-  const shareTo = async (ch: 'x' | 'fb' | 'ig'): Promise<void> => {
+  /** 共有ボタン。Instagram は、コピーできたか（できなければ、画面が投稿文の欄を選択状態にする。SP-90）を返す。 */
+  const shareTo = async (ch: 'x' | 'fb' | 'ig'): Promise<boolean> => {
+    let copied = true;
     const text = buildPostText(view());
     if (ch === 'x') {
       deps.openWindow(shareUrlX(text));
@@ -559,6 +561,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       toast('Facebookの投稿画面を別のタブで開きました');
     } else {
       const ok = await deps.copyText(text);
+      copied = ok;
       toast(
         ok
           ? 'コピーしました。Instagramに貼り付けて投稿できます'
@@ -570,6 +573,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       set({ done: { ...state.done, share: true } });
       later(reduce() ? 0 : 400, () => unlockGift(1));
     }
+    return copied;
   };
 
   /* ---------- はじめの画面 ---------- */
@@ -607,12 +611,12 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
   const commitStart = (): void => {
     const s = state.start;
     if (!s) return;
-    const changedPid = performanceIdOf(s.oshiId, venueOfCity(s.city)) !== pidNow();
+    const changedPid = performanceIdOf(s.oshiId, venueForCity(state, s.city)) !== pidNow();
     set({
       oshiId: s.oshiId,
       seat: s.seat,
       city: s.city,
-      venueId: venueOfCity(s.city),
+      venueId: venueForCity(state, s.city),
       custom: s.city !== s.baseCity,
       start: null,
     });
@@ -715,7 +719,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
   const pendCond = (): Condition => {
     const p = state.pend;
     if (!p) return condNow();
-    return p.city === state.city ? condNow() : conditionOf(venueOfCity(p.city));
+    return p.city === state.city ? condNow() : conditionOf(venueForCity(state, p.city));
   };
   const pickPend = (kind: 'oshi' | 'city' | 'seat', v: string): void => {
     const p = state.pend;
@@ -727,7 +731,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       ...(kind === 'seat' ? { seat: v as Pend['seat'] } : {}),
     };
     // 条件がそろっていないコースは選べない（選んでいたら、通常の席に戻す）
-    const pc = next.city === state.city ? condNow() : conditionOf(venueOfCity(next.city));
+    const pc = next.city === state.city ? condNow() : conditionOf(venueForCity(state, next.city));
     const k = pc.courses.find((c) => c.id === next.seat);
     if (!k || !canApply(k, state.acct.deposit, state.acct.pay)) next.seat = 'normal';
     set({ pend: next });
@@ -743,7 +747,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
   }): void => {
     const p = state.pend;
     const target =
-      to ?? (p ? { oshiId: p.oshiId, venueId: venueOfCity(p.city), seat: p.seat } : null);
+      to ?? (p ? { oshiId: p.oshiId, venueId: venueForCity(state, p.city), seat: p.seat } : null);
     if (!target) return;
     const before = view();
     const held = before.my?.price ?? 0;

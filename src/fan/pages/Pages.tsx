@@ -1,6 +1,7 @@
 // メニュー配下の画面（あとから読む側。設計 D-40 の fan-pages）。枠（札の帯・戻る）は、読み込み前から出ている。
 import type { ReactNode } from 'react';
 import { RECRUITMENT_DEADLINE, areaFor } from '../../core';
+import { STORAGE_KEYS } from '../../shared/device';
 import { artistView } from '../art/registry';
 import { PAGE_TITLES } from '../text/ui';
 import { ACT_IDS } from '../domain/state';
@@ -210,6 +211,11 @@ function MorePage() {
 
 type AreaPref = ReturnType<typeof areaFor>[number];
 
+/** 端末の中に残るもの（共有の部品の STORAGE_KEYS から作る。キーが増えたら、ここの言い方も足す。設計 D-10・I-103）。 */
+const KEPT_LABELS: Record<(typeof STORAGE_KEYS)[number], string> = {
+  'oshiyobu.v1.device': '端末の番号（個人を特定しない乱数）',
+};
+
 /** 支援の状況（SP-46）。達成率・横棒・県別・市別の表。 */
 function AreaPage() {
   const { view, actions } = useFan();
@@ -388,7 +394,7 @@ function PrivPage() {
       '預金額・メイン口座（擬似）',
       <MyState key="my" deposit={state.acct.deposit} pay={state.acct.pay} />,
     ],
-    ['端末の番号', 'この端末に残ります（個人を特定しない乱数）'],
+    ...STORAGE_KEYS.map((key): [string, ReactNode] => [KEPT_LABELS[key], 'この端末に残ります']),
   ];
   return (
     <>

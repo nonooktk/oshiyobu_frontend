@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 import { CITY_NAMES, ARTIST_IDS, canApply, conditionOf, courseOffersOf } from '../../core';
 import { ARTISTS_VIEW, artistView } from '../art/registry';
 import logoMark from '../../assets/img/logo-mark.webp';
-import { venueOfCity } from '../domain/state';
+import { venueForCity } from '../domain/state';
 import { courseOf } from '../domain/view';
 import { yen } from '../text/format';
 import styles from '../fan.module.css';
@@ -29,7 +29,7 @@ export function Start() {
   if (!s) return null;
 
   const o = artistView(s.oshiId);
-  const venueId = venueOfCity(s.city);
+  const venueId = venueForCity(state, s.city);
   // 条件は、いま出している会場と同じなら、事務所向けと連動した条件をそのまま使う
   const c = view.cond.venueId === venueId ? view.cond : conditionOf(venueId);
   const { deposit, pay } = state.acct;

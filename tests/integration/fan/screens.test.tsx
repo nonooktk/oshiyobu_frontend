@@ -1,6 +1,12 @@
 // ファン向けの画面ごとの確かめ（上層: A-17・A-29〜A-32・A-42・A-54・A-56・A-57・I-29・I-67・I-69・I-74・I-101・I-117・I-118）。
 import { describe, expect, it, vi } from 'vitest';
+import { PREFETCH_IMAGES, PREFETCH_PLAN } from '../../../src/fan/art/registry';
 import { PUBLIC_URL } from '../../../src/fan/domain/share';
+import { loadLayersChunk, loadPagesChunk } from '../../../src/fan/prefetch';
+import { App } from '../../../src/fan/App';
+import { STORAGE_KEYS } from '../../../src/shared/device';
+import { configurePrefetch } from '../../../src/shared/prefetch';
+import { render } from '@testing-library/react';
 import {
   act,
   btn,
@@ -294,5 +300,111 @@ describe('特典の絵と感謝（I-28・I-117・I-118）', () => {
     expect(layer('gift')).not.toBeNull();
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(layer('gift')).toBeNull();
+  });
+});
+
+describe('遅れて読む画面と、受け皿（I-119・I-121・I-103・SP-90）', () => {
+  it('メニュー配下の塊が読めないあいだも、枠（札・戻る・見出し）は出て、白い画面にならない。読めたら中身が埋まる', async () => {
+    let fail = true;
+    configurePrefetch({
+      images: PREFETCH_IMAGES,
+      plan: PREFETCH_PLAN,
+      chunks: {
+        'fan-pages': () => (fail ? Promise.reject(new Error('読めない')) : loadPagesChunk()),
+        'fan-layers': loadLayersChunk,
+      },
+    });
+    mountFan('?p=4');
+    passStart();
+    await closeGiftAfterFx();
+    click('メニュー');
+    await tick(10);
+    expect(screen.getByRole('heading', { level: 2, name: 'メニュー' })).toBeTruthy(); // 枠
+    expect(screen.getByRole('button', { name: '‹ ホーム' })).toBeTruthy(); // 操作が残る
+    expect(screen.getByText('デモ用の架空データ')).toBeTruthy();
+    expect(screen.queryByText('くわしく')).toBeNull(); // 中身は空のまま。エラーの文言は出さない
+    expect(screen.queryByText(/エラー|失敗/)).toBeNull();
+    fail = false;
+    await tick(8000); // 失敗のあと、2・4 秒と間隔を空けて、自動で再試行する
+    await settle();
+    expect(screen.getByText('くわしく')).toBeTruthy();
+  });
+
+  it('やめる確認の塊が読めないあいだも、枠と「戻る」は出る', async () => {
+    let fail = true;
+    configurePrefetch({
+      images: PREFETCH_IMAGES,
+      plan: PREFETCH_PLAN,
+      chunks: {
+        'fan-pages': loadPagesChunk,
+        'fan-layers': () => (fail ? Promise.reject(new Error('読めない')) : loadLayersChunk()),
+      },
+    });
+    mountFan('?p=4');
+    passStart();
+    await closeGiftAfterFx();
+    click('メニュー');
+    await settle();
+    click('申し込みをやめる');
+    expect(screen.getByRole('heading', { name: '申し込みをやめますか？' })).toBeTruthy();
+    expect(
+      within(layer('sheet') as HTMLElement).getByRole('button', { name: '戻る' }),
+    ).toBeTruthy();
+    fail = false;
+    // 失敗のあと、2・4 秒と間隔を空けて、自動で再試行する（待ちと読み込みを、少しずつ進める）
+    for (let i = 0; i < 5; i++) {
+      await tick(2000);
+      await settle();
+    }
+    expect(
+      within(layer('sheet') as HTMLElement).getByRole('button', { name: 'やめない（戻る）' }),
+    ).toBeTruthy();
+  });
+
+  it('ルートの受け皿が中身を作り直しても、状態（申し込み・人数）は残る（ストアは React の外にある）', async () => {
+    mountFan('?p=4');
+    passStart();
+    await closeGiftAfterFx();
+    cleanup();
+    render(<App />); // 作り直し（再読み込みではない）
+    expect(screen.getByRole('img', { name: /^支援者75人/ })).toBeTruthy();
+  });
+
+  it('操作のあとの localStorage のキーは、端末の番号だけ（I-103）。「情報の扱い」の一覧も、同じ数のキーから作る', async () => {
+    mountFan('?p=4');
+    passStart();
+    await closeGiftAfterFx();
+    click('メニュー');
+    await settle();
+    click(/^情報の扱い/);
+    await settle();
+    expect(
+      Object.keys(localStorage).every((k) => (STORAGE_KEYS as readonly string[]).includes(k)),
+    ).toBe(true);
+    expect(screen.getAllByText('この端末に残ります')).toHaveLength(STORAGE_KEYS.length);
+    expect(
+      screen.getByText(
+        /送るのは、申し込みの合図（公演の指定を含む）と端末の番号だけです。個人の情報は送りません。/,
+      ),
+    ).toBeTruthy();
+  });
+
+  it('コピーできないときは、投稿文の欄を選択状態にする（SP-90）', async () => {
+    mountFan('?p=4');
+    passStart();
+    await closeGiftAfterFx();
+    click(/^次のアクション/);
+    click(/^SNSで広める/);
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: vi.fn().mockRejectedValue(new Error('x')) },
+      configurable: true,
+    });
+    const box = screen.getByRole('textbox') as HTMLTextAreaElement;
+    await act(async () => {
+      fireEvent.click(btn('Instagram'));
+    });
+    expect(document.activeElement).toBe(box);
+    expect(box.selectionStart).toBe(0);
+    expect(box.selectionEnd).toBe(box.value.length);
   });
 });

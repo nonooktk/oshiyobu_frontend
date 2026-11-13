@@ -254,6 +254,21 @@ describe('特典の絵と感謝（I-28・I-117・I-118）', () => {
     expect(gift.querySelectorAll('img[alt*="特典の絵"]')).toHaveLength(0); // 壊れた画像の印を出さない
   });
 
+  it('代わりの表示の順: 本来の絵（幅 1152）が届くまでは、読み済みの幅 768 の絵を切り抜きの段のまま出す（D-40）', async () => {
+    mountFan('?p=10'); // krs48（1 枚の絵を切り抜いて広げる組）
+    click('次へ');
+    click('次へ');
+    click('この内容で申し込む');
+    // 最初の画面・ホームで出した絵が、読み終えた（load）
+    for (const img of Array.from(document.querySelectorAll('img[alt$="の絵"]')))
+      fireEvent.load(img);
+    await tick(650 + 2500 + 20);
+    const art = layer('gift')?.querySelector('img[alt*="特典の絵 1/3"]') as HTMLImageElement;
+    expect(art.getAttribute('src')).toMatch(/krs48-full-768/);
+    expect(art.style.width).toMatch(/%$/); // 切り抜きの広げ方（1 段目は顔まわり）
+    expect(layer('gift')?.querySelector('[role="img"][aria-label*="特典の絵"]')).toBeNull(); // 頭文字には落ちない
+  });
+
   it('本来の絵が届いたら、その場で差し替える', async () => {
     vi.stubGlobal('Image', ReadyImage);
     mountFan('?p=4');
@@ -291,6 +306,25 @@ describe('特典の絵と感謝（I-28・I-117・I-118）', () => {
     click(/^貢献/);
     await settle();
     expect(screen.getByText(/ライブでみんなに会えたら、うれしいな。/)).toBeTruthy();
+  });
+
+  it('りじちょーの感謝のメッセージには、いまの市の名前が入る（久留米市で会えたら…）', async () => {
+    mountFan('?p=12');
+    passStart();
+    await closeGiftAfterFx();
+    click(/^次のアクション/);
+    click(/^SNSで広める/);
+    vi.spyOn(window, 'open').mockReturnValue(null);
+    fireEvent.click(btn('X'));
+    await tick(400 + 2300);
+    fireEvent.click(within(layer('gift') as HTMLElement).getByRole('button', { name: '閉じる' }));
+    fireEvent.click(within(layer('share') as HTMLElement).getByRole('button', { name: '閉じる' }));
+    await tick(2000 + 700 + 2300);
+    fireEvent.click(within(layer('gift') as HTMLElement).getByRole('button', { name: '閉じる' }));
+    const text = layer('thanks')?.textContent ?? '';
+    expect(text).toContain('あれっす！特典を3つとも開けてくれて、ありがとうっす！');
+    expect(text).toContain('久留米市で会えたら、ほんとうに最高にうれしいっす！');
+    expect(text).not.toContain('{市}');
   });
 
   it('Esc で、いちばん上の層（特典の絵）を閉じる', async () => {

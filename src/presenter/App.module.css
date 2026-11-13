@@ -1,9 +1,8 @@
-/* 発表者用（/presenter/）。枠だけの段階。聞き手の画面からはリンクしない（SP-67） */
+/* 発表者用（/presenter/）。聞き手の画面からはリンクしない（SP-67） */
 .page {
   min-height: 100vh;
   background: var(--bg-b);
 }
-
 .bar {
   display: flex;
   align-items: center;
@@ -11,19 +10,117 @@
   min-height: var(--tap);
   padding: var(--s2) var(--s3);
 }
-
 .badge {
   margin-left: auto;
 }
-
 .main {
+  display: grid;
+  gap: var(--s4);
   max-width: 640px;
   margin: 0 auto;
   padding: var(--s3) var(--s3) var(--s5);
 }
-
 .heading {
   margin: 0;
   font-size: 20px;
   font-weight: 700;
+}
+.lead,
+.help {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+.card {
+  display: grid;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+}
+.card h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+.field label {
+  display: block;
+  margin-bottom: var(--s1);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.field input {
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--s1) var(--s2);
+  border: 1px solid var(--ink-soft);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s3);
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap);
+  padding: var(--s2) var(--s4);
+  border: 2px solid var(--primary);
+  border-radius: var(--pill);
+  background: var(--primary);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn:hover {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+.btn:disabled {
+  border-color: var(--line);
+  background: var(--bg-c);
+  color: var(--ink-soft);
+  cursor: not-allowed;
+}
+.secondary {
+  background: var(--surface);
+  color: var(--primary);
+}
+.danger {
+  border-color: var(--error-ink);
+  background: var(--error-ink);
+}
+.danger:hover {
+  border-color: var(--error-ink);
+  background: var(--error-ink);
+}
+.result {
+  margin: 0;
+  padding: var(--s2) var(--s3);
+  border-radius: var(--r);
+  background: var(--bg-c);
+  font-size: 16px;
+  font-weight: 700;
+}
+.ok {
+  background: var(--success-ink);
+  color: #fff;
+}
+.ng {
+  background: var(--error-ink);
+  color: #fff;
+}
+.notes {
+  margin: 0;
+  padding-left: var(--s4);
+  font-size: 14px;
 }

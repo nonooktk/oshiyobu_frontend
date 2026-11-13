@@ -13,6 +13,9 @@ import type { MeterFetchReason, MeterStatus, SharedMeter } from './types';
 export type { MeterFetchReason, MeterStatus, SharedMeter };
 export type { ResetOutcome } from './client';
 
+/** API の接続先が設定されているか（未設定なら、サーバーなしで動いている） */
+export const API_CONFIGURED: boolean = API_BASE !== '';
+
 let engine: MeterEngine | null = null;
 const getEngine = (): MeterEngine => (engine ??= createMeterEngine({ apiBase: API_BASE }));
 

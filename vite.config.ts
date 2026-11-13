@@ -39,6 +39,7 @@ export default defineConfig({
   test: {
     // 画面を描くテスト（R）と、ファイルを検査するテスト（V）を同じ設定で動かす（テスト設計「使い方」）
     environment: 'jsdom',
+    // CSS の中身も読み込む。false だと、CSS が空の文字列になり、文言ガード（forbidden-words）が CSS を検査できない
     css: true,
     include: ['tests/**/*.test.{ts,tsx}'],
   },

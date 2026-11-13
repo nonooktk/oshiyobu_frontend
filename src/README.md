@@ -10,7 +10,7 @@
 | `office/` | 事務所向け（`/`） | F-1 | `text/` は文言。`components/` は部品 |
 | `presenter/` | 発表者用（`/presenter/`） | F-1 | 聞き手の画面からリンクしない |
 | `fan/` | ファン向け（`/fan/`。QR の行き先） | F-2 | `text/` は文言（セリフ・感謝の文を含む） |
-| `core/` | backend の core（計算とデータ）の写し | 手で直さない | backend で直し、`core:sync` で置く（F-0b で作る。今は空） |
+| `core/` | backend の core（計算とデータ）の写し | 手で直さない | backend で直し、`core:sync` で置く（backend 1dff053 を置き済み） |
 | `assets/img/` | 配信用の絵（表示の大きさに縮めた WebP） | F-3 | 元絵は、リポジトリ直下の `assets-src/`（配信しない） |
 
 ## 今あるもの

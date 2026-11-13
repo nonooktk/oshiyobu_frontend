@@ -1,0 +1,27 @@
+/* ファン向け（toC）。枠だけの段階。スマホの幅（375px）で崩れないことが前提（N-06） */
+.page {
+  min-height: 100vh;
+  background: var(--bg-c);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: var(--tap);
+  padding: var(--s2) var(--s3);
+}
+
+.badge {
+  margin-left: auto;
+}
+
+.main {
+  padding: var(--s3) var(--s3) var(--s5);
+}
+
+.heading {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}

@@ -1,0 +1,31 @@
+/* 事務所向け（toB）。枠だけの段階。上の帯の中身は、画面を作るときに足す */
+.page {
+  min-height: 100vh;
+  background: var(--bg-b);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  max-width: 1180px;
+  min-height: var(--tap);
+  margin: 0 auto;
+  padding: var(--s2) var(--s3);
+}
+
+.badge {
+  margin-left: auto;
+}
+
+.main {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: var(--s4) var(--s3) var(--s5);
+}
+
+.heading {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}

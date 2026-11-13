@@ -1,0 +1,12 @@
+/* 「デモ用の架空データ」の札。黄の面に濃紺の文字（10:1 以上） */
+.badge {
+  display: inline-block;
+  padding: 0 var(--s2);
+  border-radius: var(--r);
+  background: var(--yellow);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 20px;
+  white-space: nowrap;
+}

@@ -1,0 +1,46 @@
+/* 全ページ共通の土台（値は tokens.css から使う）。部品ごとの見た目は、各部品の *.module.css に書く */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--surface);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 3px solid var(--primary-dark);
+  outline-offset: 2px;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+/* 既定の bolder だと、太字の中で 900 になる。太さは 400 と 700 だけ使う */
+b,
+strong {
+  font-weight: 700;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* 画面には出さず、読み上げだけに使う文字 */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

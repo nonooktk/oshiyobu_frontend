@@ -1,0 +1,51 @@
+/*
+  デザイントークン（班の DESIGN.md の値。収支シミュレーター・モックと同じ値）。
+  色・角丸・間隔・書体は、ここだけで決める。新しい色は足さない（足すときは、統括の承認を得る）。
+  画面の CSS は、値を直接書かず、var(--名前) で使う。
+*/
+:root {
+  --primary: #005ebb;
+  --primary-dark: #004c97;
+  --sky: #00b8f0;
+  --sky-light: #68d7ff;
+  --yellow: #fbd635;
+  --yellow-light: #fde98c;
+  --ink: #0b2a4a; /* 本文の文字。DESIGN.md に指定が無いため、コーディネーターが決めた濃紺 */
+  --ink-soft: #2f6f9e; /* 補助の文字。これより薄い色を文字に使わない */
+  --surface: #ffffff;
+  --bg-b: #f5f9fc; /* 事務所向け（toB）の背景 */
+  --bg-c: #e6f0fa; /* ファン向け（toC）の背景 */
+  --line: #bfd8f1; /* 線・無効・飾りだけ。文字に使わない */
+  --gray-300: #7fb7e3; /* 同上 */
+  --success: #00b894;
+  --success-ink: #007a63;
+  --warning: #f5b400;
+  --warning-ink: #7a5a00;
+  --error: #e53935;
+  --error-ink: #c62828;
+
+  /*
+    熱量の赤 5 段（淡い → 濃い）。デザインの決まりの色ではなく、モックの D-18 で足したパレット外の色。
+    使う場所は、事務所向けの地図の「払える熱量」と散布図だけ（意味は青の人数と分ける）。
+    淡い 3 段の上は --ink、濃い 2 段の上は白の文字を置く（どちらも 4.5:1 以上）。
+  */
+  --heat-1: #fde7e4;
+  --heat-2: #f8b4ac;
+  --heat-3: #f0766a;
+  --heat-4: #d6382e;
+  --heat-5: #a81e1e;
+
+  /* 形と間隔 */
+  --r: 8px;
+  --pill: 999px;
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 16px;
+  --s4: 24px;
+  --s5: 32px;
+  --tap: 44px; /* 操作できる部品の最小の高さ（N-03） */
+  --scrim: rgba(11, 42, 74, 0.6); /* --ink の半透明（ダイアログの背面） */
+
+  /* 書体は端末にある日本語ゴシックだけ。外部のフォントは読み込まない（N-07） */
+  --font: 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+}

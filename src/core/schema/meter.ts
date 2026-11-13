@@ -22,6 +22,11 @@ export const API_ERROR_CODES = [
   'rate_limited', // 429: 同じ端末の番号の連打（Retry-After を付ける）
   'unauthorized', // 401: 合言葉が違う
   'not_configured', // 503: 合言葉が未設定・短い（reset を無効にしている）
+  // 以下は B-2 で足した（設計 D-13 は状態コードだけで、名前を決めていなかったもの）
+  'payload_too_large', // 413: 本文が 1 KB を超える
+  'unsupported_media_type', // 415: Content-Type が text/plain・application/json 以外
+  'not_found', // 404: 知らない道（公演 ID の誤りは unknown_performance）
+  'internal_error', // 500: 想定外の失敗（理由は返さない）
 ] as const;
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];
 
@@ -43,6 +48,13 @@ export interface JoinResponse extends MeterResponse {
 /** POST /api/v1/reset の応答。 */
 export interface ResetResponse {
   readonly resetAt: string;
+}
+
+/** エラーの応答（HTTP の状態コードが 4xx・5xx のときの本文）。 */
+export interface ApiErrorResponse {
+  readonly error: ApiErrorCode;
+  /** 上限（cap_reached）のとき、その公演の申し込みの件数。 */
+  readonly joined?: number;
 }
 
 /** サーバーが返す時刻の形（Date#toISOString。ミリ秒は省いてもよい）。 */
@@ -92,6 +104,28 @@ export function parseJoinResponse(value: unknown): JoinResponse | null {
   }
   const counted = own(value, 'counted');
   return typeof counted === 'boolean' ? { ...meter, counted } : null;
+}
+
+function isApiErrorCode(value: unknown): value is ApiErrorCode {
+  return typeof value === 'string' && (API_ERROR_CODES as readonly string[]).includes(value);
+}
+
+/**
+ * エラーの応答を検査する。error が決まった種類でなければ null。知らない項目は捨てる。
+ * joined は、0 以上の整数のときだけ残す（上限 cap_reached が添える）。
+ */
+export function parseApiErrorResponse(value: unknown): ApiErrorResponse | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+  const error = own(value, 'error');
+  if (!isApiErrorCode(error)) {
+    return null;
+  }
+  const joined = own(value, 'joined');
+  return typeof joined === 'number' && Number.isSafeInteger(joined) && joined >= 0
+    ? { error, joined }
+    : { error };
 }
 
 /** POST reset の応答を検査する。resetAt は必ず時刻（null は受けない）。型が違えば null。 */

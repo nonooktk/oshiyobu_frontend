@@ -5,7 +5,7 @@ import { useLinkedOffice } from '../../shared/link';
 import { Av, GiftArt } from '../components/Art';
 import { ACT_IDS } from '../domain/state';
 import { courseOf, nextViewOf, restText, slotsText } from '../domain/view';
-import { THANKS } from '../text/thanks';
+import { thanksOf } from '../text/thanks';
 import { ACT_NAMES, GIFT_LABELS } from '../text/ui';
 import { yen } from '../text/format';
 import fan from '../fan.module.css';
@@ -183,7 +183,7 @@ export function ContribPage() {
       {k === 3 ? (
         <div className={fan.card}>
           <p className={fan.bigK}>推しからの感謝のメッセージ</p>
-          <p className={styles.thanksBox}>{THANKS[state.oshiId].join('')}</p>
+          <p className={styles.thanksBox}>{thanksOf(state.oshiId, cond.city).join('')}</p>
         </div>
       ) : null}
     </>

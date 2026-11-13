@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { artistView } from '../art/registry';
-import { THANKS } from '../text/thanks';
+import { thanksOf } from '../text/thanks';
 import { buildPostText } from '../domain/share';
 import type { AchSpec, FxSpec, ShareMode } from '../domain/state';
 import { VOICES } from '../text/voices';
@@ -170,7 +170,7 @@ export function GiftLayer({ replay, inert }: { replay: boolean; inert: boolean }
 
 /** 感謝のメッセージ（3 つ目の特典の絵を閉じた直後に 1 回）。押す・Esc で閉じる。 */
 export function ThanksLayer({ inert }: { inert: boolean }) {
-  const { state, actions } = useFan();
+  const { state, view, actions } = useFan();
   const o = artistView(state.oshiId);
   const voice = VOICES[state.oshiId];
   const btn = useRef<HTMLButtonElement>(null);
@@ -195,7 +195,9 @@ export function ThanksLayer({ inert }: { inert: boolean }) {
           <span className={styles.thanksName}>
             {voice.who ? `${o.name}・${voice.who}より` : `${o.name}より`}
           </span>
-          <span className={styles.thanksText}>{THANKS[state.oshiId].join('')}</span>
+          <span className={styles.thanksText}>
+            {thanksOf(state.oshiId, view.cond.city).join('')}
+          </span>
           <span className={styles.thanksClose}>押すと閉じます</span>
         </span>
       </button>

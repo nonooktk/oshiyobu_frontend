@@ -1,8 +1,12 @@
 // 感謝のメッセージ（特典を 3 つとも開いたあと、3 つ目の絵を閉じた直後に 1 回。決定 25・SP-34・SP-68）。
 // 【仮】マイメロディの案（inputs/感謝のメッセージ_案.md）の「おすすめの 5 つ」を、統括の採否が出るまで仮に使う。
 // 採否が出たら、この 1 か所の文を差し替える。5 組ぶん・各 3〜4 文（文は「。」「！」「？」で区切る）。
-// 金額・預金・口座・約束（「会おう」「必ず」など）・人数は書かない。市の名前の差し込みは使わない。
+// 金額・預金・口座・約束（「会おう」「必ず」など）・人数は書かない。
+// 市の名前は、文の中の印 `{市}` に差し込む（`thanksOf`）。いちばん長い市（北九州市・鹿児島市の 4 字）でも、枠に収まる長さにしてある。
 import type { ArtistId } from '../../core';
+
+/** 市の名前を差し込む印。 */
+export const CITY_MARK = '{市}';
 
 export const THANKS: Record<ArtistId, readonly string[]> = {
   tech0: [
@@ -21,7 +25,7 @@ export const THANKS: Record<ArtistId, readonly string[]> = {
     'あれっす！',
     '特典を3つとも開けてくれて、ありがとうっす！',
     'ここまで応援してくれたみんなの声が、ぜんぶ力になっているっす！',
-    'ライブで会えたら、ほんとうに最高にうれしいっす！',
+    '{市}で会えたら、ほんとうに最高にうれしいっす！',
   ],
   terao: [
     '特典を3つとも開いてくれて、本当にありがとう。',
@@ -36,3 +40,8 @@ export const THANKS: Record<ArtistId, readonly string[]> = {
     'その日を想像するだけで、にやけちゃうじゃん。',
   ],
 };
+
+/** 感謝のメッセージの文（市の名前を差し込んだもの）。 */
+export function thanksOf(id: ArtistId, city: string): string[] {
+  return THANKS[id].map((line) => line.replaceAll(CITY_MARK, city));
+}

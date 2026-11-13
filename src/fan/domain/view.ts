@@ -5,7 +5,7 @@ import type { Condition, CourseId, CourseOffer, SupportStatus } from '../core';
 import type { Seg } from '../text/format';
 import { yen } from '../text/format';
 import type { HomeKey } from '../text/voices';
-import { ACT_IDS, GIFT_ACTS } from './state';
+import { ACT_IDS } from './state';
 import type { Fan } from './state';
 
 /** 共有メーターから受ける値（サーバーの件数と、自分が数えられた印）。 */
@@ -287,7 +287,3 @@ export function homeKeyOf(v: FanView): HomeKey {
   if (v.stage === 1) return v.soon ? 'postSoon' : 'post';
   return 'friend';
 }
-
-/** 特典を開く 3 つの行動の札（貢献の画面）。 */
-export const GIFT_LABELS = ['申し込む', 'SNSで広める', '仲間が申し込む'] as const;
-export { GIFT_ACTS };

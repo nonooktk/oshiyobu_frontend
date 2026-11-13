@@ -12,7 +12,7 @@ import {
 } from '../core';
 import type { Condition, CourseId, PerformanceId } from '../core';
 import { artistView } from '../art/registry';
-import { GIFT_ACTS, initialState, startSelOf, venueOfCity } from '../domain/state';
+import { ACT_IDS, GIFT_ACTS, initialState, startSelOf, venueOfCity } from '../domain/state';
 import type {
   AcctId,
   ActId,
@@ -349,7 +349,15 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
         homeIdx = pool[Math.floor(deps.random() * pool.length)] ?? 0;
       }
     }
-    set({ page, origin, homeIdx, fresh: null });
+    set({
+      page,
+      origin,
+      homeIdx,
+      fresh: null,
+      ...(page === 'opt'
+        ? { pend: { oshiId: state.oshiId, city: state.city, seat: state.seat } }
+        : {}),
+    });
   };
 
   const applyCourse = (id: CourseId): void => {
@@ -664,8 +672,83 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     );
   };
 
-  /* ---------- 「推し・条件の変更」 ---------- */
-  const setPend = (pend: Pend | null): void => set({ pend });
+  /* ---------- 「推し・条件の変更」（SP-25・SP-49。デモ用の操作） ---------- */
+  /** 選んでいる最中の条件（市を変えたときは、その市の会場の条件）。 */
+  const pendCond = (): Condition => {
+    const p = state.pend;
+    if (!p) return condNow();
+    return p.city === state.city ? condNow() : conditionOf(venueOfCity(p.city));
+  };
+  const pickPend = (kind: 'oshi' | 'city' | 'seat', v: string): void => {
+    const p = state.pend;
+    if (!p) return;
+    const next = {
+      ...p,
+      ...(kind === 'oshi' ? { oshiId: v as Pend['oshiId'] } : {}),
+      ...(kind === 'city' ? { city: v as Pend['city'] } : {}),
+      ...(kind === 'seat' ? { seat: v as Pend['seat'] } : {}),
+    };
+    // 条件がそろっていないコースは選べない（選んでいたら、通常の席に戻す）
+    const pc = next.city === state.city ? condNow() : conditionOf(venueOfCity(next.city));
+    const k = pc.courses.find((c) => c.id === next.seat);
+    if (!k || !canApply(k, state.acct.deposit, state.acct.pay)) next.seat = 'normal';
+    set({ pend: next });
+  };
+  /**
+   * 条件を変える。開いた特典・達成の記録・呼んだ仲間の数・口座の設定は残し、
+   * 申し込み（確保額）・80% の演出の済み・擬似の仲間・公演のメーターは、新しい条件で取り直す（共有のメーターへは送らない。決定 3）。
+   */
+  const applyChange = (to?: {
+    oshiId: Pend['oshiId'];
+    venueId: Condition['venueId'];
+    seat: Pend['seat'];
+  }): void => {
+    const p = state.pend;
+    const target =
+      to ?? (p ? { oshiId: p.oshiId, venueId: venueOfCity(p.city), seat: p.seat } : null);
+    if (!target) return;
+    const before = view();
+    const held = before.my?.price ?? 0;
+    if (inviteTimer) clearTimeout(inviteTimer);
+    inviteTimer = null;
+    const changedPid = performanceIdOf(target.oshiId, target.venueId) !== pidNow();
+    const venueCond = conditionOf(target.venueId);
+    set({
+      oshiId: target.oshiId,
+      seat: target.seat,
+      venueId: target.venueId,
+      city: venueCond.city,
+      custom: true,
+      course: null,
+      aim: null,
+      friends: 0,
+      milestoneShown: false,
+      pend: null,
+    });
+    if (changedPid) deps.fetch('performance-changed');
+    const v = view();
+    const nk = courseOf(v.cond, target.seat);
+    set({
+      carry: {
+        oshiName: artistView(state.oshiId).name,
+        city: state.city,
+        gifts: v.giftCount,
+        doneCount: v.doneCount,
+        doneNames: ACT_IDS.filter((id) => state.done[id]),
+        called: state.called,
+        deposit: state.acct.deposit,
+        pay: state.acct.pay,
+        held,
+        seatPrice: nk.price,
+        supporters: v.status.supporters,
+        pct: v.status.pct,
+        venueName: v.cond.venue.name,
+        min: v.cond.min,
+      },
+    });
+    pushLayer({ kind: 'carry' });
+    announce('条件を変えました。引き継いだものの一覧を出しています。');
+  };
 
   return {
     getState: (): FanState => state,
@@ -679,6 +762,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     view,
     dispose: clearTimers,
     startOf: startSelOf,
+    pendCond,
     actions: {
       go,
       applyCourse,
@@ -702,7 +786,9 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       openCancel,
       closeCancel,
       doCancel,
-      setPend,
+      pickPend,
+      pendCond,
+      applyChange,
       toast,
       announce,
       friendJoins,

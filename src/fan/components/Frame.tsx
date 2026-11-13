@@ -17,14 +17,17 @@ export function Strip() {
 /** 詳細の画面の帯。戻るは、来た所（ホームかメニュー）へ。ホームから来たときだけ、右に「メニュー」を出す（決定 24）。 */
 export function DetailHead({ title }: { title: string }) {
   const { state, actions } = useFan();
-  const fromMenu = state.origin === 'more';
+  // メニューの画面そのものは、戻るがホーム。メニュー配下の画面は、来た所へ戻る
+  const isMenu = state.page === 'more';
+  const target = isMenu ? 'home' : state.origin;
+  const fromMenu = !isMenu && state.origin === 'more';
   return (
     <div className={styles.dHead}>
-      <button type="button" className={styles.back} onClick={() => actions.go(state.origin)}>
-        {fromMenu ? '‹ メニュー' : '‹ ホーム'}
+      <button type="button" className={styles.back} onClick={() => actions.go(target)}>
+        {target === 'more' ? '‹ メニュー' : '‹ ホーム'}
       </button>
       <h2>{title}</h2>
-      {fromMenu ? null : (
+      {isMenu || fromMenu ? null : (
         <button type="button" className={styles.toMenu} onClick={() => actions.go('more')}>
           <svg
             width="20"
@@ -92,5 +95,33 @@ export function useReturnFocus(): void {
       if (el && el.isConnected && !el.closest('[inert]')) el.focus({ preventScroll: true });
     },
     [from],
+  );
+}
+
+/** 下から出るシートの枠（背景・見出し）。中身があとから読まれる層（やめる確認・引き継ぎ）でも、枠と操作は先に出す。 */
+export function SheetShell({
+  title,
+  inert,
+  onClose,
+  children,
+}: {
+  title: string;
+  inert: boolean;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  useReturnFocus();
+  return (
+    <div
+      className={styles.sheetBg}
+      inert={inert}
+      role="presentation"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className={styles.sheet} role="dialog" aria-modal="true" aria-label={title}>
+        <h2>{title}</h2>
+        {children}
+      </div>
+    </div>
   );
 }

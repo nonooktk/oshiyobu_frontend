@@ -2,12 +2,19 @@
 import { useEffect, useState } from 'react';
 import { startPrefetch } from './adapter';
 import { Home } from './components/Home';
-import { DetailPage, LiveRegion, Toast } from './components/Frame';
+import { DetailPage, LiveRegion, SheetShell, Toast } from './components/Frame';
+import { LazyBody } from './components/Lazy';
 import { AchLayer, FxLayer, GiftLayer, ShareSheet, ThanksLayer } from './components/Layers';
 import { NextAction } from './components/NextAction';
 import { Start } from './components/Start';
+import { PAGE_TITLES } from './text/ui';
 import styles from './fan.module.css';
 import { FanProvider, personaNoFromLocation, useFan } from './store/FanProvider';
+
+// あとから読む塊（設計 D-40 の fan-pages・fan-layers）。押されたとき、読めていなければ、枠を先に出して、中身を埋める
+const loadPages = () => import('./pages/Pages');
+const loadCancel = () => import('./layers/Sheets').then((m) => ({ default: m.CancelBody }));
+const loadCarry = () => import('./layers/Sheets').then((m) => ({ default: m.CarryBody }));
 
 export function App() {
   const [personaNo] = useState(() => personaNoFromLocation(window.location.search));
@@ -26,7 +33,14 @@ function Screen() {
   const oshiId = state.oshiId;
   useEffect(() => {
     performance.mark('oshiyobu:ready');
-    const t = setTimeout(() => startPrefetch(oshiId), 1000);
+    const t = setTimeout(() => {
+      startPrefetch(oshiId);
+      // メニュー配下の画面 → やめる確認・引き継ぎの順に、静かに先読みする
+      void loadPages()
+        .then(() => loadCancel())
+        .then(() => loadCarry())
+        .catch(() => undefined);
+    }, 1000);
     return () => clearTimeout(t);
   }, [oshiId]);
 
@@ -56,8 +70,8 @@ function Screen() {
         ) : page === 'next' ? (
           <NextAction />
         ) : (
-          <DetailPage title="メニュー">
-            <p>この画面は、これから作ります。</p>
+          <DetailPage title={PAGE_TITLES[page]}>
+            <LazyBody load={loadPages} props={{ page }} name="pages" />
           </DetailPage>
         )}
       </div>
@@ -72,8 +86,58 @@ function Screen() {
             return <ThanksLayer key="thanks" inert={inert} />;
           case 'share':
             return <ShareSheet key="share" mode={layer.mode} inert={inert} />;
-          default:
-            return null;
+          case 'cancel':
+            return (
+              <SheetShell
+                key="cancel"
+                title="申し込みをやめますか？"
+                inert={inert}
+                onClose={actions.closeCancel}
+              >
+                <LazyBody
+                  load={loadCancel}
+                  props={{}}
+                  name="cancel"
+                  fallback={
+                    <div className={styles.sheetBtns}>
+                      <button
+                        type="button"
+                        className={`${styles.btn} ${styles.btnFull}`}
+                        onClick={actions.closeCancel}
+                      >
+                        戻る
+                      </button>
+                    </div>
+                  }
+                />
+              </SheetShell>
+            );
+          case 'carry':
+            return (
+              <SheetShell
+                key="carry"
+                title="引き継いだもの"
+                inert={inert}
+                onClose={actions.closeCarry}
+              >
+                <LazyBody
+                  load={loadCarry}
+                  props={{}}
+                  name="carry"
+                  fallback={
+                    <div className={styles.sheetBtns}>
+                      <button
+                        type="button"
+                        className={`${styles.btn} ${styles.btnFull}`}
+                        onClick={actions.closeCarry}
+                      >
+                        ホームへ
+                      </button>
+                    </div>
+                  }
+                />
+              </SheetShell>
+            );
         }
       })}
       {ach ? <AchLayer key={ach.id} ach={ach} /> : null}

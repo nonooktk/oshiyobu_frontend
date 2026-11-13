@@ -60,13 +60,16 @@ export function LazyBody<P extends object>({
   load,
   props,
   name,
+  fallback = null,
 }: {
   load: () => Promise<{ default: ComponentType<P> }>;
   props: P;
   name: string;
+  /** 読めるまで出すもの（操作を残すため）。 */
+  fallback?: ReactNode;
 }) {
   const mod = useChunk(load);
-  if (!mod) return null;
+  if (!mod) return <>{fallback}</>;
   const Body = mod.default;
   return (
     <ChunkBoundary retryKey={name}>

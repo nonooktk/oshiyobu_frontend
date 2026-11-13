@@ -10,3 +10,19 @@ export const ACT_NAMES: Record<ActId, string> = {
   deposit: '預金を積み増した',
   teiki: '推し活定期をはじめた',
 };
+
+/** メニュー配下の画面の見出し。 */
+export const PAGE_TITLES = {
+  more: 'メニュー',
+  menu: '応援コース',
+  acct: '口座と預金',
+  contrib: '貢献',
+  area: '支援の状況',
+  how: 'しくみ',
+  opt: '推し・条件の変更',
+  priv: '情報の扱い',
+  next: '次のアクション',
+} as const;
+
+/** 特典を開く 3 つの行動の札（貢献の画面）。 */
+export const GIFT_LABELS = ['申し込む', 'SNSで広める', '仲間が申し込む'] as const;

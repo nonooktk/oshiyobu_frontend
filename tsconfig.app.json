@@ -18,5 +18,13 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true
   },
-  "include": ["src", "tests", "scripts/core-lib.d.mts"]
+  "include": [
+    "src",
+    "tests",
+    "e2e",
+    "playwright.config.ts",
+    "scripts/core-lib.d.mts",
+    "scripts/budget-lib.d.mts",
+    "scripts/csp-lib.d.mts"
+  ]
 }

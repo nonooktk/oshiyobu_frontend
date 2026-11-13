@@ -39,8 +39,11 @@ Node.js が要ります（22 LTS の 22.22.2 以降。24 LTS の 24.15.0 以降�
 | ビルド | `npm run build`（出力は `dist/`） |
 | ビルドの確認 | `npm run preview`（ビルドした `dist/` を <http://localhost:4173/> で開く） |
 | 整形 | `npm run format`（確認だけは `npm run format:check`） |
+| 絵の変換 | `npm run images`（元絵 `assets-src/` → `src/assets/img/` の WebP） |
+| 量・CSP の検査（ビルドのあと） | `npm run check:budget`・`npm run check:csp` |
+| 実ブラウザの試験（任意） | `npm run e2e`（手元の Chrome なら `E2E_CHANNEL=chrome npm run e2e`） |
 
-PR を出す前に、`npm ci`・`npm run lint`・`npm run typecheck`・`npm test`・`npm run build` が、エラーなしで通ることを確かめてください。
+PR を出す前に、`npm ci`・`npm run lint`・`npm run typecheck`・`npm test`・`npm run build`・`npm run check:budget`・`npm run check:csp` が、エラーなしで通ることを確かめてください。
 
 ## 構成
 
@@ -55,6 +58,8 @@ PR を出す前に、`npm ci`・`npm run lint`・`npm run typecheck`・`npm test
 ├── tests/                        テスト（unit は検査・integration は画面を描くテスト）
 ├── public/                       そのまま配る設定（staticwebapp.config.json）
 ├── assets-src/                   絵の元絵（配信しない）
+├── e2e/                          実ブラウザの試験（Playwright。任意）
+├── scripts/                      core:sync・core:check・絵の変換・量と CSP の検査・配備後の確認
 ├── docs/
 │   ├── はじめに.md               導入から初回の起動まで
 │   ├── デプロイ手順.md           本番に反映するまでの流れと、戻し方

@@ -10,6 +10,7 @@ export function evaluate(args: {
   images: readonly { out: string; maxBytes: number }[];
   listBundle: () => string[];
   searchText: (needle: string) => boolean;
+  strictImages?: boolean;
 }): {
   errors: string[];
   warnings: string[];

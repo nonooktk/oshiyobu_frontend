@@ -13,3 +13,4 @@ src/core
 
 # 班の方の道具（そのまま置く。整形すると script のハッシュが変わる）
 public/simulator.html
+

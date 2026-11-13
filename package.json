@@ -21,7 +21,8 @@
     "core:check": "node scripts/core-check.mjs",
     "images": "node scripts/make-images.mjs",
     "check:budget": "node scripts/check-budget.mjs",
-    "check:csp": "node scripts/check-csp.mjs"
+    "check:csp": "node scripts/check-csp.mjs",
+    "e2e": "node scripts/run-e2e.mjs"
   },
   "dependencies": {
     "react": "19.2.9",

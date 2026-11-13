@@ -23,8 +23,10 @@ const run = (
   m: ReturnType<typeof manifest>,
   sizes: Record<string, number> = {},
   bundle: string[] = [],
+  strictImages = true,
 ) =>
   evaluate({
+    strictImages,
     manifest: m,
     read: files(sizes),
     images: [{ out: 'big-768.webp', maxBytes: 1000 }],
@@ -71,6 +73,12 @@ describe('check-budget', () => {
     expect(big.errors.some((error) => error.includes('big-768-abc.webp'))).toBe(true);
     const raw = run(manifest(), {}, ['photo-abc.jpg']);
     expect(raw.errors.some((error) => error.includes('元絵'))).toBe(true);
+  });
+
+  it('元絵の形式のまま配っていても、strictImages でなければ（CI）、警告にとどめる', () => {
+    const result = run(manifest(), {}, ['photo-abc.jpg'], false);
+    expect(result.errors).toEqual([]);
+    expect(result.warnings.some((warning) => warning.includes('元絵'))).toBe(true);
   });
 
   it('assets-src を参照していたら、エラー', () => {

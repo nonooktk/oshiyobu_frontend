@@ -1,0 +1,640 @@
+/* メニュー配下の画面（あとから読む側）。値は tokens.css の var(--名前) だけ。出典: モックの CSS。 */
+.stack {
+  display: grid;
+  gap: var(--s3);
+}
+.homeH {
+  margin: var(--s3) var(--s3) 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.homeH small {
+  font-size: 12px;
+  font-weight: 400;
+}
+.homeMenu {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s2);
+  padding: var(--s1) var(--s3) 0;
+}
+.tile {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 52px;
+  padding: 0 var(--s2);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+  cursor: pointer;
+  text-align: left;
+}
+.tile:hover {
+  border-color: var(--primary);
+}
+.tile svg {
+  flex: none;
+}
+.tileT {
+  display: grid;
+  gap: 2px;
+  line-height: 1.3;
+}
+.tileT .demoChip {
+  justify-self: start;
+  line-height: 18px;
+}
+.procRow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s2);
+  padding: var(--s2) var(--s3) var(--s4);
+}
+.procBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 64px;
+  padding: var(--s1) 2px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--primary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  word-break: keep-all;
+  cursor: pointer;
+}
+.procBtn:hover {
+  border-color: var(--primary);
+}
+.menuFoot {
+  margin: var(--s2) var(--s3) 0;
+  padding: var(--s2) 0 var(--s4);
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+.quitLink {
+  min-height: var(--tap);
+  padding: 0 var(--s3);
+  border: 0;
+  border-radius: var(--r);
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.quitLink:hover {
+  color: var(--ink);
+}
+
+/* 札・注記 */
+.demoLine {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  margin: var(--s2) 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.demoLine .demoChip {
+  flex: none;
+  border: 1px solid var(--ink);
+}
+.demoChip {
+  display: inline-block;
+  padding: 0 var(--s2);
+  border-radius: var(--r);
+  background: var(--yellow);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 20px;
+  white-space: nowrap;
+}
+.solo {
+  margin: 0;
+}
+.bigV {
+  margin: var(--s1) 0 0;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.plain {
+  margin: var(--s2) 0 0;
+  font-size: 14px;
+}
+.dSub {
+  margin: var(--s2) 0 0;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.cardNext .dSub,
+.cardNext .plain {
+  color: var(--ink);
+}
+.facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--s1) var(--s3);
+  margin: 0;
+  font-size: 14px;
+}
+.facts dt {
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.facts dd {
+  margin: 0;
+  font-weight: 700;
+}
+.factsV {
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+.factsV dd {
+  margin-bottom: var(--s2);
+}
+.cardNext .facts dt {
+  color: var(--ink);
+}
+.aonBig {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.aonBig b {
+  color: var(--primary);
+}
+
+/* 応援コースの画面のカードの下 */
+.rcAct {
+  display: grid;
+  gap: var(--s2);
+  padding: 0 var(--s3) var(--s3);
+}
+.rcAct > p {
+  margin: 0;
+  font-size: 14px;
+}
+.rcAct .demoLine {
+  margin: 0;
+  font-size: 14px;
+}
+.rcAct .demoChip {
+  font-size: 14px;
+  line-height: 22px;
+}
+.enter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+
+/* 口座と預金 */
+.gauge {
+  position: relative;
+  height: 66px;
+  margin-top: var(--s2);
+}
+.track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 6px;
+  height: 16px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--pill);
+  background: var(--bg-c);
+}
+.track i {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+}
+.tick {
+  position: absolute;
+  top: 2px;
+  height: 24px;
+  border-left: 2px solid var(--ink);
+}
+.tick span {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  padding-top: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+.tickEnd {
+  margin-left: -2px;
+}
+.tickEnd span {
+  transform: translateX(-100%);
+}
+.actTag {
+  display: inline-block;
+  margin-bottom: var(--s1);
+  padding: 0 var(--s2);
+  border: 1px solid var(--warning-ink);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--warning-ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+.actH {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+.actD {
+  margin: var(--s1) 0 var(--s2);
+  font-size: 14px;
+}
+.before {
+  margin: 0 0 var(--s1);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.rows {
+  display: grid;
+  gap: var(--s1);
+  margin: 0 0 var(--s3);
+  padding: var(--s2);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--bg-b);
+}
+.rows div {
+  display: grid;
+  gap: 2px;
+}
+.rows dt {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.rows dd {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+.actDone {
+  margin: var(--s2) 0 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--success-ink);
+}
+.actDone.got {
+  transform-origin: left center;
+  animation: actGot 1s ease-out var(--ck-delay, 0s) both;
+}
+@keyframes actGot {
+  0% {
+    background: transparent;
+    transform: none;
+  }
+  20% {
+    background: var(--yellow-light);
+    transform: scale(1.12);
+  }
+  55% {
+    background: var(--yellow-light);
+    transform: scale(1.04);
+  }
+  100% {
+    background: transparent;
+    transform: none;
+  }
+}
+
+/* 貢献 */
+.artBtn {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r);
+  background: transparent;
+  cursor: pointer;
+}
+.art32 {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  border-radius: var(--r);
+  background: var(--ink);
+}
+.locked {
+  position: absolute;
+  inset: 0;
+  filter: blur(12px) grayscale(1) brightness(0.55);
+}
+.lockOv {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s1);
+  padding: var(--s3);
+  background: var(--scrim);
+  color: var(--surface);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+}
+.artCap {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s2);
+  margin: var(--s2) 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.artCap b {
+  font-size: 14px;
+  color: var(--ink);
+}
+.thanksBox {
+  margin: var(--s2) 0 0;
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--yellow);
+  border-radius: var(--r);
+  background: var(--yellow-light);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.7;
+}
+.area {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.area th,
+.area td {
+  padding: var(--s2) var(--s1);
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+.area td.r {
+  text-align: right;
+  font-weight: 700;
+}
+.areaBar {
+  display: block;
+  height: 8px;
+  border-radius: var(--pill);
+  background: var(--gray-300);
+}
+.prefRow th,
+.prefRow td {
+  background: var(--bg-b);
+}
+.prefRow .areaBar,
+.me .areaBar {
+  background: var(--primary);
+}
+.me td {
+  background: var(--yellow-light);
+  font-weight: 700;
+}
+.meTag {
+  margin-left: var(--s1);
+  padding: 0 var(--s1);
+  border: 1px solid var(--warning-ink);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--warning-ink);
+  font-size: 12px;
+}
+
+/* しくみ */
+.flow {
+  display: grid;
+  gap: 0;
+  margin: var(--s2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.flow li {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  padding: 0 0 var(--s3) 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+.flow li:last-child {
+  padding-bottom: 0;
+}
+.flow li::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 26px;
+  bottom: 2px;
+  border-left: 2px solid var(--primary);
+}
+.flow li:last-child::before {
+  display: none;
+}
+.flow i {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--surface);
+  font-size: 12px;
+  font-style: normal;
+}
+.flow small {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+
+/* 推し・条件の変更 */
+.oshiPick {
+  display: grid;
+  gap: var(--s2);
+  margin-top: var(--s2);
+}
+.apill {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  width: 100%;
+  min-height: var(--tap);
+  padding: 0 var(--s3) 0 var(--s1);
+  border: 1px solid var(--primary);
+  border-radius: var(--pill);
+  background: var(--surface);
+  color: var(--primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.apill[aria-pressed='true'] {
+  background: var(--primary);
+  color: var(--surface);
+}
+.apill[aria-pressed='true'] > span:first-child {
+  border-color: var(--surface);
+}
+.cityPick {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s2);
+  margin-top: var(--s2);
+}
+.chip {
+  min-height: var(--tap);
+  padding: 0 var(--s1);
+  border: 1px solid var(--primary);
+  border-radius: var(--pill);
+  background: var(--surface);
+  color: var(--primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.chip:hover {
+  background: var(--bg-c);
+}
+.chip[aria-pressed='true'] {
+  background: var(--primary);
+  color: var(--surface);
+}
+.seatPick {
+  display: grid;
+  gap: var(--s2);
+  margin-top: var(--s2);
+}
+.seatOpt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  min-height: 56px;
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--primary);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.seatOpt:hover {
+  background: var(--bg-c);
+}
+.seatOpt[aria-pressed='true'] {
+  background: var(--primary);
+  color: var(--surface);
+}
+.seatOpt:disabled {
+  border-color: var(--line);
+  background: var(--bg-c);
+  color: var(--ink-soft);
+  cursor: not-allowed;
+}
+.seatOpt .p {
+  font-size: 20px;
+}
+.seatOpt small {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* 情報の扱い */
+.privFig {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.privFig text {
+  font-size: 14px;
+  font-weight: 700;
+  fill: var(--ink);
+}
+.privFig .sub {
+  fill: var(--ink-soft);
+  font-weight: 400;
+}
+.privFig .box {
+  fill: var(--bg-c);
+  stroke: var(--primary);
+  stroke-width: 2;
+}
+.privFig .out {
+  fill: none;
+  stroke: var(--ink-soft);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+}
+.privFig .ln {
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+/* やめる・引き継ぎのシート */
+.subH {
+  margin: var(--s2) 0 var(--s1);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.danger {
+  background: var(--surface);
+  color: var(--error-ink);
+  border-color: var(--error-ink);
+}
+.danger:hover {
+  background: var(--bg-c);
+  border-color: var(--error-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .actDone.got {
+    animation: none;
+  }
+}

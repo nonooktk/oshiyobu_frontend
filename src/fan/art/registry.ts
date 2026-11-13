@@ -1,18 +1,23 @@
 // 推しの絵の置き場（1 か所）。絵の部品は、ここの ArtistView を見て描く。
-// 【仮】いまは元絵（`assets-src/`）をそのまま使う。縮めた版（幅 192・768・1152 の WebP）は F-3 が作る。
+// 縮めた版（`npm run images` が `src/assets/img/` に作る WebP。幅 192・768・1152）を使う（設計 D-40）。
+// 最初の画面・ホーム・コースのカードは幅 768、特典の全画面の切り抜きは幅 1152（4 組）。
 // 差し替えるときは、このファイルの import だけを替える（絵の部品は、読めないときの代わりの表示を自分で持つ）。
 import type { ArtistId, CourseId } from '../../core';
-import circleHeisei from '../../../assets-src/artist-heisei.jpg';
-import circleKrs48 from '../../../assets-src/artist-krs48.jpg';
-import circleRiji from '../../../assets-src/artist-rijicho.jpg';
-import circleTech0 from '../../../assets-src/artist-tech0.jpg';
-import circleTerao from '../../../assets-src/artist-terao.jpg';
-import fullKrs48 from '../../../assets-src/krs48-full-1.jpg';
-import fullRiji from '../../../assets-src/rijicho-full-1.jpg';
-import fullTech01 from '../../../assets-src/tech0-full-1.jpg';
-import fullTech02 from '../../../assets-src/tech0-full-2.jpg';
-import fullTech03 from '../../../assets-src/tech0-full-3.jpg';
-import fullTerao from '../../../assets-src/terao-full-1.jpg';
+import circleHeisei from '../../assets/img/artist-heisei.webp';
+import circleKrs48 from '../../assets/img/artist-krs48.webp';
+import circleRiji from '../../assets/img/artist-rijicho.webp';
+import circleTech0 from '../../assets/img/artist-tech0.webp';
+import circleTerao from '../../assets/img/artist-terao.webp';
+import fullHeisei from '../../assets/img/heisei-full.webp';
+import bigKrs48 from '../../assets/img/krs48-full-1152.webp';
+import fullKrs48 from '../../assets/img/krs48-full-768.webp';
+import bigRiji from '../../assets/img/rijicho-full-1152.webp';
+import fullRiji from '../../assets/img/rijicho-full-768.webp';
+import fullTech01 from '../../assets/img/tech0-full-1-768.webp';
+import fullTech02 from '../../assets/img/tech0-full-2-768.webp';
+import fullTech03 from '../../assets/img/tech0-full-3-768.webp';
+import bigTerao from '../../assets/img/terao-full-1152.webp';
+import fullTerao from '../../assets/img/terao-full-768.webp';
 
 /** 切り抜き。pos＝object-position、zoom＝拡大、org＝拡大の中心。顔が切れないよう、絵ごとに決める。 */
 export type Crop = { pos?: string; zoom?: number; org?: string };
@@ -28,8 +33,8 @@ export type ArtistView = {
   initial: string;
   /** 丸い小さな絵。 */
   circle: CardArt;
-  /** 大きな絵。imgs があれば、特典の 1・2・3 段目がその 3 枚。img だけなら、その 1 枚を切り抜いて広げる。 */
-  art: { imgs?: readonly string[]; img?: string };
+  /** 大きな絵。imgs があれば、特典の 1・2・3 段目がその 3 枚。img だけなら、その 1 枚を切り抜いて広げる（big があれば、広げるときは big。拡大に耐える幅 1152）。 */
+  art: { imgs?: readonly string[]; img?: string; big?: string };
   cards: Record<CourseId, CardArt>;
   cut?: Cutout;
 };
@@ -53,7 +58,7 @@ export const ARTISTS_VIEW: Record<ArtistId, ArtistView> = {
     name: 'KRS48',
     initial: 'K',
     circle: { src: circleKrs48, crop: { zoom: 2, org: '56% 68%' } },
-    art: { img: fullKrs48 },
+    art: { img: fullKrs48, big: bigKrs48 },
     cards: {
       normal: { src: fullKrs48, crop: { pos: '50% 0%' } },
       front: { src: fullKrs48, crop: { pos: '50% 100%', zoom: 2.4, org: '51% 60%' } },
@@ -67,7 +72,7 @@ export const ARTISTS_VIEW: Record<ArtistId, ArtistView> = {
     name: 'りじちょーといっしょだよ。',
     initial: 'り',
     circle: { src: circleRiji, crop: { zoom: 1.8, org: '18% 0%' } },
-    art: { img: fullRiji },
+    art: { img: fullRiji, big: bigRiji },
     cards: {
       normal: { src: fullRiji, crop: { pos: '50% 3%' } },
       front: { src: fullRiji, crop: { pos: '50% 3%', zoom: 2.1, org: '36% 0%' } },
@@ -81,7 +86,7 @@ export const ARTISTS_VIEW: Record<ArtistId, ArtistView> = {
     name: 'てらお少年',
     initial: 'て',
     circle: { src: circleTerao, crop: { zoom: 2.2, org: '50% 13%' } },
-    art: { img: fullTerao },
+    art: { img: fullTerao, big: bigTerao },
     cards: {
       normal: { src: fullTerao, crop: { pos: '50% 0%' } },
       front: { src: fullTerao, crop: { pos: '50% 8%', zoom: 2.2, org: '0% 22%' } },
@@ -95,12 +100,12 @@ export const ARTISTS_VIEW: Record<ArtistId, ArtistView> = {
     name: '平成の俺',
     initial: '平',
     circle: { src: circleHeisei, crop: { pos: '50% 14%', zoom: 1.5, org: '50% 22%' } },
-    art: { img: circleHeisei },
+    art: { img: fullHeisei },
     cards: {
-      normal: { src: circleHeisei, crop: { pos: '50% 8%' } },
-      front: { src: circleHeisei, crop: { pos: '50% 20%', zoom: 1.3, org: '35% 25%' } },
-      special: { src: circleHeisei, crop: { pos: '88% 82%', zoom: 1.4, org: '85% 0%' } },
-      top: { src: circleHeisei, crop: { pos: '50% 100%' } },
+      normal: { src: fullHeisei, crop: { pos: '50% 8%' } },
+      front: { src: fullHeisei, crop: { pos: '50% 20%', zoom: 1.3, org: '35% 25%' } },
+      special: { src: fullHeisei, crop: { pos: '88% 82%', zoom: 1.4, org: '85% 0%' } },
+      top: { src: fullHeisei, crop: { pos: '50% 100%' } },
     },
     cut: { ar: 384 / 480, c1: [0.45, 0.31], c2: [0.5, 0.5] },
   },
@@ -112,13 +117,15 @@ export const artistView = (id: ArtistId): ArtistView => ARTISTS_VIEW[id];
 export function giftSources(
   a: ArtistView,
   idx: number,
-): { whole: string | null; cutout: string | null } {
+): { whole: string | null; cutout: string | null; base: string | null } {
+  // base ＝ 最初の画面・ホームで読み済みの幅 768 の絵（本来の絵が届くまでの代わり）
+  const base = a.art.imgs?.[0] ?? a.art.img ?? null;
   if (a.art.imgs) {
     const imgs = a.art.imgs;
-    return { whole: imgs[Math.min(idx, imgs.length - 1)] ?? null, cutout: null };
+    return { whole: imgs[Math.min(idx, imgs.length - 1)] ?? null, cutout: null, base };
   }
-  if (idx >= 2) return { whole: a.art.img ?? null, cutout: null };
-  return { whole: null, cutout: a.art.img ?? null };
+  if (idx >= 2) return { whole: a.art.img ?? null, cutout: null, base };
+  return { whole: null, cutout: a.art.big ?? a.art.img ?? null, base };
 }
 
 /** 1 枚の絵の切り抜きを、枠の縦横比 q に合わせて広げる（1 段目は顔まわり、2 段目は 2 人分）。 */
@@ -145,14 +152,22 @@ export function cutoutStyle(
 /** 先読みの絵の登録（共有の部品 `configurePrefetch` に渡す）。絵の ID は、絵のファイルの URL そのもの。 */
 export const PREFETCH_IMAGES: Readonly<Record<string, string>> = Object.fromEntries(
   Object.values(ARTISTS_VIEW)
-    .flatMap((a) => [a.circle.src, ...(a.art.imgs ?? []), ...(a.art.img ? [a.art.img] : [])])
+    .flatMap((a) => [
+      a.circle.src,
+      ...(a.art.imgs ?? []),
+      ...(a.art.img ? [a.art.img] : []),
+      ...(a.art.big ? [a.art.big] : []),
+    ])
     .map((url) => [url, url]),
 );
 
 /**
- * 推しごとの先読みの順（必要になる順。設計 D-40）。最初の画面で読む絵は含めない。
- * 【仮】いまは元絵 1 枚ずつ。縮めた版（幅 1152 など）が入ったら（F-3）、ここに足す。
+ * 推しごとの先読みの順（必要になる順。設計 D-40）。最初の画面で読む絵（幅 768 の 1 枚）は含めない。
+ * tech0 は幅 768 の 2・3 枚目、ほかの 3 組は特典の切り抜き用の幅 1152、平成の俺は無し（最初の画面の絵で足りる）。
  */
 export const PREFETCH_PLAN: Readonly<Partial<Record<ArtistId, readonly string[]>>> = {
   tech0: (ARTISTS_VIEW.tech0.art.imgs ?? []).slice(1),
+  krs48: [ARTISTS_VIEW.krs48.art.big ?? ''],
+  riji: [ARTISTS_VIEW.riji.art.big ?? ''],
+  terao: [ARTISTS_VIEW.terao.art.big ?? ''],
 };

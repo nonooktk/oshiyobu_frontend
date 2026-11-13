@@ -119,7 +119,10 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
   };
 
   /* ---------- 小さな部品 ---------- */
-  const announce = (text: string): void => set({ live: text });
+  // 同じ文が続くときは、末尾の見えない印（ZWSP）を付け替えて、読み上げの領域の中身を変える（2 回目も伝わる）
+  const announce = (text: string): void => {
+    set({ live: state.live === text ? `${text}\u200b` : text });
+  };
   const toast = (text: string, ms = 3000): void => {
     const id = ++seq;
     set({ toast: { id, text } });
@@ -567,7 +570,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
           ? 'コピーしました。Instagramに貼り付けて投稿できます'
           : 'コピーできませんでした。選んだ文面を手動でコピーしてください',
       );
-      if (!ok) set({ live: 'コピーできませんでした。選んだ文面を手動でコピーしてください' });
+      if (!ok) announce('コピーできませんでした。選んだ文面を手動でコピーしてください');
     }
     if (!state.done.share) {
       set({ done: { ...state.done, share: true } });
@@ -594,7 +597,8 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
   const startStep = (n: 0 | 1 | 2): void => {
     const s = state.start;
     if (!s) return;
-    set({ start: { ...s, step: n }, live: `${n + 1} / 3。${STEP_TITLES[n]}` });
+    set({ start: { ...s, step: n } });
+    announce(`${n + 1} / 3。${STEP_TITLES[n]}`);
     if (n === 2) deps.fetch('course-select');
   };
   const startBack = (): void => {

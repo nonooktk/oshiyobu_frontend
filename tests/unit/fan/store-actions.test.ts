@@ -351,3 +351,21 @@ describe('共有メーターの取得の依頼（取得の契機。I-122）', ()
     expect(h.fetches).toEqual(['course-select', 'performance-changed']);
   });
 });
+
+describe('読み上げの領域（同じ文が続いても、2 回目が伝わる）', () => {
+  it('同じ文を続けて伝えると、見えない印を付け替えて、領域の中身を変える（文そのものは同じ）', () => {
+    const h = harness(4);
+    const seen: string[] = [];
+    h.store.subscribe(() => seen.push(h.state().live));
+    h.a.announce('呼んだ仲間が申し込みました。');
+    h.a.announce('呼んだ仲間が申し込みました。');
+    h.a.announce('呼んだ仲間が申し込みました。');
+    const lives = seen.filter((t) => t.startsWith('呼んだ仲間'));
+    expect(new Set(lives).size).toBe(2); // 3 回目は 1 回目と同じ形に戻る。連続した 2 回は、必ず違う
+    expect(lives[0]).not.toBe(lives[1]);
+    expect(lives[1]).not.toBe(lives[2]);
+    expect(lives.every((t) => t.replace('\u200b', '') === '呼んだ仲間が申し込みました。')).toBe(
+      true,
+    );
+  });
+});

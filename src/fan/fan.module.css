@@ -25,6 +25,11 @@
   overscroll-behavior: contain;
   background: var(--bg-c);
 }
+/* 見出しなど、画面を切り替えたときにフォーカスを移すだけの要素（tabindex=-1）には、枠を出さない（操作する部品ではない。Safari では初回に枠が見えてしまう） */
+.shell [tabindex='-1']:focus,
+.shell [tabindex='-1']:focus-visible {
+  outline: none;
+}
 .strip {
   display: flex;
   align-items: center;

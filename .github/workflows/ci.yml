@@ -1,5 +1,6 @@
 # PR と main への push で回す検査（設計 D-26）。必須のチェックは verify だけ。
-# 今は lint・型・テスト・ビルド。core:check・check-budget・check-csp は、スクリプトができたら verify に足す。
+# 今は lint・型・テスト・ビルド・core:check（src/core/ が lock のとおりか。CI では commit が local の lock を拒否する）。
+# check-budget・check-csp は、スクリプトができたら verify に足す。
 name: ci
 
 on:
@@ -25,3 +26,4 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - run: npm run core:check

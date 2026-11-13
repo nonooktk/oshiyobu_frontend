@@ -56,7 +56,11 @@ OSHIYOBU（推しを地元に呼ぶ仕組みのデモ）の、**画面**のリ�
 
 ## 7. 技術スタック
 
-未決。設計の確定後に決まる。決まるまで、アプリのコードと `package.json` は入れない。アプリの起動・テスト・ビルドのコマンドは、決まりしだい `docs/はじめに.md` に追記される。
+Vite 8・React 19・TypeScript（strict）の静的サイト（3 ページ: `/` 事務所向け・`/fan/` ファン向け・`/presenter/` 発表者用）です。状態は Zustand、見た目は CSS Modules と `src/styles/tokens.css`、テストは Vitest・Testing Library（実ブラウザの試験は任意の Playwright）、lint は ESLint・整形は Prettier、Node は 22 LTS の 22.22.2 以降（24 LTS の 24.15.0 以降と 26 以降でも動く）です。
+
+- 計算とデータは、backend の core の写し（`src/core/`）です。**手で直しません**（backend で直し、`npm run core:sync` で置きます。置くのは統括かコーディネーター）。
+- 起動・テスト・ビルドのコマンドは `docs/はじめに.md` の C 節にあります。PR を出す前に、`npm ci`・`npm run lint`・`npm run typecheck`・`npm test`・`npm run build`・`npm run check:budget`・`npm run check:csp` が通ることを確かめます。
+- `src/` のフォルダごとの持ち主と決まりは `src/README.md` にあります。依存は、増やす前に必要性・出所・ライセンス・既知の脆弱性を確かめます（ランタイムの依存は `react`・`react-dom`・`zustand` の 3 つ）。
 
 ## 8. 参照
 

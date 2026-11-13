@@ -180,6 +180,19 @@ describe('事務所向け', () => {
     expect(input('最低人数').value).toBe('93');
   });
 
+  it('I-75 heisei・宮崎市・メディキット県民文化センターは、札「低」（見込み 11 ÷ 必要人数 250）。提案は出せない', () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /平成の俺/ }));
+    choose('宮崎市');
+    pickVenue(/メディキット県民文化センター/);
+    expect(text('expected')).toBe('11人');
+    expect(text('need')).toBe('250人');
+    expect(text('verdict')).toBe('成立の見込み 低');
+    expect(screen.getByRole('button', { name: '提案を見る' }).getAttribute('aria-disabled')).toBe(
+      'true',
+    );
+  });
+
   it('決定 12 札は、最低人数を変えても変わらない（必要人数で決まる）。必要人数 129人・見込み 187人で「中」', () => {
     render(<App />);
     pickBase();

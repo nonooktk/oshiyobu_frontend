@@ -86,3 +86,4 @@ const state = useImageState(id); // 'ready' | 'loading' | 'missing'。missing �
 
 - F-0b 第 1 の区切り: `core:sync`・`core:check` と `src/core/`（backend 1dff053）／`device`・`persona`・`link`・`condition`・`meter`（スタブ）・`prefetch`・`mount` の `ErrorBoundary` を追加。`package.json` に zustand と `core:sync`・`core:check`、`tsconfig.app.json` に node の型（テスト用）、ESLint に `src/**` の `process`・`Buffer` の禁止と `_` 始まりの未使用引数の許可、`ci.yml` に `core:check` を追加
 - F-1: `src/office/`・`src/presenter/` を実装（`src/shared/` の変更: `meter/index.ts` に `API_CONFIGURED` を追加。F-2 への影響なし）。`vite.config.ts`・`package.json` の変更なし。`src/assets/img/artist-*.webp`（5 組の丸い絵。192px の WebP）と、元絵 `assets-src/artist-*.jpg` を追加（F-3 の `npm run images` で置き換える）
+- F-0b の追加: 共有メーターが、429 の `Retry-After` を尊重して間隔を空け、409（上限）の申し込みは送信済みとして再送しない（I-49）。`useSharedMeter`・`joinPerformance` の型と動きは変わらない

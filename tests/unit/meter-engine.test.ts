@@ -338,6 +338,55 @@ describe('共有メーターの仕組み', () => {
     });
   });
 
+  describe('429・409・長い切断（I-49・I-60）', () => {
+    it('429 は、Retry-After を尊重して、間隔を空けて続ける。画面は最後の値のまま', async () => {
+      api.joined = 7;
+      engine.subscribe(PID);
+      await advance(POLL_MS + 10);
+      api.status = 429;
+      api.retryAfter = '30';
+      await advance(POLL_MS + 10);
+      const before = api.gets().length;
+      await advance(29_000);
+      expect(api.gets()).toHaveLength(before);
+      await advance(2000);
+      expect(api.gets().length).toBe(before + 1);
+      expect(engine.getSnapshot(PID).joined).toBe(7);
+    });
+
+    it('409（上限）の申し込みは、送信済みとして扱い、再送しない', async () => {
+      api.status = 409;
+      engine.join(PID);
+      await advance(60_000);
+      expect(api.posts()).toHaveLength(1);
+      expect(engine.getSnapshot(PID).mineCounted).toBe(false);
+    });
+
+    it('10 分切れていても、要求は約 60 回以内。戻ったあと 10 秒以内に追いつく', async () => {
+      api.joined = 2;
+      engine.subscribe(PID);
+      await advance(POLL_MS + 10);
+      api.down = true;
+      const offlineFrom = api.log.length;
+      await advance(600_000);
+      expect(api.log.length - offlineFrom).toBeLessThanOrEqual(65);
+      api.down = false;
+      api.joined = 9;
+      await advance(11_000);
+      expect(engine.getSnapshot(PID)).toMatchObject({ joined: 9, status: 'ok' });
+    });
+
+    it('サーバーの人数が減っても（再起動）、取得のたびにサーバーの値に従う（5 → 3）', async () => {
+      api.joined = 5;
+      engine.subscribe(PID);
+      await advance(POLL_MS + 10);
+      expect(engine.getSnapshot(PID).joined).toBe(5);
+      api.joined = 3;
+      await advance(POLL_MS + 10);
+      expect(engine.getSnapshot(PID).joined).toBe(3);
+    });
+  });
+
   describe('reset の検知（D-18 の規則 10。I-126）', () => {
     it('resetAt が変わったら、数えた印を消し、resetEpoch を増やし、登録した動きを呼ぶ', async () => {
       const onReset = vi.fn();

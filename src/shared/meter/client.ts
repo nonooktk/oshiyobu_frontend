@@ -11,7 +11,13 @@ export const RESET_TIMEOUT_MS = 10000;
 
 export type Failure =
   | { readonly ok: false; readonly kind: 'timeout' | 'network' | 'invalid' }
-  | { readonly ok: false; readonly kind: 'http'; readonly status: number };
+  | {
+      readonly ok: false;
+      readonly kind: 'http';
+      readonly status: number;
+      /** 429 などで、サーバーが待つよう求めた時間（Retry-After。ミリ秒）。無ければ undefined */
+      readonly retryAfterMs?: number;
+    };
 export type Result<T> = { readonly ok: true; readonly value: T } | Failure;
 
 async function request(
@@ -30,7 +36,10 @@ async function request(
       cache: 'no-store',
     });
     if (!response.ok) {
-      return { ok: false, kind: 'http', status: response.status };
+      const seconds = Number(response.headers.get('Retry-After'));
+      const retryAfterMs =
+        Number.isFinite(seconds) && seconds > 0 ? Math.ceil(seconds * 1000) : undefined;
+      return { ok: false, kind: 'http', status: response.status, retryAfterMs };
     }
     try {
       return { ok: true, value: await response.json() };

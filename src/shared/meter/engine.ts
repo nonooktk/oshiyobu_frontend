@@ -132,10 +132,14 @@ export function createMeterEngine(deps: EngineDeps): MeterEngine {
   };
   const succeeded = (): void => {
     failures = 0;
+    penaltyMs = 0;
     setStatus('ok');
   };
-  const failed = (): void => {
+  /** サーバーが待つよう求めた時間（Retry-After）。次の間隔は、これより短くしない。成功したら 0 に戻す */
+  let penaltyMs = 0;
+  const failed = (retryAfterMs?: number): void => {
     failures += 1;
+    penaltyMs = retryAfterMs ?? 0;
     setStatus('failing');
   };
 
@@ -165,7 +169,7 @@ export function createMeterEngine(deps: EngineDeps): MeterEngine {
   };
   const nextDelay = (): number =>
     failures > 0
-      ? (FAILURE_MS[Math.min(failures - 1, FAILURE_MS.length - 1)] ?? 10000)
+      ? Math.max(FAILURE_MS[Math.min(failures - 1, FAILURE_MS.length - 1)] ?? 10000, penaltyMs)
       : POLL_MS * (1 + (random() * 2 - 1) * POLL_JITTER);
 
   const clearTimer = (): void => {
@@ -196,7 +200,14 @@ export function createMeterEngine(deps: EngineDeps): MeterEngine {
       succeeded();
       return;
     }
-    failed();
+    const retryAfterMs = result.kind === 'http' ? result.retryAfterMs : undefined;
+    if (result.kind === 'http' && result.status === 409) {
+      // 上限に達している（cap_reached）。申し込みは送信済みとして扱い、再送しない。画面には出さない
+      state.joinSending = false;
+      state.joinUnsent = false;
+      return;
+    }
+    failed(retryAfterMs);
     state.joinFailures += 1;
     const wait = JOIN_RETRY_MS[state.joinFailures - 1];
     if (wait === undefined) {
@@ -205,7 +216,7 @@ export function createMeterEngine(deps: EngineDeps): MeterEngine {
       state.joinUnsent = true;
       return;
     }
-    setTimeout(() => void attemptJoin(pid), wait);
+    setTimeout(() => void attemptJoin(pid), Math.max(wait, retryAfterMs ?? 0));
   };
 
   const startJoin = (pid: PerformanceId): void => {
@@ -231,7 +242,7 @@ export function createMeterEngine(deps: EngineDeps): MeterEngine {
       succeeded();
       if (state.joinUnsent && !state.joinSending) startJoin(pid);
     } else {
-      failed();
+      failed(result.kind === 'http' ? result.retryAfterMs : undefined);
     }
   };
 

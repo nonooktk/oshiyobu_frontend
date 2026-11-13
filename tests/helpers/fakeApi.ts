@@ -18,6 +18,8 @@ export class FakeApi {
   down = false;
   /** 0 でなければ、その HTTP ステータスを返す */
   status = 0;
+  /** status を返すときに付ける Retry-After（秒） */
+  retryAfter: string | null = null;
   /** true なら、形の違う応答を返す */
   malformed = false;
   log: LoggedRequest[] = [];
@@ -42,7 +44,8 @@ export class FakeApi {
 
   private respond(url: string, init: RequestInit): Response {
     if (this.status !== 0) {
-      return new Response('{}', { status: this.status });
+      const headers = this.retryAfter === null ? undefined : { 'Retry-After': this.retryAfter };
+      return new Response('{}', { status: this.status, headers });
     }
     if (this.malformed) {
       return new Response(JSON.stringify({ hello: 'world' }));

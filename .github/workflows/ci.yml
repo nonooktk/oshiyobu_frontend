@@ -1,0 +1,27 @@
+# PR と main への push で回す検査（設計 D-26）。必須のチェックは verify だけ。
+# 今は lint・型・テスト・ビルド。core:check・check-budget・check-csp は、スクリプトができたら verify に足す。
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# 既定は読み取りだけ。書き込みが要る job だけ、その job で上げる
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build

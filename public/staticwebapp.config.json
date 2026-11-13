@@ -1,0 +1,31 @@
+{
+  "routes": [
+    {
+      "route": "/bundle/*",
+      "headers": { "cache-control": "public, max-age=31536000, immutable" }
+    },
+    {
+      "route": "/simulator.html",
+      "headers": { "cache-control": "public, max-age=3600" }
+    },
+    {
+      "route": "/assets/*",
+      "headers": { "cache-control": "public, max-age=3600" }
+    },
+    {
+      "route": "/index.html",
+      "headers": { "cache-control": "no-cache" }
+    },
+    {
+      "route": "/fan/index.html",
+      "headers": { "cache-control": "no-cache" }
+    },
+    {
+      "route": "/presenter/index.html",
+      "headers": { "cache-control": "no-cache" }
+    }
+  ],
+  "globalHeaders": {
+    "x-robots-tag": "noindex"
+  }
+}

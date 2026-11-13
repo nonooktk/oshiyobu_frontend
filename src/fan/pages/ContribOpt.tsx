@@ -1,7 +1,7 @@
 // 貢献（SP-45）と、推し・条件の変更（SP-49。デモ用の操作）。メニュー配下の画面（あとから読む側）。
-import { CITY_NAMES, ARTIST_IDS, areaFor, canApply, conditionOf } from '../core';
+import { CITY_NAMES, ARTIST_IDS, areaFor, canApply, conditionOf } from '../../core';
 import { ARTISTS_VIEW, artistView } from '../art/registry';
-import { useLinkedOffice } from '../adapter';
+import { useLinkedOffice } from '../../shared/link';
 import { Av, GiftArt } from '../components/Art';
 import { ACT_IDS } from '../domain/state';
 import { courseOf, nextViewOf, restText, slotsText } from '../domain/view';
@@ -209,8 +209,8 @@ export function OptPage() {
     diff.push(`市・会場 ${view.cond.city} → ${pend.city}（${pc.venue.name}）`);
   if (pend.seat !== state.seat) diff.push(`希望のコース → ${nk.name}（${yen(nk.price)}）`);
   const syncVenue =
-    office && state.custom && office.venueId !== view.cond.venueId
-      ? conditionOf(office.venueId)
+    office && state.custom && office.selection.venueId !== view.cond.venueId
+      ? conditionOf(office.selection.venueId)
       : null;
   return (
     <>

@@ -1,6 +1,6 @@
 // メニュー配下の画面（あとから読む側。設計 D-40 の fan-pages）。枠（札の帯・戻る）は、読み込み前から出ている。
 import type { ReactNode } from 'react';
-import { RECRUITMENT_DEADLINE, areaFor } from '../core';
+import { RECRUITMENT_DEADLINE, areaFor } from '../../core';
 import { artistView } from '../art/registry';
 import { PAGE_TITLES } from '../text/ui';
 import { ACT_IDS } from '../domain/state';

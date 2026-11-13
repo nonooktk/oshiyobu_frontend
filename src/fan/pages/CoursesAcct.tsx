@@ -1,7 +1,7 @@
 // 応援コース（SP-43）と、口座と預金（SP-44）。メニュー配下の画面（あとから読む側）。
 import { useEffect } from 'react';
 import type { CSSProperties } from 'react';
-import { TEIKI, achievementPct, canApply, nextDepositTarget } from '../core';
+import { TEIKI, achievementPct, canApply, nextDepositTarget } from '../../core';
 import { artistView } from '../art/registry';
 import { CourseFace } from '../components/CourseFace';
 import type { AcctId } from '../domain/state';

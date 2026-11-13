@@ -1,7 +1,7 @@
 // ファン向けの、いまの状態から決まる値（人数・達成率・成立・次のアクションなど）。
 // 数字・成立の判定は core の関数だけを使う（画面の側で同じ式を書かない）。
-import { TEIKI, canApply, nextDepositTarget, restParts, supportStatus } from '../core';
-import type { Condition, CourseId, CourseOffer, SupportStatus } from '../core';
+import { TEIKI, canApply, nextDepositTarget, restParts, supportStatus } from '../../core';
+import type { Condition, CourseId, CourseOffer, SupportStatus } from '../../core';
 import type { Seg } from '../text/format';
 import { yen } from '../text/format';
 import type { HomeKey } from '../text/voices';

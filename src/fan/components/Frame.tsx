@@ -49,7 +49,7 @@ export function DetailHead({ title }: { title: string }) {
 }
 
 /** 詳細の画面 1 枚（札の帯・戻る帯・中身）。 */
-export function DetailPage({ title, children }: { title: string; children: ReactNode }) {
+export function DetailPage({ title, children }: { title: string; children?: ReactNode }) {
   return (
     <div className={styles.page}>
       <Strip />

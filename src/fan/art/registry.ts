@@ -1,7 +1,7 @@
 // 推しの絵の置き場（1 か所）。絵の部品は、ここの ArtistView を見て描く。
 // 【仮】いまは元絵（`assets-src/`）をそのまま使う。縮めた版（幅 192・768・1152 の WebP）は F-3 が作る。
 // 差し替えるときは、このファイルの import だけを替える（絵の部品は、読めないときの代わりの表示を自分で持つ）。
-import type { ArtistId, CourseId } from '../core';
+import type { ArtistId, CourseId } from '../../core';
 import circleHeisei from '../../../assets-src/artist-heisei.jpg';
 import circleKrs48 from '../../../assets-src/artist-krs48.jpg';
 import circleRiji from '../../../assets-src/artist-rijicho.jpg';
@@ -144,3 +144,18 @@ export function cutoutStyle(
 
 /** 全体を見せたいところ（応援コースの上の絵）の段。大きい絵が 3 枚の組は 1 枚目、1 枚の組は全体（3 段目）。 */
 export const publicIdx = (a: ArtistView): number => (a.art.imgs ? 0 : 2);
+
+/** 先読みの絵の登録（共有の部品 `configurePrefetch` に渡す）。絵の ID は、絵のファイルの URL そのもの。 */
+export const PREFETCH_IMAGES: Readonly<Record<string, string>> = Object.fromEntries(
+  Object.values(ARTISTS_VIEW)
+    .flatMap((a) => [a.circle.src, ...(a.art.imgs ?? []), ...(a.art.img ? [a.art.img] : [])])
+    .map((url) => [url, url]),
+);
+
+/**
+ * 推しごとの先読みの順（必要になる順。設計 D-40）。最初の画面で読む絵は含めない。
+ * 【仮】いまは元絵 1 枚ずつ。縮めた版（幅 1152 など）が入ったら（F-3）、ここに足す。
+ */
+export const PREFETCH_PLAN: Readonly<Partial<Record<ArtistId, readonly string[]>>> = {
+  tech0: (ARTISTS_VIEW.tech0.art.imgs ?? []).slice(1),
+};

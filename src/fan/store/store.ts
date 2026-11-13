@@ -11,8 +11,8 @@ import {
   PERSONA_DEFAULT_NO,
   performanceIdOf,
   personaByNo,
-} from '../core';
-import type { Condition, CourseId, PerformanceId } from '../core';
+} from '../../core';
+import type { Condition, CourseId, PerformanceId } from '../../core';
 import { artistView } from '../art/registry';
 import { ACT_IDS, GIFT_ACTS, initialState, startSelOf, venueOfCity } from '../domain/state';
 import type {
@@ -40,7 +40,7 @@ export type Deps = {
   /** 申し込みの送信（即座に戻る。数えられる前でも画面は先に進む）。 */
   join: (pid: PerformanceId) => void;
   /** 共有メーターの取得の依頼。 */
-  fetch: (reason: 'open' | 'step3' | 'performance-changed') => void;
+  fetch: (reason: 'open' | 'course-select' | 'performance-changed') => void;
   /** 動きを減らす設定か。 */
   reduceMotion: () => boolean;
   /** 別タブで開く（X・Facebook）。 */
@@ -591,7 +591,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     const s = state.start;
     if (!s) return;
     set({ start: { ...s, step: n }, live: `${n + 1} / 3。${STEP_TITLES[n]}` });
-    if (n === 2) deps.fetch('step3');
+    if (n === 2) deps.fetch('course-select');
   };
   const startBack = (): void => {
     const s = state.start;

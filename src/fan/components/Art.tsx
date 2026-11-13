@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { cutoutStyle, giftSources } from '../art/registry';
 import type { ArtistView, CardArt, Crop } from '../art/registry';
-import { needImage, useImageState } from '../adapter';
+import { needImage, useImageState } from '../../shared/prefetch';
 import styles from '../fan.module.css';
 
 const cropStyle = (c: Crop): CSSProperties =>

@@ -1,5 +1,5 @@
 // はじめの画面の「呼びたい市」の札に描く、九州の形と市の位置の点。市の位置は表示のためだけの値（frontend が持つ）。
-import type { CityName } from '../core';
+import type { CityName } from '../../core';
 
 /** 市の位置（九州の絵の中の座標。地図は 460 × 590）。 */
 export const CITY_DOT: Record<CityName, readonly [number, number]> = {

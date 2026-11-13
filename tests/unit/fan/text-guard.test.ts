@@ -1,6 +1,6 @@
 // ファン向けの文言の検査（上層: I-28・I-102・SP-30・SP-34・決定 25・26）。
 import { describe, expect, it } from 'vitest';
-import { ARTIST_IDS } from '../../../src/fan/core';
+import { ARTIST_IDS } from '../../../src/core';
 import { THANKS } from '../../../src/fan/text/thanks';
 import { VOICES } from '../../../src/fan/text/voices';
 

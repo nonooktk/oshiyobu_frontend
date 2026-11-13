@@ -11,6 +11,7 @@ import {
   layer,
   mountFan,
   passStart,
+  ReadyImage,
   screen,
   tick,
   setupFanTest,
@@ -248,21 +249,13 @@ describe('特典の絵と感謝（I-28・I-117・I-118）', () => {
   });
 
   it('本来の絵が届いたら、その場で差し替える', async () => {
-    class FakeImage {
-      onload: (() => void) | null = null;
-      onerror: (() => void) | null = null;
-      set src(_v: string) {
-        setTimeout(() => this.onload?.(), 0);
-      }
-    }
-    vi.stubGlobal('Image', FakeImage);
+    vi.stubGlobal('Image', ReadyImage);
     mountFan('?p=4');
     passStart();
     await tick(650 + 2500 + 20);
     await tick(5);
     const gift = layer('gift') as HTMLElement;
     expect(gift.querySelector('img[alt*="特典の絵 1/3"]')).not.toBeNull();
-    vi.unstubAllGlobals();
   });
 
   it('3 つ目の特典の絵を閉じた直後に、感謝のメッセージが 1 回だけ出て、貢献で読み返せる（A-44）', async () => {

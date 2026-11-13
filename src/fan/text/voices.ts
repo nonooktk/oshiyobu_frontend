@@ -1,7 +1,7 @@
 // 推しのセリフ（5 組 × 状況）。出典: モックの VOICE（文言の校正済み）。口調は組ごとに書き分ける。
 // 使わない 3 種（main・deposit・teiki のひとこと）は持たない（決定 26。文言ガードで 0 件を確かめる）。
 // 実在の人物・既存の作品の名前・決まり文句・煽り・うその期限は書かない（SP-30）。
-import type { ArtistId } from '../core';
+import type { ArtistId } from '../../core';
 
 /** ホームのコメントのキー（SP-30）。 */
 export type HomeKey = 'reached' | 'gathered' | 'pre' | 'preSoon' | 'post' | 'postSoon' | 'friend';

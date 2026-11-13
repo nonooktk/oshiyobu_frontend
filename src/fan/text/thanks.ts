@@ -2,7 +2,7 @@
 // 【仮】マイメロディの案（inputs/感謝のメッセージ_案.md）の「おすすめの 5 つ」を、統括の採否が出るまで仮に使う。
 // 採否が出たら、この 1 か所の文を差し替える。5 組ぶん・各 3〜4 文（文は「。」「！」「？」で区切る）。
 // 金額・預金・口座・約束（「会おう」「必ず」など）・人数は書かない。市の名前の差し込みは使わない。
-import type { ArtistId } from '../core';
+import type { ArtistId } from '../../core';
 
 export const THANKS: Record<ArtistId, readonly string[]> = {
   tech0: [

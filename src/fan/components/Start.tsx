@@ -1,6 +1,6 @@
 // はじめの画面（推し → 市 → コースの 3 ステップ。SP-40）。初めから選んであるので、「次へ」を 3 回押せばホームへ進む。
 import { useEffect, useRef } from 'react';
-import { CITY_NAMES, ARTIST_IDS, canApply, conditionOf, courseOffersOf } from '../core';
+import { CITY_NAMES, ARTIST_IDS, canApply, conditionOf, courseOffersOf } from '../../core';
 import { ARTISTS_VIEW, artistView } from '../art/registry';
 import logoMark from '../../assets/img/logo-mark.webp';
 import { venueOfCity } from '../domain/state';

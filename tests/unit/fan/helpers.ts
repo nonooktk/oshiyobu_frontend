@@ -1,6 +1,6 @@
 // ファン向けのストアのテストの共通部品。通信は無い（共有メーターは、テストが env で作る）。
-import { conditionOf, performanceIdOf } from '../../../src/fan/core';
-import type { PerformanceId } from '../../../src/fan/core';
+import { conditionOf, performanceIdOf } from '../../../src/core';
+import type { PerformanceId } from '../../../src/core';
 import { createFanStore } from '../../../src/fan/store/store';
 import type { Deps } from '../../../src/fan/store/store';
 

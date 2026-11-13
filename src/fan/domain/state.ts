@@ -1,6 +1,6 @@
 // ファン向けの状態の型と、初めの値（端末の中だけ。再読み込みで初めに戻る。設計 D-10）。
-import { defaultVenueIdOf, personaByNo, personaPerformanceId, personaVenueId } from '../core';
-import type { ArtistId, CityName, CourseId, PerformanceId, VenueId } from '../core';
+import { defaultVenueIdOf, personaByNo, personaPerformanceId, personaVenueId } from '../../core';
+import type { ArtistId, CityName, CourseId, PerformanceId, VenueId } from '../../core';
 
 /** 達成した行動 6 つ（SP-45）。 */
 export const ACT_IDS = ['join', 'share', 'friend', 'main', 'deposit', 'teiki'] as const;

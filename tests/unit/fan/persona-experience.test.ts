@@ -10,7 +10,7 @@ import {
   personaNoFromParam,
   personaPerformanceId,
   personaVenueId,
-} from '../../../src/fan/core';
+} from '../../../src/core';
 import { needTag } from '../../../src/fan/domain/view';
 
 const OK = '✓';

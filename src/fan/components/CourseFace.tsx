@@ -1,7 +1,7 @@
 // コースのカードの中身（はじめの画面のステップ 3 と、応援コースの画面で同じ）。
 // 絵 → 金額 → コース名 → 手に入るもの（全部・✓ つき）→ 小さな情報（枠・条件）→ 自分の状態の札。
-import { canApply } from '../core';
-import type { Condition, CourseOffer } from '../core';
+import { canApply } from '../../core';
+import type { Condition, CourseOffer } from '../../core';
 import type { ArtistView } from '../art/registry';
 import { yen } from '../text/format';
 import { needTag, slotsText } from '../domain/view';

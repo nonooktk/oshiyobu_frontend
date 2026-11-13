@@ -1,10 +1,11 @@
 // ファン向けの基準の流れと、前方の席を目指す流れ（上層: A-15〜A-18・A-24〜A-27・A-34・A-35・A-40・A-41・A-45・A-46・I-23・I-24・I-74）。
 // 通信は無い。共有メーターは、仮の I/F のメモリの値（サーバーへの申し込みの合図は、画面の人数に足されないことを確かめる）。
 import { describe, expect, it, vi } from 'vitest';
-import { stubTriggerReset } from '../../../src/fan/adapter';
-import { resetFan } from '../../../src/fan/link';
+import { createLink } from '../../../src/shared/link';
+import { asBroadcastChannel, FakeChannel } from '../../helpers/fakeChannel';
 import {
   act,
+  api,
   btn,
   click,
   closeGiftAfterFx,
@@ -198,24 +199,63 @@ describe('申し込み済みの再押下・コース変更（A-24・I-24）', ()
 });
 
 describe('共有メーターの reset と連動（I-64・I-126・A-62 のファン向け側）', () => {
+  it('サーバーの人数に追いつく: 取れた人数（ほかの端末の申し込み）を足して、自分の分を二重に数えない（I-129）', async () => {
+    mountFan('?p=4');
+    passStart();
+    await closeGiftAfterFx();
+    await tick(3000);
+    expect(api.joined).toBe(1); // 自分の申し込みが、サーバーに 1 回だけ数えられた
+    expect(meter().getAttribute('aria-label')).toContain('支援者75人');
+    api.joined += 1; // ほかの端末が 1 人申し込んだ
+    await tick(4000);
+    expect(meter().getAttribute('aria-label')).toContain('支援者76人');
+  });
+
   it('発表者の reset を検知すると 74 人に戻り、「未申し込み」になって、同じコースを押し直して申し込める', async () => {
     mountFan('?p=4');
     passStart();
     await closeGiftAfterFx();
+    await tick(3000);
     expect(meter().getAttribute('aria-label')).toContain('支援者75人');
-    act(() => stubTriggerReset('tech0:cbox'));
+    api.reset();
+    await tick(6000); // 次の取得で、resetAt の変化を見つける（3 秒前後）
     expect(meter().getAttribute('aria-label')).toContain('支援者74人');
     expect(screen.getByText('まだチケットと特典は入手できていません！')).toBeTruthy();
     click(/^次のアクション/);
     fireEvent.click(screen.getByRole('button', { name: /^通常の席に申し込む/ }));
+    await tick(3000);
+    expect(api.joined).toBe(1);
     expect(meter().getAttribute('aria-label')).toContain('支援者75人');
   });
 
-  it('事務所向けの「デモを最初に戻す」を受けた連動（resetFan）で、はじめの画面に戻る', async () => {
+  it('事務所向けの「デモを最初に戻す」を受けた連動で、はじめの画面に戻る。共有のメーターには触らない', async () => {
+    FakeChannel.reset();
+    vi.stubGlobal('BroadcastChannel', asBroadcastChannel);
     mountFan('?p=4');
     passStart();
     await closeGiftAfterFx();
-    act(() => resetFan());
+    await tick(3000);
+    const joinedBefore = api.joined;
+    createLink(asBroadcastChannel).broadcastResetAll(); // 事務所向けのページ
+    await tick(10);
     expect(screen.getByRole('heading', { name: '推しを選ぶ' })).toBeTruthy();
+    expect(api.joined).toBe(joinedBefore);
+  });
+
+  it('事務所向けで熊本市の会場を選ぶと、まだ選び直していないはじめの画面の市が、熊本市になる（A-17・I-110）', async () => {
+    FakeChannel.reset();
+    vi.stubGlobal('BroadcastChannel', asBroadcastChannel);
+    mountFan('?p=4');
+    const office = createLink(asBroadcastChannel);
+    await act(async () => {
+      office.publishOffice({
+        venueId: 'KMM-002',
+        costs: { venue: 60000, prod: 100000, fee: 250000, travel: 120000, profit: 120000 },
+        minPeople: null,
+      });
+      vi.advanceTimersByTime(200);
+    });
+    click('次へ');
+    expect(btn('熊本市').getAttribute('aria-pressed')).toBe('true');
   });
 });

@@ -1,27 +1,38 @@
 // ファン向け（/fan/。QR の行き先）。人物（端末の番号から決まる 15 通り）の初めの値で、はじめの画面から始める。
-import { useEffect, useState } from 'react';
-import { requestMeterFetch, startPrefetch } from './adapter';
+import { useEffect } from 'react';
+import type { ReactNode } from 'react';
+import { requestMeterFetch } from '../shared/meter';
+import { ChunkBoundary, startPrefetch } from '../shared/prefetch';
 import { Home } from './components/Home';
 import { DetailPage, LiveRegion, SheetShell, Toast } from './components/Frame';
-import { LazyBody } from './components/Lazy';
 import { AchLayer, FxLayer, GiftLayer, ShareSheet, ThanksLayer } from './components/Layers';
 import { NextAction } from './components/NextAction';
 import { Start } from './components/Start';
+import type { LayersModule, PagesModule } from './prefetch';
+import { setupFanPrefetch } from './prefetch';
 import { PAGE_TITLES } from './text/ui';
 import styles from './fan.module.css';
-import { FanProvider, personaNoFromLocation, useFan } from './store/FanProvider';
+import { FanProvider, getAppStore, useFan } from './store/FanProvider';
 
-// あとから読む塊（設計 D-40 の fan-pages・fan-layers）。押されたとき、読めていなければ、枠を先に出して、中身を埋める
-const loadPages = () => import('./pages/Pages');
-const loadCancel = () => import('./layers/Sheets').then((m) => ({ default: m.CancelBody }));
-const loadCarry = () => import('./layers/Sheets').then((m) => ({ default: m.CarryBody }));
+// 先読みする絵と、遅れて読む塊（メニュー配下の画面・やめる確認・引き継ぎ）を、共有の部品に登録する
+setupFanPrefetch();
 
 export function App() {
-  const [personaNo] = useState(() => personaNoFromLocation(window.location.search));
   return (
-    <FanProvider personaNo={personaNo}>
+    <FanProvider store={getAppStore()}>
       <Screen />
     </FanProvider>
+  );
+}
+
+/** 層の枠が出ているあいだ、中身が来るまで出す「戻る」（操作を残す。白い画面にしない）。 */
+function BackOnly({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <div className={styles.sheetBtns}>
+      <button type="button" className={`${styles.btn} ${styles.btnFull}`} onClick={onClick}>
+        {label}
+      </button>
+    </div>
   );
 }
 
@@ -40,14 +51,7 @@ function Screen() {
     performance.mark('oshiyobu:ready');
   }, []);
   useEffect(() => {
-    const t = setTimeout(() => {
-      startPrefetch(oshiId);
-      // メニュー配下の画面 → やめる確認・引き継ぎの順に、静かに先読みする
-      void loadPages()
-        .then(() => loadCancel())
-        .then(() => loadCarry())
-        .catch(() => undefined);
-    }, 1000);
+    const t = setTimeout(() => startPrefetch(oshiId), 1000);
     return () => clearTimeout(t);
   }, [oshiId]);
 
@@ -66,6 +70,18 @@ function Screen() {
     };
   }, [actions]);
 
+  const sheet = (
+    title: string,
+    inert: boolean,
+    onClose: () => void,
+    back: string,
+    body: ReactNode,
+  ): ReactNode => (
+    <SheetShell title={title} inert={inert} onClose={onClose}>
+      {body ?? <BackOnly label={back} onClick={onClose} />}
+    </SheetShell>
+  );
+
   return (
     <div className={styles.shell} data-page={page}>
       <h1 className={styles.srOnly}>OSHIYOBU</h1>
@@ -77,9 +93,16 @@ function Screen() {
         ) : page === 'next' ? (
           <NextAction />
         ) : (
-          <DetailPage title={PAGE_TITLES[page]}>
-            <LazyBody load={loadPages} props={{ page }} name="pages" />
-          </DetailPage>
+          <ChunkBoundary<PagesModule>
+            name="fan-pages"
+            frame={<DetailPage title={PAGE_TITLES[page]} />}
+          >
+            {(m) => (
+              <DetailPage title={PAGE_TITLES[page]}>
+                <m.default page={page} />
+              </DetailPage>
+            )}
+          </ChunkBoundary>
         )}
       </div>
       {layers.map((layer, i) => {
@@ -95,55 +118,33 @@ function Screen() {
             return <ShareSheet key="share" mode={layer.mode} inert={inert} />;
           case 'cancel':
             return (
-              <SheetShell
+              <ChunkBoundary<LayersModule>
                 key="cancel"
-                title="申し込みをやめますか？"
-                inert={inert}
-                onClose={actions.closeCancel}
+                name="fan-layers"
+                frame={sheet('申し込みをやめますか？', inert, actions.closeCancel, '戻る', null)}
               >
-                <LazyBody
-                  load={loadCancel}
-                  props={{}}
-                  name="cancel"
-                  fallback={
-                    <div className={styles.sheetBtns}>
-                      <button
-                        type="button"
-                        className={`${styles.btn} ${styles.btnFull}`}
-                        onClick={actions.closeCancel}
-                      >
-                        戻る
-                      </button>
-                    </div>
-                  }
-                />
-              </SheetShell>
+                {(m) =>
+                  sheet(
+                    '申し込みをやめますか？',
+                    inert,
+                    actions.closeCancel,
+                    '戻る',
+                    <m.CancelBody />,
+                  )
+                }
+              </ChunkBoundary>
             );
           case 'carry':
             return (
-              <SheetShell
+              <ChunkBoundary<LayersModule>
                 key="carry"
-                title="引き継いだもの"
-                inert={inert}
-                onClose={actions.closeCarry}
+                name="fan-layers"
+                frame={sheet('引き継いだもの', inert, actions.closeCarry, 'ホームへ', null)}
               >
-                <LazyBody
-                  load={loadCarry}
-                  props={{}}
-                  name="carry"
-                  fallback={
-                    <div className={styles.sheetBtns}>
-                      <button
-                        type="button"
-                        className={`${styles.btn} ${styles.btnFull}`}
-                        onClick={actions.closeCarry}
-                      >
-                        ホームへ
-                      </button>
-                    </div>
-                  }
-                />
-              </SheetShell>
+                {(m) =>
+                  sheet('引き継いだもの', inert, actions.closeCarry, 'ホームへ', <m.CarryBody />)
+                }
+              </ChunkBoundary>
             );
         }
       })}

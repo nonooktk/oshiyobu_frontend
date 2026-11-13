@@ -1,7 +1,7 @@
 // あとから読む層の中身（設計 D-40 の fan-layers）: 申し込みをやめる確認（SP-51）と、引き継ぎ（SP-25）。
 // 枠（背景・見出し・閉じる）は、読み込み前から出ている（components/SheetShell）。
 import { useEffect, useRef } from 'react';
-import { achievementPct } from '../core';
+import { achievementPct } from '../../core';
 import { ACT_IDS } from '../domain/state';
 import { ACT_NAMES } from '../text/ui';
 import { yen } from '../text/format';

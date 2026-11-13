@@ -1,0 +1,9 @@
+dist
+coverage
+node_modules
+package-lock.json
+assets-src
+# 文書・設定の置き場（このファイルの整形の対象外）
+*.md
+.claude
+.github

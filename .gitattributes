@@ -1,0 +1,2 @@
+# 改行を LF にそろえる（Windows でも core:check のハッシュが変わらないようにする。設計 D-07・D-26）
+* text=auto eol=lf

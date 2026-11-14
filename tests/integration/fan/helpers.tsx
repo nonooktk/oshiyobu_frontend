@@ -95,6 +95,7 @@ export const homeActionButtons = (): string[] =>
   screen
     .getAllByRole('button')
     .map((b) => b.textContent?.trim() ?? '')
-    .filter((t) => !/^メニュー$|^リセット/.test(t));
+    // 帯の「メニュー」「リセット」と、文字を持たない音のボタン（称賛の音）は、行動のボタンに数えない
+    .filter((t) => t !== '' && !/^メニュー$|^リセット/.test(t));
 
 export { act, cleanup, fireEvent, screen, within };

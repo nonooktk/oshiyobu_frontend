@@ -39,6 +39,7 @@ import {
 import type { FanView, MeterIn } from '../domain/view';
 import { postedText } from '../domain/share';
 import type { ShareChannel } from '../domain/share';
+import type { SoundCue } from '../sound';
 import { yen } from '../text/format';
 import { VOICES } from '../text/voices';
 
@@ -58,10 +59,12 @@ export type Deps = {
    * true のとき、仲間を呼ぶと、成立に届く所まで一度に増え、成立の演出が出る。
    */
   solo?: () => boolean;
+  /** 称賛の音を鳴らす（鳴るかどうかは、受け取る側が決める: オフ・操作の前・使えない環境では、何もしない）。 */
+  sound?: (cue: SoundCue) => void;
 };
 
 export const defaultDeps = (
-  partial: Pick<Deps, 'join' | 'fetch'> & Partial<Pick<Deps, 'solo'>>,
+  partial: Pick<Deps, 'join' | 'fetch'> & Partial<Pick<Deps, 'solo' | 'sound'>>,
 ): Deps => ({
   ...partial,
   reduceMotion: () =>
@@ -114,6 +117,8 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     env && env.cond.venueId === state.venueId ? env.cond : conditionOf(state.venueId);
   const pidNow = (): PerformanceId => performanceIdOf(state.oshiId, state.venueId);
   const solo = (): boolean => deps.solo?.() ?? false;
+  /** 称賛の音（行動の直後と、段階が上がった・FEVER の瞬間だけ） */
+  const sound = (cue: SoundCue): void => deps.sound?.(cue);
   /** いまの公演のメーター（Provider が渡した値が、いまの公演のものでなければ、取れていない扱い） */
   const meterNow = (): MeterIn =>
     env && env.pid === pidNow() ? env.meter : { serverJoined: 0, counted: false };
@@ -313,6 +318,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
    */
   const showReached = (cb: () => void, withGift: boolean, by: 'join' | 'friend'): void => {
     const established = view().status.established;
+    sound(established ? 'fever' : 'stage');
     const t = established
       ? {
           title: 'FEVER！',
@@ -381,6 +387,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     const first = !state.done.join;
     const had = v.joined;
     set({ course: id, aim: null, done: { ...state.done, join: true } });
+    if (!had) sound('join'); // 申し込んだ直後の称賛（新しい申し込みだけ。コースの変更は鳴らさない）
     if (!had) deps.join(pidNow()); // 新しい申し込みだけ送る（コースの変更・やめる・申し込み直しは数え直さない。決定 3）
     go('home');
     const after = (merged: boolean): void => {
@@ -549,6 +556,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     if (state.page !== 'next') go('home');
     const s = view().status;
     toast('呼んだ仲間が申し込みました');
+    sound('friend');
     announce(
       `呼んだ仲間が申し込みました。熱量は${view().heat.name}です。` +
         (s.established ? 'ライブの開催が決まりました。' : ''),
@@ -567,6 +575,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
   const shareTo = (ch: ShareChannel): void => {
     const text = postedText(ch);
     toast(text);
+    sound('share');
     announce(`${text}。`); // トーストは読み上げの対象外なので、読み上げの領域でも伝える
     if (!state.done.share) {
       set({ done: { ...state.done, share: true } });
@@ -649,7 +658,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
   /** 初めの状態に戻す（人物の初めの値。タイマーを止めて、状態を作り直す。共有のメーターには触らない）。 */
   const backToStart = (): void => {
     clearTimers();
-    state = { ...initialState(personaNo), live: '' };
+    state = { ...initialState(personaNo), live: '', soundOn: state.soundOn }; // 音のオン・オフは、リセットで変えない
     emit();
   };
   /** ファン向けだけを、はじめの画面に戻す（「リセット（デモ用）」）。 */
@@ -848,6 +857,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       toast,
       announce,
       friendJoins,
+      toggleSound: (): void => set({ soundOn: !state.soundOn }),
     },
   };
 }

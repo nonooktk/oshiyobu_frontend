@@ -38,9 +38,29 @@
 .strip {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  padding: var(--s1) var(--s3);
+  justify-content: space-between;
+  gap: var(--s2);
+  padding: 0 var(--s3);
   line-height: 20px;
+}
+/* 称賛の音のオン・オフ（全画面の帯の左）。押せる大きさは 44px */
+.soundBtn {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap);
+  height: var(--tap);
+  margin-left: calc(var(--s2) * -1);
+  padding: 0;
+  border: 0;
+  border-radius: var(--pill);
+  background: transparent;
+  color: var(--primary-dark);
+  cursor: pointer;
+}
+.soundBtn[aria-pressed='false'] {
+  color: var(--ink-soft);
 }
 .chip {
   display: inline-block;

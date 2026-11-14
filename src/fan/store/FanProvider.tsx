@@ -24,6 +24,7 @@ import { getPersona } from '../../shared/persona';
 import type { FanState } from '../domain/state';
 import { viewOf } from '../domain/view';
 import type { FanView } from '../domain/view';
+import { createSound } from '../sound';
 import { createFanLifecycle } from './lifecycle';
 import { createFanStore, defaultDeps } from './store';
 import type { FanActions, FanStore } from './store';
@@ -32,12 +33,19 @@ type FanContextValue = { state: FanState; view: FanView; actions: FanActions };
 const FanContext = createContext<FanContextValue | null>(null);
 
 let appStore: FanStore | null = null;
+/** 称賛の音（端末の中に 1 つ。利用者の操作のあとにだけ鳴る） */
+let appSound = createSound();
 
 /** 画面が使うストア（1 つだけ）。人物は、`?p=` の指定か端末の番号から決まる（設計 D-19。保存しない）。 */
 export function getAppStore(): FanStore {
   appStore ??= createFanStore({
     personaNo: getPersona().no,
-    deps: defaultDeps({ join: joinPerformance, fetch: requestMeterFetch, solo: isSoloMeter }),
+    deps: defaultDeps({
+      join: joinPerformance,
+      fetch: requestMeterFetch,
+      solo: isSoloMeter,
+      sound: (cue) => appSound.play(cue),
+    }),
   });
   return appStore;
 }
@@ -46,6 +54,7 @@ export function getAppStore(): FanStore {
 export function resetAppStoreForTest(): void {
   appStore?.dispose();
   appStore = null;
+  appSound = createSound();
 }
 
 type Props = { store: FanStore; children: ReactNode };
@@ -93,6 +102,19 @@ export function FanProvider({ store, children }: Props) {
     store.actions.applyOffice(officeVenue);
   }, [store, officeVenue]);
 
+  // 称賛の音: オン・オフを合わせる。利用者の操作（押す・キーを押す）のあとにだけ、鳴らせるようにする（自動再生の制限）
+  useEffect(() => {
+    appSound.setOn(state.soundOn);
+  }, [state.soundOn]);
+  useEffect(() => {
+    const unlock = (): void => appSound.unlock();
+    document.addEventListener('pointerdown', unlock, true);
+    document.addEventListener('keydown', unlock, true);
+    return () => {
+      document.removeEventListener('pointerdown', unlock, true);
+      document.removeEventListener('keydown', unlock, true);
+    };
+  }, []);
   const solo = isSoloMeter();
   const view = useMemo(
     () => viewOf(state, cond, { serverJoined, counted }, solo),

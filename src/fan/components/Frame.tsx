@@ -4,11 +4,13 @@ import type { ReactNode } from 'react';
 import { DemoBadge } from '../../shared/components/DemoBadge';
 import styles from '../fan.module.css';
 import { useFan } from '../store/FanProvider';
+import { SoundToggle } from './SoundToggle';
 
 /** 全画面に出す札「デモ用の架空データ」の帯（SP-80）。 */
 export function Strip() {
   return (
     <div className={styles.strip}>
+      <SoundToggle />
       <DemoBadge />
     </div>
   );

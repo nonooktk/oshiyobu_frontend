@@ -17,6 +17,7 @@ export const LICENSE_FILES: string[];
 export const SIMULATOR_CSS: string;
 export const SIMULATOR_FILE: string;
 export const BASE_CHARS: string;
+export const FONT_EXCLUDED_DIRS: string[];
 export function collectChars(text: string, kind: 'ts' | 'tsx' | 'js' | 'css' | 'html'): Set<string>;
 export function screenSourceFiles(root: string): string[];
 export function collectScreenCharsByFile(root: string): Map<string, Set<string>>;

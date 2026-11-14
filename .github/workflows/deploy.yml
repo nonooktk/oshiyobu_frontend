@@ -19,6 +19,9 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # 承認つきの環境。管理者（統括）が承認するまで、この job は始まらない。配備できるブランチは main と dev だけ。
+    # 配備の鍵（Secrets）は、この環境の中に置く（ほかの workflow からは読めない）。
+    environment: production
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

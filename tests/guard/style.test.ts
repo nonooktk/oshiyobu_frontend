@@ -34,6 +34,8 @@ const COLOR_TOKENS = [
   '--heat-3',
   '--heat-4',
   '--heat-5',
+  // 虹の色（開催熱量の棒だけに使う。2026-11-14 に、統括の承認で足した）
+  '--rainbow-violet',
   '--scrim',
 ];
 
@@ -113,6 +115,29 @@ describe('色の決まり（G-14）', () => {
         'G-14',
         'TS・TSX に色の値を直接書いています。tokens.css の var(--名前) を使ってください',
       ),
+    ).toEqual([]);
+  });
+
+  it('虹の色（--rainbow-*）は、ファン向け（src/fan/）の開催熱量の棒だけに使う。事務所向け・発表者用・共通の部品に使わない', () => {
+    const hits = scanned
+      .filter((path) => /\.(css|ts|tsx)$/.test(path) && !path.startsWith('src/fan/'))
+      .filter((path) => read(path).includes('--rainbow-'));
+    expect(
+      hits,
+      guardMessage('G-14', '虹の色（--rainbow-*）を、ファン向けの熱量の棒以外で使っています'),
+    ).toEqual([]);
+    // 使うのは、tokens.css に定義がある色だけ（定義の無い --rainbow-* は、色が付かない）
+    const defined = new Set(
+      [...read('src/styles/tokens.css').matchAll(/^\s*(--rainbow-[a-z0-9-]+):/gm)].map(
+        (match) => match[1],
+      ),
+    );
+    const used = withExt(walk('src/fan'), ['.css'])
+      .flatMap((path) => [...read(path).matchAll(/var\((--rainbow-[a-z0-9-]+)\)/g)])
+      .map((match) => match[1]);
+    expect(
+      used.filter((name) => !defined.has(name)),
+      guardMessage('G-14', 'tokens.css に定義の無い虹の色を使っています'),
     ).toEqual([]);
   });
 

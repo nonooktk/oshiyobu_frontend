@@ -29,6 +29,38 @@ const titleInside = async (page: Page, width: number): Promise<boolean> => {
   const box = await layer(page, 'fx').locator('b').first().boundingBox();
   return box !== null && box.x >= 0 && box.x + box.width <= width;
 };
+/**
+ * はじめの画面（推し → コース。市の選択は無い）を進めて、ホームで、推し活定期をはじめる → 預金を積み増す（額の入力は、条件にちょうど届く額が
+ * 初めから入っている）→ 申し込む、まで進める（主のボタンの 1 つずつ）。shots があれば、各段の画面写真を置く。
+ */
+const startToApply = async (page: Page, shots = false): Promise<void> => {
+  const snap = async (name: string): Promise<void> => {
+    if (shots) await shot(page, name);
+  };
+  await expect(page.getByText(/会場:/)).toHaveCount(0); // 1 / 2（推し）には、会場の説明は無い
+  await page.getByRole('button', { name: '次へ' }).click();
+  await expect(page.getByRole('heading', { name: '目指すコースを選ぶ' })).toBeVisible();
+  await expect(page.getByText(/会場: 久留米シティプラザ Cボックス/)).toBeVisible();
+  await snap('01b-course');
+  await page.getByRole('button', { name: 'このコースを目指して始める' }).click();
+  await expect(page.getByRole('button', { name: /^推し活定期をはじめる/ })).toBeVisible();
+  await snap('02a-home-before-start');
+  await page.getByRole('button', { name: /^推し活定期をはじめる/ }).click();
+  await expect(layer(page, 'ach').getByText('はじめてくれてありがとう。')).toBeVisible();
+  await expect(
+    page.getByText('推し活定期をはじめました。デモ用の操作で、実際の手続きは行われません').first(),
+  ).toBeVisible(); // 画面のトースト（読み上げ用の領域にも同じ文がある）
+  await snap('02b-started');
+  await page.getByRole('button', { name: /^預金を積み増す/ }).click();
+  await expect(page.getByRole('textbox', { name: '積み増す額（円）' })).toHaveValue('20000'); // 条件にちょうど届く額
+  await snap('02c-deposit-input');
+  await page.getByRole('button', { name: '積み増す', exact: true }).click();
+  await expect(layer(page, 'ach').getByText('申し込めるようになりました')).toBeVisible();
+  await snap('02d-reached');
+  await expect(page.getByRole('button', { name: /^申し込む/ })).toBeVisible();
+  await snap('02e-home-apply');
+  await page.getByRole('button', { name: /^申し込む/ }).click();
+};
 /** 偽の API が受けた要求（取得・申し込み）。接続の確認（/healthz）は数えない */
 const apiRequests = async (): Promise<{ method: string; path: string }[]> =>
   ((await (await fetch(`${API}/__state`)).json()) as { log: { method: string; path: string }[] })
@@ -52,10 +84,8 @@ test('はじめの画面 → 申し込む（FEVER 目前）→ 仲間を呼ぶ�
   await expect(page.getByText('動作確認用のデモ画面です')).toBeVisible();
   await shot(page, '01-start');
 
-  // ② 申し込む（FEVER 目前の演出）
-  await page.getByRole('button', { name: '次へ' }).click();
-  await page.getByRole('button', { name: '次へ' }).click();
-  await page.getByRole('button', { name: 'この内容で申し込む' }).click();
+  // ② はじめる → 積み増す → 申し込む（FEVER 目前の演出）
+  await startToApply(page, true);
   await expect(layer(page, 'fx').getByText('FEVER 目前！')).toBeVisible();
   await page.waitForTimeout(1200);
   await expect(layer(page, 'fx').getByText('申し込みありがとう。あなたの一歩で、')).toBeVisible();
@@ -119,9 +149,7 @@ test('はじめの画面 → 申し込む（FEVER 目前）→ 仲間を呼ぶ�
   await reopened.goto('/fan/?p=4');
   await expect(reopened.getByRole('heading', { name: '推しを選ぶ' })).toBeVisible();
   await shot(reopened, '08-reopen-start');
-  await reopened.getByRole('button', { name: '次へ' }).click();
-  await reopened.getByRole('button', { name: '次へ' }).click();
-  await reopened.getByRole('button', { name: 'この内容で申し込む' }).click();
+  await startToApply(reopened);
   await expect(layer(reopened, 'fx').getByText('FEVER 目前！')).toBeVisible(); // 初めから始まるので、また FEVER 目前の演出
   await layer(reopened, 'gift').getByRole('button', { name: '閉じる' }).click({ timeout: 10_000 });
   await expect(meter(reopened)).toHaveAttribute('aria-label', '開催熱量。FEVER 目前。あと一歩'); // 前回の FEVER を持ち越さない
@@ -137,9 +165,7 @@ test('操作が 5 分無いと、初めの状態に戻り、理由が出る（�
 }) => {
   await page.clock.install();
   await page.goto('/fan/?p=4');
-  await page.getByRole('button', { name: '次へ' }).click();
-  await page.getByRole('button', { name: '次へ' }).click();
-  await page.getByRole('button', { name: 'この内容で申し込む' }).click();
+  await startToApply(page);
   await page.clock.runFor(3500);
   await layer(page, 'gift').getByRole('button', { name: '閉じる' }).click();
   await expect(meter(page)).toBeVisible();

@@ -226,3 +226,27 @@ describe('④ 「0. 要点」と、CLAUDE.md・台本・設定が、食い違っ
     }
   });
 });
+
+describe('G-08: 有効になっていて、歯止めが、ファン向けの画面を巡回する検査に結ばれている', () => {
+  const row = rows.find((item) => item.id === 'G-08');
+
+  it('G-08 の行から「予定」が外れ、要点にも「予定（G-08）」が残っていない', () => {
+    expect(row, guardMessage('G-08', '表に G-08 の行がありません')).toBeDefined();
+    expect(row?.cells[1], guardMessage('G-08', 'G-08 の行に「予定」が残っています')).not.toContain(
+      '予定',
+    );
+    expect(
+      briefBlock(doc) ?? '',
+      guardMessage('G-08', '要点に「予定（G-08）」が残っています'),
+    ).not.toContain('予定（G-08）');
+  });
+
+  it('「落ちる検査」に、巡回の検査（no-numbers）とソースの検査（tests/guard/heat.test.ts）が書かれ、巡回の検査の中に番号がある', () => {
+    const cell = row?.cells[3] ?? '';
+    const message = guardMessage('G-08', '落ちる検査の書き方が、実際の検査とずれています');
+    expect(cell, message).not.toContain('歯止めなし');
+    expect(backticks(cell), message).toContain('tests/integration/fan/no-numbers.test.tsx');
+    expect(backticks(cell), message).toContain('tests/guard/heat.test.ts');
+    expect(read('tests/integration/fan/no-numbers.test.tsx'), message).toContain('G-08');
+  });
+});

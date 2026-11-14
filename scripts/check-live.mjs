@@ -28,7 +28,7 @@ import { isMain, isPortFree, runNpm, startBackground, waitForHttp } from './acce
 import { isMeterUrl, judgeLiveMeter } from './api-check-lib.mjs';
 import { ROOT } from './core-lib.mjs';
 
-/** 開く 3 ページ（p=4 は、ファン向けの試験用の推しの指定） */
+/** 開く 3 ページ（?p=4 は、基準の人物 4 の指定。e2e/csp.spec.ts と同じ） */
 const PAGES = [
   { id: 'live.page.office', label: '/ （事務所向け）', path: '/', fan: false },
   { id: 'live.page.fan', label: '/fan/?p=4（ファン向け）', path: '/fan/?p=4', fan: true },

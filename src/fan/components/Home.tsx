@@ -123,7 +123,7 @@ export function Home() {
             !
           </span>
           <span className={styles.warnText}>
-            <Wbr parts={['まだチケットと特典は', '入手できていません！']} />
+            <Wbr parts={['ここまでは、チケットと特典の', '入手前です。']} />
           </span>
         </p>
       )}

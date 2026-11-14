@@ -151,7 +151,7 @@ const ACCT_DEF: Record<AcctId, { title?: string; btn: string; desc: string; tag?
     btn: 'メイン口座にする',
     desc: '推し活の支払いに、この口座を使います。前方の席・特別コース・最上位コースの条件の 1 つです。',
   },
-  deposit: { btn: '預金を積み増す', desc: '預金が増えると、各コースの預金の条件がそろいます。' },
+  deposit: { btn: '預金を積み増す', desc: '預金を積み増すと、各コースの預金の条件がそろいます。' },
   teiki: {
     title: '推し活定期をはじめる',
     btn: '推し活定期をはじめる',

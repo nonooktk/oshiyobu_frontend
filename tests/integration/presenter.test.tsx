@@ -65,7 +65,7 @@ describe('発表者用', () => {
   it('合言葉に、HTTP ヘッダーに載せられない文字（印字できる ASCII 以外）が入っていたら、送らずに「半角の英数字と記号」と出す。半角に直せば送れる（G2-03）', async () => {
     meter.resetSharedMeter.mockResolvedValue({ kind: 'ok', resetAt: '2026-11-18T01:02:03.000Z' });
     render(<App />);
-    armAndConfirm('あいうえおかきくけこさし');
+    armAndConfirm('dummy-passphrase');
     for (const bad of [
       'あいうえおかきくけこさし', // 全角（日本語）
       'ＰＡＳＳＷＯＲＤ１２３４', // 全角の英数字

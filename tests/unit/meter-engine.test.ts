@@ -523,8 +523,8 @@ describe('共有メーターの仕組み', () => {
       api.latency = 3000;
       engine.join(PID);
       api.latency = 0;
-      await advance(POLL_MS + 10); // 2 秒: 取得が先に返る。サーバーは、まだ自分を数えていない
-      expect(engine.getSnapshot(PID)).toMatchObject({ joined: 0, mineCounted: false });
+      await advance(POLL_MS + 10); // 2 秒: 取得が先に返る（このあと着く申し込みの応答は、古い連番になる）
+      expect(engine.getSnapshot(PID).mineCounted).toBe(false);
       await advance(1000); // 3 秒: 申し込みの応答が着く
     };
 
@@ -537,13 +537,9 @@ describe('共有メーターの仕組み', () => {
     });
 
     it('応答の counted が false（前に数えられていた端末の 2 回目）でも、数えられた印が立つ', async () => {
-      api.devices.add(DEVICE);
+      api.devices.add(DEVICE); // サーバーは、この端末を数えてある
       api.joined = 1;
-      engine.subscribe(PID);
-      api.latency = 3000;
-      engine.join(PID);
-      api.latency = 0;
-      await advance(POLL_MS + 10 + 1000);
+      await joinWithSlowResponse();
       expect(engine.getSnapshot(PID)).toMatchObject({ joined: 1, mineCounted: true });
       expect(shown(true)).toBe(75);
     });

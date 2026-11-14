@@ -24,9 +24,14 @@ type Props = {
   desc: string;
   /** この画面で、いちばん先にやってほしい行動か（主のボタンの色にする） */
   primary: boolean;
+  /**
+   * 額の入力のシートの中の形。見出し・説明・枠は、シートの枠（見出しの行）にあるので出さず、縦を詰める
+   * （幅 320 の低い画面で、「閉じる」が画面の外へ出ないように。QA H-05）。
+   */
+  compact?: boolean;
 };
 
-export function DepositCard({ title, desc, primary }: Props) {
+export function DepositCard({ title, desc, primary, compact = false }: Props) {
   const { state, view, actions } = useFan();
   const { deposit: d, pay: p } = state.acct;
   const base = useId();
@@ -63,11 +68,15 @@ export function DepositCard({ title, desc, primary }: Props) {
   };
 
   return (
-    <div className={fan.card} id="ac-deposit">
-      <h3 className={styles.actH} id="fan-ac-deposit-h" tabIndex={-1}>
-        {title}
-      </h3>
-      <p className={styles.actD}>{desc}</p>
+    <div className={compact ? undefined : fan.card} id="ac-deposit">
+      {compact ? null : (
+        <>
+          <h3 className={styles.actH} id="fan-ac-deposit-h" tabIndex={-1}>
+            {title}
+          </h3>
+          <p className={styles.actD}>{desc}</p>
+        </>
+      )}
       {target && !view.joined ? (
         <p className={styles.actD}>
           {gap > 0
@@ -75,9 +84,14 @@ export function DepositCard({ title, desc, primary }: Props) {
             : `${target.name}の預金の条件は、そろっています`}
         </p>
       ) : null}
+      {/* 「✓ n回積み増しました」の行は、初めから 1 行ぶんの場所を取っておく（出たときに、下のボタンが動かない。QA G2-14） */}
       {state.acct.times > 0 ? (
         <p className={styles.actDone}>✓ {state.acct.times}回積み増しました</p>
-      ) : null}
+      ) : (
+        <p className={`${styles.actDone} ${styles.actDoneNone}`} aria-hidden="true">
+          {'\u00a0'}
+        </p>
+      )}
       <form onSubmit={onSubmit} noValidate>
         <label className={styles.amountLab} htmlFor={inputId}>
           積み増す額（円）

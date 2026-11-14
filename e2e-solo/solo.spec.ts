@@ -1,6 +1,7 @@
 // ひとり体験（既定）の、実ブラウザでの通し（手元の Google Chrome・幅 390px・ポート 5297）。
 // 基準の公演（人物 4・Tech0サステナアイドル × 久留米市 × Cボックス）を、
-//   はじめの画面 → 申し込む（FEVER 目前の称賛）→ ホームの主のボタン「仲間を呼ぶ」（届いた！ → ゲージが加速して伸びる → FEVER の瞬間）
+//   はじめの画面 → ホーム（点火）→ 推し活定期をはじめる（あたたまってきた）→ 預金を積み増して条件に届く（ヒートアップ）
+//   → 申し込む（FEVER 目前の称賛）→ ホームの主のボタン「仲間を呼ぶ」（届いた！ → ゲージが加速して伸びる → FEVER の瞬間）
 //   → 閉じて開き直す（はじめの画面・熱量は初めから）
 // まで通す。共有のシートは経由しない。大きい文字が、画面の左右に収まることも確かめる。API の接続先つきでビルドしてあるが、共有メーターではないので、偽の API（8798）への要求は 0 件。
 // 各段の画面写真を、環境変数 SOLO_SHOTS の場所（既定は test-results/solo）に置く
@@ -33,7 +34,7 @@ const titleInside = async (page: Page, width: number): Promise<boolean> => {
  * はじめの画面（推し → コース。市の選択は無い）を進めて、ホームで、推し活定期をはじめる → 預金を積み増す（額の入力は、条件にちょうど届く額が
  * 初めから入っている）→ 申し込む、まで進める（主のボタンの 1 つずつ）。shots があれば、各段の画面写真を置く。
  */
-const startToApply = async (page: Page, shots = false): Promise<void> => {
+const startToApply = async (page: Page, shots = false, clock = false): Promise<void> => {
   const snap = async (name: string): Promise<void> => {
     if (shots) await shot(page, name);
   };
@@ -44,22 +45,43 @@ const startToApply = async (page: Page, shots = false): Promise<void> => {
   await snap('01b-course');
   await page.getByRole('button', { name: 'このコースを目指して始める' }).click();
   await expect(page.getByRole('button', { name: /^推し活定期をはじめる/ })).toBeVisible();
+  // 開いた直後は 点火（行動のたびに、段階が 1 つずつ上がる）
+  await expect(meter(page)).toHaveAttribute('aria-label', '開催熱量。点火。はじまったところ');
   await snap('02a-home-before-start');
   await page.getByRole('button', { name: /^推し活定期をはじめる/ }).click();
   await expect(layer(page, 'ach').getByText('はじめてくれてありがとう。')).toBeVisible();
   await expect(
+    layer(page, 'ach').getByText('熱量が「あたたまってきた」へ進みました。'),
+  ).toBeVisible();
+  await expect(meter(page)).toHaveAttribute(
+    'aria-label',
+    '開催熱量。あたたまってきた。だんだん近づいてきた',
+  );
+  await expect(
     page.getByText('推し活定期をはじめました。デモ用の操作で、実際の手続きは行われません').first(),
   ).toBeVisible(); // 画面のトースト（読み上げ用の領域にも同じ文がある）
   await snap('02b-started');
+  await settle(page, clock); // 押した直後は、次の押下を受けない
   await page.getByRole('button', { name: /^預金を積み増す/ }).click();
   await expect(page.getByRole('textbox', { name: '積み増す額（円）' })).toHaveValue('20000'); // 条件にちょうど届く額
   await snap('02c-deposit-input');
   await page.getByRole('button', { name: '積み増す', exact: true }).click();
   await expect(layer(page, 'ach').getByText('申し込めるようになりました')).toBeVisible();
+  await expect(layer(page, 'ach').getByText('熱量が「ヒートアップ」へ進みました。')).toBeVisible();
+  await expect(meter(page)).toHaveAttribute('aria-label', '開催熱量。ヒートアップ。もう少し');
   await snap('02d-reached');
   await expect(page.getByRole('button', { name: /^申し込む/ })).toBeVisible();
   await snap('02e-home-apply');
+  await settle(page, clock);
   await page.getByRole('button', { name: /^申し込む/ }).click();
+};
+/**
+ * 主のボタンを押したあと、次の押下を受けない間（0.6 秒ほど。連打・ダブルタップで 2 段進むのを止めている）を待つ。
+ * 時計を止めている台本（clock）は、時計を進める。
+ */
+const settle = async (page: Page, clock = false): Promise<void> => {
+  if (clock) await page.clock.runFor(700);
+  else await page.waitForTimeout(700);
 };
 /** 偽の API が受けた要求（取得・申し込み）。接続の確認（/healthz）は数えない */
 const apiRequests = async (): Promise<{ method: string; path: string }[]> =>
@@ -165,7 +187,7 @@ test('操作が 5 分無いと、初めの状態に戻り、理由が出る（�
 }) => {
   await page.clock.install();
   await page.goto('/fan/?p=4');
-  await startToApply(page);
+  await startToApply(page, false, true);
   await page.clock.runFor(3500);
   await layer(page, 'gift').getByRole('button', { name: '閉じる' }).click();
   await expect(meter(page)).toBeVisible();

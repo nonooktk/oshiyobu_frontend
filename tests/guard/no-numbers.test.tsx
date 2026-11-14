@@ -1,11 +1,13 @@
-// G-08 の歯止め（docs/守ること.md「予定」→ 有効にするための検査）。ファン向けの画面の文と読み上げ用の文に、
+// G-08 の歯止め（docs/守ること.md）。ファン向けの画面の文と読み上げ用の文に、
 // 人数・割合・最低人数・達成率・到達ライン・目標の金額が出ない。出してよい数字は、自分が払うコースの金額・預金・席数・日付・特典の n/3・ステップの 1 / 3 だけ。
 // 巡回する画面: はじめの画面 3 つ・ホーム（申し込む前・後・FEVER。主のボタンと副のボタン）・演出（申し込み・投稿・届いた！・ゲージが伸びている最中・FEVER の瞬間・仲間に知らせる）・共有のシート・やめる確認・メニューの下の全画面。推し 5 組（人物 4・10・12・14・15）
 // 起動条件: 巡回した場面の数が、決めた数以上であること（0 件で通る空振りを防ぐ）。
-// 置き場: tests/guard/ に移すのは管理者（この PR では、決まりの文書と guard を変えないため、通常のテストとして置く）。
+// 置き場: tests/guard/（2026-11-14 に tests/integration/fan/ から移した。管理者の側だけが変える。ソースの語を見る検査は heat.test.ts）。
+// 画面の部品は tests/integration/fan/ の helpers を使う（共有の部品は本物・サーバーだけ偽物）。
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { setMeterEngineForTest } from '../../../src/shared/meter';
-import { createMeterEngine } from '../../../src/shared/meter/engine';
+import { getAppStore } from '../../src/fan/store/FanProvider';
+import { setMeterEngineForTest } from '../../src/shared/meter';
+import { createMeterEngine } from '../../src/shared/meter/engine';
 import {
   act,
   btn,
@@ -18,9 +20,13 @@ import {
   setupFanTest,
   tick,
   within,
-} from './helpers';
+} from '../integration/fan/helpers';
 
 setupFanTest();
+
+/** 落ちたときの文（tests/guard/helpers.ts の guardMessage と同じ形。この検査は画面を描くので、jsdom で動き、その部品を読み込めない） */
+const guardMessage = (id: string, what: string): string =>
+  `【${id} に反しています】${what}。直さずに、管理者（統括）へ相談してください（docs/守ること.md の ${id}）。`;
 
 /** 画面に出してはいけない言い方（G-08）。「円」を伴う金額・席数・日付・n/3・1 / 3 は対象外 */
 const FORBIDDEN: [string, RegExp][] = [
@@ -186,7 +192,10 @@ describe('ファン向けの画面に、人数・達成率・目標の金額の�
     );
     expect(
       violations,
-      'G-08 に反しています（ファン向けに、人数・達成率・目標の金額を出さない）',
+      guardMessage(
+        'G-08',
+        'ファン向けの画面に、人数・最低人数・残りの人数・達成率・目標の金額の数字が出ています',
+      ),
     ).toEqual([]);
   });
 
@@ -217,5 +226,72 @@ describe('ファン向けの画面に、人数・達成率・目標の金額の�
         FORBIDDEN.some(([, re]) => re.test(text)),
         text,
       ).toBe(false);
+  });
+});
+
+describe('行動のたびに段階が上がる進み方の各段階にも、数字が出ない（G-08）', () => {
+  beforeEach(() => {
+    setMeterEngineForTest(createMeterEngine({ apiBase: '', random: () => 0.5 }));
+  });
+
+  /** ホームのメーター（開催熱量。段階の名前。距離のことば）の読み上げの文 */
+  const gauge = (): string =>
+    screen.getByRole('img', { name: /^開催熱量。/ }).getAttribute('aria-label') ?? '';
+
+  it('前方の席（メイン口座・預金）: 点火 → あたたまってきた → メイン口座・届かない額（段階はそのまま）→ ヒートアップ → 申し込み', async () => {
+    const seen: { scene: string; text: string }[] = [];
+    const look = (scene: string, root?: ParentNode) => seen.push({ scene, text: collect(root) });
+    const stages: string[] = [];
+    mountFan('?p=4');
+    click('次へ');
+    click(/前方の席/);
+    click('このコースを目指して始める');
+    look('ホーム（点火）');
+    stages.push(gauge());
+    fireEvent.click(screen.getByRole('button', { name: /^推し活定期をはじめる/ }));
+    look('推し活定期の直後（段階が上がった称賛の札）');
+    fireEvent.pointerDown(document.body);
+    look('ホーム（あたたまってきた）');
+    stages.push(gauge());
+    fireEvent.click(screen.getByRole('button', { name: /^メイン口座にする/ }));
+    look('メイン口座の直後（段階は上がらない称賛の札）');
+    fireEvent.pointerDown(document.body);
+    look('ホーム（メイン口座のあと）');
+    stages.push(gauge());
+    act(() => getAppStore().actions.runAcct('deposit', 'home', 1_000)); // 条件に届かない額
+    look('届かない額の直後（段階は上がらない称賛の札）');
+    fireEvent.pointerDown(document.body);
+    look('ホーム（届かない額のあと）');
+    stages.push(gauge());
+    act(() => getAppStore().actions.runAcct('deposit', 'home', 99_000)); // 条件に届く
+    look('条件に届いた直後（段階が上がった称賛の札）');
+    fireEvent.pointerDown(document.body);
+    look('ホーム（ヒートアップ）');
+    stages.push(gauge());
+    fireEvent.click(screen.getByRole('button', { name: /^申し込む/ }));
+    await tick(700);
+    look('演出（FEVER 目前）', layer('fx') as HTMLElement);
+
+    // 段階は、点火 → あたたまってきた（メイン口座・届かない額では動かない）→ ヒートアップ
+    expect(stages.map((t) => t.split('。')[1])).toEqual([
+      '点火',
+      'あたたまってきた',
+      'あたたまってきた',
+      'あたたまってきた',
+      'ヒートアップ',
+    ]);
+    expect(seen.length).toBeGreaterThanOrEqual(10);
+    const violations = seen.flatMap(({ scene, text }) =>
+      FORBIDDEN.filter(([, re]) => re.test(text)).map(
+        ([name, re]) => `${scene}: 「${name}」 ${text.match(re)?.[0] ?? ''}`,
+      ),
+    );
+    expect(
+      violations,
+      guardMessage(
+        'G-08',
+        'ファン向けの画面に、人数・最低人数・残りの人数・達成率・目標の金額の数字が出ています',
+      ),
+    ).toEqual([]);
   });
 });

@@ -145,6 +145,8 @@ export type FanState = Fan & {
   ckDelay: number;
   /** 仲間を呼んでいる最中のゲージの伸び（無ければ null。人数の状態は、伸びたあとに変わる）。 */
   gaugeRun: GaugeRun | null;
+  /** 主・副のボタンの押下を受けない間（押した直後の短い間・申し込みの称賛が終わるまで・仲間を呼んでいる最中）。見た目に出す。 */
+  held: boolean;
   /** 直前の達成の演出で新しく付いた ✓ と、全部そろった印。 */
   fresh: {
     ids: readonly string[];
@@ -212,6 +214,7 @@ export function initialState(personaNo: number): FanState {
     carry: null,
     ckDelay: 1,
     gaugeRun: null,
+    held: false,
     fresh: null,
   };
 }

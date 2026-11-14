@@ -1,9 +1,9 @@
 // ファン向けの、いまの状態から決まる値（人数・達成率・成立・次のアクションなど）。
 // 数字・成立の判定は core の関数だけを使う（画面の側で同じ式を書かない）。
-import { TEIKI, canApply, restParts, supportStatus } from '../../core';
+import { TEIKI, canApply, depShort, restParts, supportStatus } from '../../core';
 import type { Condition, CourseId, CourseOffer, SupportStatus } from '../../core';
-import { heatOf } from './heat';
-import type { Heat } from './heat';
+import { heatOf, soloHeatOf } from './heat';
+import type { Heat, SoloProgress } from './heat';
 import type { Seg } from '../text/format';
 import { yen } from '../text/format';
 import type { HomeKey } from '../text/voices';
@@ -24,6 +24,14 @@ export type FanView = {
   status: SupportStatus;
   /** 開催熱量（ゲージの長さ・段階・距離のことば）。画面に出すのは、これだけ（数字は出さない。G-08）。 */
   heat: Heat;
+  /** ひとり体験か（熱量を、自分の行動の進みから決める。共有メーターありは、人数の割合から決める）。 */
+  solo: boolean;
+  /** 申し込んだ直後の熱量（主のボタンの「→ FEVER 目前へ」の予告に使う）。 */
+  afterJoin: Heat;
+  /** 申し込みの条件がそろった直後の熱量（預金を積み増すボタンの予告に使う。共有メーターありは、いまのまま）。 */
+  afterReady: Heat;
+  /** 申し込みをやめたあとの熱量（やめる確認に使う。申し込んでいなければ、いまのまま）。 */
+  afterCancel: Heat;
   /** 0 ＝ 未申し込み → 1 ＝ 申し込み後 → 2 ＝ 仲間が申し込んだあと。 */
   stage: 0 | 1 | 2;
   giftCount: number;
@@ -63,14 +71,54 @@ export function friendsToClinch(fan: Fan, cond: Condition, meter: MeterIn): numb
   }
 }
 
-/** solo は、ひとり体験（共有メーターなし）か。仲間を呼ぶと成立に届く所まで増える（次のアクションの予告に使う）。 */
+/**
+ * 申し込みの条件の達成度（0〜1。1 ＝ いま申し込める）。メイン口座（条件にあるコースだけ）と預金の達成度の平均。
+ * ひとり体験の熱量が、条件がそろうまでの間、段階の中でゲージを伸ばすのに使う。判定は core の canApply・depShort。
+ */
+export function readyOf(k: CourseOffer, deposit: number, pay: boolean): number {
+  if (canApply(k, deposit, pay)) return 1;
+  const dep = k.deposit > 0 ? 1 - depShort(k, deposit) / k.deposit : 1;
+  const parts = k.mainAccount ? [dep, pay ? 1 : 0] : [dep];
+  return Math.min(0.99, parts.reduce((a, b) => a + b, 0) / parts.length);
+}
+
+/**
+ * solo は、ひとり体験（共有メーターなし）か。仲間を呼ぶと成立に届く所まで増える（次のアクションの予告に使う）。
+ * ひとり体験の熱量は、自分の行動の進みから決める（heat.ts の soloHeatOf）。共有メーターありは、人数の割合から決める。
+ * 成立（FEVER）の判定は、どちらも core の supportStatus（人数と金額）。
+ */
 export function viewOf(fan: Fan, cond: Condition, meter: MeterIn, solo = false): FanView {
   const joined = fan.course !== null;
   const my = fan.course !== null ? courseOf(cond, fan.course) : null;
   const targetId = joined ? null : (fan.aim ?? fan.seat);
   const target = targetId !== null ? courseOf(cond, targetId) : null;
   const status = statusOf(fan, cond, meter);
-  const heat = heatOf(status, cond.min);
+  const progress: SoloProgress = {
+    established: status.established,
+    joined,
+    called: fan.done.friend === true,
+    started: fan.done.teiki === true,
+    ready: joined ? 1 : target ? readyOf(target, fan.acct.deposit, fan.acct.pay) : 0,
+  };
+  // 「もし申し込んだら」「もし条件がそろったら」「もしやめたら」の熱量（行動の予告・やめる確認）。成立は含めない
+  const before: SoloProgress = { ...progress, established: false, called: false };
+  const seatNow = cond.courses.find((k) => k.id === (fan.aim ?? fan.seat)) ?? my ?? target;
+  const heat = solo ? soloHeatOf(progress) : heatOf(status, cond.min);
+  const afterJoin = solo
+    ? soloHeatOf({ ...before, joined: true, ready: 1 })
+    : heatOf({ supporters: status.supporters + 1, established: false }, cond.min);
+  const afterReady = solo
+    ? soloHeatOf({ ...before, joined: false, started: true, ready: 1 })
+    : heat;
+  const afterCancel = !joined
+    ? heat
+    : solo
+      ? soloHeatOf({
+          ...before,
+          joined: false,
+          ready: seatNow ? readyOf(seatNow, fan.acct.deposit, fan.acct.pay) : 0,
+        })
+      : heatOf({ supporters: status.supporters - 1, established: false }, cond.min);
   return {
     cond,
     fan,
@@ -79,6 +127,10 @@ export function viewOf(fan: Fan, cond: Condition, meter: MeterIn, solo = false):
     target,
     status,
     heat,
+    solo,
+    afterJoin,
+    afterReady,
+    afterCancel,
     stage: !joined ? 0 : fan.done.friend ? 2 : 1,
     giftCount: fan.gifts.filter(Boolean).length,
     doneCount: ACT_IDS.filter((id) => fan.done[id]).length,
@@ -193,10 +245,6 @@ export type NextHead =
   | { kind: 'going'; heat: Heat };
 export type NextView = { head: NextHead; rows: NextRow[]; hint: string };
 
-/** 申し込んだあとの熱量（数字は出さず、段階で伝える）。申し込むボタンの 2 行目に使う。 */
-const heatAfterJoin = (v: FanView): Heat =>
-  heatOf({ supporters: v.status.supporters + 1, established: false }, v.cond.min);
-
 /** 次のアクション（SP-42）。いまできる行動の一覧と、ホームの 2 行目に出す 1 行。 */
 export function nextViewOf(v: FanView): NextView {
   const { fan, status } = v;
@@ -208,7 +256,7 @@ export function nextViewOf(v: FanView): NextView {
     if (!t) throw new Error('申し込む前は、目指すコースがあります');
     const ok = canApplyOf(v, t);
     const needMain = t.mainAccount && !p;
-    const after = heatAfterJoin(v);
+    const after = v.afterJoin;
     const afterJoin = after.stage > v.heat.stage ? `${after.name}へ進みます` : '熱が高まります';
     // 流れ: 推し活定期をはじめる（口座が使える）→ メイン口座にする（条件にあるとき）→ 預金を積み増す → 申し込む。いまやる 1 つだけが並ぶ
     if (!fan.done.teiki) {
@@ -216,7 +264,7 @@ export function nextViewOf(v: FanView): NextView {
         id: 'teiki',
         label: '推し活定期をはじめる',
         why: [
-          `預金を積み増せるようになります。毎月 ${yen(TEIKI.monthlyYen)}の積立です（デモ用の操作）`,
+          `${v.solo ? 'あたたまってきます。' : ''}預金を積み増せるようになります。毎月 ${yen(TEIKI.monthlyYen)}の積立です（デモ用の操作）`,
         ],
         hint: '',
       });
@@ -224,14 +272,18 @@ export function nextViewOf(v: FanView): NextView {
       rows.push({
         id: 'main',
         label: 'メイン口座にする',
-        why: [`${t.name}の条件の 1 つです（預金は変わりません）`],
+        why: [
+          `${t.name}の条件の 1 つです（預金は変わりません）${v.solo ? '。熱が少し高まります' : ''}`,
+        ],
         hint: '',
       });
     } else if (!ok) {
       rows.push({
         id: 'deposit',
         label: '預金を積み増す',
-        why: [`${t.name}まで、あと ${yen(Math.max(0, t.deposit - d))}。額は、入力で決めます`],
+        why: [
+          `${t.name}まで、あと ${yen(Math.max(0, t.deposit - d))}。額は、入力で決めます${v.solo && v.afterReady.stage > v.heat.stage ? `。条件に届くと、${v.afterReady.name}へ進みます` : ''}`,
+        ],
         hint: '',
       });
     } else {
@@ -318,7 +370,7 @@ export function homeActionOf(v: FanView): HomeAction {
   const id = first?.id ?? 'deposit';
   switch (id) {
     case 'apply': {
-      const after = heatAfterJoin(v);
+      const after = v.afterJoin;
       const up = after.stage > v.heat.stage;
       return {
         id,
@@ -331,15 +383,17 @@ export function homeActionOf(v: FanView): HomeAction {
       return {
         id,
         label: 'メイン口座にする',
-        sub: '→ 申し込めるようになります',
-        hint: '押すと、メイン口座にします（擬似）',
+        sub: v.solo ? '→ 熱が少し高まります' : '→ 申し込めるようになります',
+        hint: v.solo
+          ? '押すと、メイン口座にします（擬似）。熱が少し高まります'
+          : '押すと、メイン口座にします（擬似）',
       };
     case 'teiki':
       return {
         id,
         label: '推し活定期をはじめる',
-        sub: '→ 預金を積み増せるようになります',
-        hint: '押すと、推し活定期をはじめます。デモ用の操作で、実際の手続きは行われません',
+        sub: v.solo ? '→ あたたまってきます' : '→ 預金を積み増せるようになります',
+        hint: `押すと、推し活定期をはじめます${v.solo ? '。あたたまってきます' : ''}。デモ用の操作で、実際の手続きは行われません`,
       };
     case 'friend': {
       const clinch = v.friendsClinch || v.status.friendClinches;
@@ -371,14 +425,18 @@ export function homeActionOf(v: FanView): HomeAction {
         sub: '→ 投稿のシートで、声をかけられます',
         hint: '押すと、投稿のシートが開きます',
       };
-    default:
-      // 預金（口座と預金の画面で、積み増す額を決める）
+    default: {
+      // 預金（額の入力のシートで、積み増す額を決める。初めから、条件にちょうど届く額が入っている）
+      const up = v.solo && v.afterReady.stage > v.heat.stage;
       return {
         id: 'deposit',
         label: '預金を積み増す',
-        sub: '→ 申し込めるようになります',
-        hint: '押すと、積み増す額の入力が開きます',
+        sub: up ? `→ ${v.afterReady.name}へ` : '→ 申し込めるようになります',
+        hint: up
+          ? `押すと、積み増す額の入力が開きます。条件に届くと、${v.afterReady.name}へ進みます`
+          : '押すと、積み増す額の入力が開きます',
       };
+    }
   }
 }
 

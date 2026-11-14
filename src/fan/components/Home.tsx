@@ -122,7 +122,7 @@ export function Home() {
             !
           </span>
           <span className={styles.warnText}>
-            <Wbr parts={['まだチケットと特典は', '入手できていません！']} />
+            <Wbr parts={['ここまでは、チケットと特典の', '入手前です。']} />
           </span>
         </p>
       )}
@@ -137,7 +137,8 @@ export function Home() {
             : `${styles.homeNext} ${popKey % 2 ? styles.btnPopA : styles.btnPopB}`
         }
         aria-label={`${act.label}。${act.hint}`}
-        onClick={actions.homePrimary}
+        aria-busy={state.held}
+        onClick={() => actions.press(actions.homePrimary)}
       >
         <span className={styles.nxL}>
           {act.label}
@@ -152,7 +153,8 @@ export function Home() {
           <button
             type="button"
             className={`${styles.btn} ${styles.btnSecondary} ${styles.btnSm} ${styles.shareBtn}`}
-            onClick={() => actions.openShare('share')}
+            aria-busy={state.held}
+            onClick={() => actions.press(() => actions.openShare('share'))}
           >
             SNSに投稿する（任意）
           </button>

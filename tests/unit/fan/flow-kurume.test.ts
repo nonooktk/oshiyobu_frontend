@@ -30,20 +30,20 @@ describe('はじめから成立まで、主のボタンの 1 つずつで進む�
     expect(h.state().course).toBeNull(); // この時点では、まだ申し込めない
     expect(h.view().status.supporters).toBe(74);
 
-    // ① 推し活定期をはじめる → 預金を積み増せるようになります
+    // ① 推し活定期をはじめる → あたたまってきます
     expect(act()).toMatchObject({
       id: 'teiki',
       label: '推し活定期をはじめる',
-      sub: '→ 預金を積み増せるようになります',
+      sub: '→ あたたまってきます',
     });
     h.a.homePrimary();
     expect(h.state().acct).toEqual({ pay: false, deposit: 0, times: 0 }); // 口座が使える状態になるだけ（預金は 0円のまま）
 
-    // ② 預金を積み増す → 申し込めるようになります。額は自由（通常の席の条件 20,000円。足りない額では、まだ申し込めない）
+    // ② 預金を積み増す → ヒートアップへ。額は自由（通常の席の条件 20,000円。足りない額では、まだ申し込めない）
     expect(act()).toMatchObject({
       id: 'deposit',
       label: '預金を積み増す',
-      sub: '→ 申し込めるようになります',
+      sub: '→ ヒートアップへ',
     });
     h.a.runAcct('deposit', 'home', 12_345);
     expect(act().id).toBe('deposit'); // まだ届かない

@@ -70,7 +70,7 @@ describe('基準の流れ（人物 4・tech0・久留米市・Cボックス）',
     click('次へ');
     fireEvent.click(seatCard('前方の席'));
     click('このコースを目指して始める');
-    expect(screen.getByText('まだチケットと特典は入手できていません！')).toBeTruthy();
+    expect(screen.getByText('ここまでは、チケットと特典の入手前です。')).toBeTruthy();
     expect(homeActionButtons()).toHaveLength(1);
     // 初めは口座なし: いまやることは、前方の席を目指しても「推し活定期をはじめる」の 1 つ
     expect(homeActionButtons()[0]).toMatch(/^推し活定期をはじめる/);
@@ -254,7 +254,7 @@ describe('共有メーターの reset と連動（I-64・I-126・A-62 のファ�
     api.reset();
     await tick(6000); // 次の取得で、resetAt の変化を見つける（3 秒前後）
     expect(supporters()).toBe(74);
-    expect(screen.getByText('まだチケットと特典は入手できていません！')).toBeTruthy();
+    expect(screen.getByText('ここまでは、チケットと特典の入手前です。')).toBeTruthy();
     click(/^申し込む/); // ホームの主のボタン（その場で申し込む）
     await tick(3000);
     expect(api.joined).toBe(1);
@@ -273,7 +273,7 @@ describe('共有メーターの reset と連動（I-64・I-126・A-62 のファ�
     api.reset();
     await tick(6000);
     expect(supporters()).toBe(74);
-    expect(screen.getByText('まだチケットと特典は入手できていません！')).toBeTruthy();
+    expect(screen.getByText('ここまでは、チケットと特典の入手前です。')).toBeTruthy();
   });
 
   it('事務所向けの「デモを最初に戻す」を受けた連動で、はじめの画面に戻る。共有のメーターには触らない', async () => {

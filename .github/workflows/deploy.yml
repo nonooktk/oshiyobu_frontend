@@ -1,0 +1,51 @@
+# 本番への反映（設計 D-22・D-27）。GitHub の「Actions」画面から、手で起動したときだけ動く（workflow_dispatch だけ）。
+# main に入っただけでは動かない。承認（リリース規定）のあとに、統括が起動する。
+# 登録が要るもの（名前だけ。値は、このリポジトリにも文書にも書かない。docs/デプロイ手順.md）:
+#   Secrets:   AZURE_STATIC_WEB_APPS_API_TOKEN（配備トークン）・SWA_BASE_URL（配備先の URL。ログに出さない）
+#   Variables: VITE_API_BASE（API の接続先。未設定なら、サーバーなしで動く画面になる）
+name: deploy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# 同時に 2 つ配備しない
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # src/core/ が、lock のコミットの内容と一致すること（lock が、実在しないコミットや別の内容を指していないこと）
+      - run: npm run core:check -- --remote
+      - run: npm run build
+        env:
+          VITE_API_BASE: ${{ vars.VITE_API_BASE }}
+      # 配備では、元絵の形式（jpg・png）のまま配っていないことも、エラーにする
+      - run: npm run check:budget -- --strict-images
+      - run: npm run check:csp
+        env:
+          VITE_API_BASE: ${{ vars.VITE_API_BASE }}
+      - uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: upload
+          app_location: dist
+          api_location: ''
+          skip_app_build: true
+          skip_api_build: true
+      # 反映のあとの自動の確認（200・圧縮・CSP・noindex・キャッシュ・API の coreVersion）。失敗は、この workflow の失敗として残る
+      - run: node scripts/check-deployed.mjs
+        env:
+          SWA_BASE_URL: ${{ secrets.SWA_BASE_URL }}
+          VITE_API_BASE: ${{ vars.VITE_API_BASE }}

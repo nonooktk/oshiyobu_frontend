@@ -226,8 +226,8 @@ describe('共有（A-29〜A-32・I-29）', () => {
     expect(box.value).not.toMatch(/https?:|example\.test|\?p=|90,000|預金|口座/);
   });
 
-  it('X・Facebook は、外のサイトを開かず（別タブも外へのリンクも無い）、押すと投稿したことが出る。Instagram は文面をコピーする', async () => {
-    const box = await toShare();
+  it('X・Instagram・Facebook は、外のサイトを開かず（別タブも外へのリンクも無い）・コピーもせず、押すと投稿したことが出る', async () => {
+    await toShare();
     const open = vi.spyOn(window, 'open').mockReturnValue(null);
     const write = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', {
@@ -236,41 +236,53 @@ describe('共有（A-29〜A-32・I-29）', () => {
     });
     const sheet = layer('share') as HTMLElement;
     expect(sheet.querySelectorAll('a')).toHaveLength(0);
-    // シートの説明が、実際の動きと合う（別のタブを開くとは言わない）
-    expect(sheet.textContent).toContain('押すと投稿したことになります');
-    expect(sheet.textContent).not.toMatch(/別のタブ|投稿画面を開き/);
-    fireEvent.click(btn('X'));
-    expect(
-      screen.getAllByText('Xに投稿しました（デモのため、実際には投稿されません）').length,
-    ).toBeGreaterThan(0);
-    fireEvent.click(btn('Facebook'));
-    expect(
-      screen.getAllByText('Facebookに投稿しました（デモのため、実際には投稿されません）').length,
-    ).toBeGreaterThan(0);
+    // 説明は 1 文（3 つのボタンの名前を並べない）。別のタブを開く・コピーするとは言わない
+    expect(sheet.textContent).toContain(
+      '押すと投稿したことになります（デモのため、実際には投稿されません）。',
+    );
+    expect(sheet.textContent).not.toMatch(/別のタブ|投稿画面を開き|コピー/);
+    for (const name of ['X', 'Instagram', 'Facebook']) {
+      fireEvent.click(btn(name));
+      expect(screen.getAllByText(`${name}に投稿しました（デモ・未投稿）`).length).toBeGreaterThan(
+        0,
+      );
+    }
     expect(open).not.toHaveBeenCalled();
-    expect(write).not.toHaveBeenCalled(); // X・Facebook では、コピーもしない
-    await act(async () => {
-      fireEvent.click(btn('Instagram'));
-    });
-    expect(write).toHaveBeenCalledWith(box.value);
-    expect(
-      screen.getAllByText('コピーしました。Instagramに貼り付けて投稿できます').length,
-    ).toBeGreaterThan(0);
+    expect(write).not.toHaveBeenCalled();
   });
 
-  it('コピーできないときは、「コピーできませんでした」と出す（SP-90）', async () => {
-    await toShare();
+  it('クリップボードが使えない環境でも、Instagram を押すと投稿したことが出る（コピーに頼らない）。投稿文の欄は選択状態にならない', async () => {
+    const box = await toShare();
     Object.defineProperty(navigator, 'clipboard', {
       value: { writeText: vi.fn().mockRejectedValue(new Error('x')) },
       configurable: true,
     });
-    await act(async () => {
-      fireEvent.click(btn('Instagram'));
-    });
-    expect(
-      screen.getAllByText('コピーできませんでした。選んだ文面を手動でコピーしてください').length,
-    ).toBeGreaterThan(0);
+    fireEvent.click(btn('Instagram'));
+    expect(screen.getAllByText('Instagramに投稿しました（デモ・未投稿）').length).toBeGreaterThan(
+      0,
+    );
+    expect(screen.queryByText(/コピーできませんでした/)).toBeNull();
+    expect(document.activeElement).not.toBe(box);
   });
+
+  it.each(['X', 'Instagram', 'Facebook'])(
+    '%s を押すと、共有した印が付いて特典 2/3 が開く。続けて 3 つのボタンを押しても、特典は増えない',
+    async (name) => {
+      await toShare();
+      fireEvent.click(btn(name));
+      await tick(400 + 2300);
+      expect(layer('gift')?.getAttribute('aria-label')).toBe('特典 2/3');
+      fireEvent.click(within(layer('gift') as HTMLElement).getByRole('button', { name: '閉じる' }));
+      for (const other of ['X', 'Instagram', 'Facebook']) fireEvent.click(btn(other));
+      await tick(400 + 2300 + 100);
+      expect(layer('gift')).toBeNull();
+      // 共有した印: シートを閉じると、次のアクションから「SNSで広める」が消える
+      fireEvent.click(
+        within(layer('share') as HTMLElement).getByRole('button', { name: '閉じる' }),
+      );
+      expect(screen.queryByRole('button', { name: /^SNSで広める/ })).toBeNull();
+    },
+  );
 });
 
 describe('特典の絵と感謝（I-28・I-117・I-118）', () => {
@@ -367,7 +379,7 @@ describe('特典の絵と感謝（I-28・I-117・I-118）', () => {
   });
 });
 
-describe('遅れて読む画面と、受け皿（I-119・I-121・I-103・SP-90）', () => {
+describe('遅れて読む画面と、受け皿（I-119・I-121・I-103）', () => {
   it('メニュー配下の塊が読めないあいだも、枠（札・戻る・見出し）は出て、白い画面にならない。読めたら中身が埋まる', async () => {
     let fail = true;
     configurePrefetch({
@@ -451,25 +463,12 @@ describe('遅れて読む画面と、受け皿（I-119・I-121・I-103・SP-90�
         /送るのは、申し込みの合図（公演の指定を含む）と端末の番号だけです。個人の情報は送りません。/,
       ),
     ).toBeTruthy();
-  });
-
-  it('コピーできないときは、投稿文の欄を選択状態にする（SP-90）', async () => {
-    mountFan('?p=4');
-    passStart();
-    await closeGiftAfterFx();
-    click(/^次のアクション/);
-    click(/^SNSで広める/);
-    Object.defineProperty(navigator, 'clipboard', {
-      value: { writeText: vi.fn().mockRejectedValue(new Error('x')) },
-      configurable: true,
-    });
-    const box = screen.getByRole('textbox') as HTMLTextAreaElement;
-    await act(async () => {
-      fireEvent.click(btn('Instagram'));
-    });
-    expect(document.activeElement).toBe(box);
-    expect(box.selectionStart).toBe(0);
-    expect(box.selectionEnd).toBe(box.value.length);
+    // 共有ボタンは、押すと投稿したことになるだけで、投稿文を外へ送らない（コピーもしない）
+    expect(
+      screen.getByText(
+        /共有ボタンを押しても、投稿文は外へ送りません。押すと投稿したことになるだけです。/,
+      ),
+    ).toBeTruthy();
   });
 });
 

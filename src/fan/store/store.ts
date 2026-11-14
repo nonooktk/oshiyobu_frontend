@@ -29,7 +29,8 @@ import type {
 } from '../domain/state';
 import { canApplyOf, condItems, courseOf, opensList, restText, viewOf } from '../domain/view';
 import type { FanView, MeterIn } from '../domain/view';
-import { buildPostText } from '../domain/share';
+import { postedText } from '../domain/share';
+import type { ShareChannel } from '../domain/share';
 import { yen } from '../text/format';
 import { VOICES } from '../text/voices';
 
@@ -43,8 +44,6 @@ export type Deps = {
   fetch: (reason: 'open' | 'course-select' | 'performance-changed', pid?: PerformanceId) => void;
   /** 動きを減らす設定か。 */
   reduceMotion: () => boolean;
-  /** 文面のコピー（Instagram）。成功したら true。 */
-  copyText: (text: string) => Promise<boolean>;
   random: () => number;
 };
 
@@ -54,14 +53,6 @@ export const defaultDeps = (partial: Pick<Deps, 'join' | 'fetch'>): Deps => ({
     typeof window !== 'undefined' &&
     typeof window.matchMedia === 'function' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-  copyText: async (text) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch {
-      return false;
-    }
-  },
   random: Math.random,
 });
 
@@ -548,30 +539,17 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     later(reduce() ? 0 : 700, () => unlockGift(2));
   };
   /**
-   * 共有ボタン。X・Facebook は、外のサイトを開かず、押したら投稿したことにする（デモなので、実際には投稿しない。統括の決定 2026-11-14）。
-   * Instagram は、文面をコピーする。コピーできたか（できなければ、画面が投稿文の欄を選択状態にする。SP-90）を返す。
+   * 共有ボタン。外のサイトは開かず、コピーもせず、押したら投稿したことにする（デモなので、実際には投稿しない。統括の決定 2026-11-14）。
+   * 投稿したことを画面と読み上げで伝え、共有した印を付ける（1 回目だけ、0.4 秒後に特典 2/3 が開く）。
    */
-  const shareTo = async (ch: 'x' | 'fb' | 'ig'): Promise<boolean> => {
-    let copied = true;
-    if (ch === 'ig') {
-      const ok = await deps.copyText(buildPostText(view()));
-      copied = ok;
-      toast(
-        ok
-          ? 'コピーしました。Instagramに貼り付けて投稿できます'
-          : 'コピーできませんでした。選んだ文面を手動でコピーしてください',
-      );
-      if (!ok) announce('コピーできませんでした。選んだ文面を手動でコピーしてください');
-    } else {
-      const text = `${ch === 'x' ? 'X' : 'Facebook'}に投稿しました（デモのため、実際には投稿されません）`;
-      toast(text);
-      announce(`${text}。`); // トーストは読み上げの対象外なので、読み上げの領域でも伝える
-    }
+  const shareTo = (ch: ShareChannel): void => {
+    const text = postedText(ch);
+    toast(text);
+    announce(`${text}。`); // トーストは読み上げの対象外なので、読み上げの領域でも伝える
     if (!state.done.share) {
       set({ done: { ...state.done, share: true } });
       later(reduce() ? 0 : 400, () => unlockGift(1));
     }
-    return copied;
   };
 
   /* ---------- はじめの画面 ---------- */

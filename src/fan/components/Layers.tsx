@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { artistView } from '../art/registry';
 import { thanksOf } from '../text/thanks';
-import { buildPostText } from '../domain/share';
+import { SHARE_NAMES, SHARE_ORDER, buildPostText } from '../domain/share';
 import type { AchSpec, FxSpec, ShareMode } from '../domain/state';
 import { VOICES } from '../text/voices';
 import styles from '../fan.module.css';
@@ -214,12 +214,11 @@ const SHARE_TITLE: Record<ShareMode, string> = {
   friend: '仲間を呼ぶ',
 };
 
-/** 共有のシート（SP-52）。X・Instagram・Facebook。X・Facebook は、押すと投稿したことになる（外へは出ない）。Instagram は、文面をコピーする。 */
+/** 共有のシート（SP-52）。X・Instagram・Facebook のどれも、押すと投稿したことになる（外へは出ない。コピーもしない）。 */
 export function ShareSheet({ mode, inert }: { mode: ShareMode; inert: boolean }) {
   const { state, view, actions } = useFan();
   const o = artistView(state.oshiId);
   const close = useRef<HTMLButtonElement>(null);
-  const area = useRef<HTMLTextAreaElement>(null);
   useReturnFocus();
   useEffect(() => {
     close.current?.focus({ preventScroll: true });
@@ -232,14 +231,6 @@ export function ShareSheet({ mode, inert }: { mode: ShareMode; inert: boolean })
       : null;
   const plain = big ? big.join('') : `ライブ開催まで あと${s.left}人`;
   const text = buildPostText(view);
-  const ig = async (): Promise<void> => {
-    const ok = await actions.shareTo('ig');
-    // コピーできないときは、自分でコピーできるよう、投稿文の欄を選択状態にする（SP-90）
-    if (!ok) {
-      area.current?.focus();
-      area.current?.select();
-    }
-  };
   return (
     <div
       className={styles.sheetBg}
@@ -284,32 +275,21 @@ export function ShareSheet({ mode, inert }: { mode: ShareMode; inert: boolean })
         <label className={styles.postLab} htmlFor="fan-post-text">
           投稿文（自動作成）
         </label>
-        <textarea id="fan-post-text" ref={area} className={styles.postText} readOnly value={text} />
+        <textarea id="fan-post-text" className={styles.postText} readOnly value={text} />
         <p className={styles.shareNote}>
-          XとFacebookは、押すと投稿したことになります（デモのため、実際には投稿されません）。Instagramは、文面をコピーします。
+          押すと投稿したことになります（デモのため、実際には投稿されません）。
         </p>
         <div className={styles.shareBtns}>
-          <button
-            type="button"
-            className={`${styles.btn} ${styles.btnSecondary}`}
-            onClick={() => void actions.shareTo('x')}
-          >
-            X
-          </button>
-          <button
-            type="button"
-            className={`${styles.btn} ${styles.btnSecondary}`}
-            onClick={() => void ig()}
-          >
-            Instagram
-          </button>
-          <button
-            type="button"
-            className={`${styles.btn} ${styles.btnSecondary}`}
-            onClick={() => void actions.shareTo('fb')}
-          >
-            Facebook
-          </button>
+          {SHARE_ORDER.map((ch) => (
+            <button
+              key={ch}
+              type="button"
+              className={`${styles.btn} ${styles.btnSecondary}`}
+              onClick={() => actions.shareTo(ch)}
+            >
+              {SHARE_NAMES[ch]}
+            </button>
+          ))}
         </div>
         <div className={styles.sheetBtns}>
           <button

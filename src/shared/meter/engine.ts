@@ -51,6 +51,8 @@ export interface MeterEngine {
   join(pid: PerformanceId): void;
   onReset(handler: () => void): () => void;
   isBusy(): boolean;
+  /** 通信しない（接続先が無い。ひとり体験）。画面は、人数を端末の中だけで数える動きに切り替える */
+  isSolo(): boolean;
   getSnapshot(pid: PerformanceId): SharedMeter;
   getIdle(): SharedMeter;
   subscribeStore(listener: () => void): () => void;
@@ -326,6 +328,7 @@ export function createMeterEngine(deps: EngineDeps): MeterEngine {
       };
     },
     isBusy: () => inflight > 0,
+    isSolo: () => base === '',
     getSnapshot(pid) {
       let snapshot = snapshots.get(pid);
       if (snapshot === undefined) {

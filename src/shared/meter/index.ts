@@ -1,6 +1,6 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import type { PerformanceId } from '../../core';
-import { API_BASE } from './config';
+import { API_BASE, METER_BASE } from './config';
 import * as client from './client';
 import { createMeterEngine } from './engine';
 import type { MeterEngine } from './engine';
@@ -8,16 +8,23 @@ import type { MeterFetchReason, MeterStatus, SharedMeter } from './types';
 
 // 共有メーター（設計 D-17・D-18・D-41）。ファン向けの画面が使う口。
 // API の接続先（ビルド時の VITE_API_BASE）が未設定なら、サーバーなしで動く（初期値のまま。通信しない）。
+// ビルド時の VITE_SHARED_METER=on のときだけ、ファン向けは API を使う。既定は「ひとり体験」（接続先があっても通信しない）。
 // 画面の部品から fetch を呼ばない。通信はこのフォルダの中だけ。
 
 export type { MeterFetchReason, MeterStatus, SharedMeter };
 export type { ResetOutcome } from './client';
 
-/** API の接続先が設定されているか（未設定なら、サーバーなしで動いている） */
+/** API の接続先が設定されているか（未設定なら、サーバーなしで動いている。発表者用の画面が使う） */
 export const API_CONFIGURED: boolean = API_BASE !== '';
 
 let engine: MeterEngine | null = null;
-const getEngine = (): MeterEngine => (engine ??= createMeterEngine({ apiBase: API_BASE }));
+// ファン向けの共有メーターの接続先は METER_BASE（共有にしない既定では空）。発表者用の画面は、下で API_BASE を直接使う
+const getEngine = (): MeterEngine => (engine ??= createMeterEngine({ apiBase: METER_BASE }));
+
+/** ファン向けが通信しない（ひとり体験）か。true なら、人数は端末の中だけで数え、5 分操作が無ければ初めに戻る */
+export function isSoloMeter(): boolean {
+  return getEngine().isSolo();
+}
 
 /**
  * 公演のメーター。購読している間だけ、サーバーを 2 秒おきに見に行く（ホーム以降の、メーターを出している画面で呼ぶ）。

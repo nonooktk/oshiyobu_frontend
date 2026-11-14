@@ -10,6 +10,7 @@ export default defineConfig([
   globalIgnores([
     'dist',
     'dist-e2e',
+    'dist-solo',
     'dist-accept',
     'coverage',
     'assets-src',
@@ -57,6 +58,7 @@ export default defineConfig([
       'vite.config.ts',
       'eslint.config.js',
       'playwright.config.ts',
+      'playwright.solo.config.ts',
       'scripts/**/*.mjs',
       'e2e/**/*.mjs',
     ],

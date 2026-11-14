@@ -1660,6 +1660,12 @@ button.rcard:hover {
   width: fit-content;
   height: fit-content;
 }
+/* 「動作確認用のデモ画面です」。札「デモ用の架空データ」（左上）と並べて、右上に置く */
+.fxNotice {
+  inset: var(--s3) var(--s3) auto auto;
+  width: fit-content;
+  height: fit-content;
+}
 .sayAv {
   width: 40px;
   height: 40px;
@@ -1912,6 +1918,12 @@ button.rcard:hover {
   position: absolute;
   top: var(--s3);
   left: var(--s3);
+  z-index: 2;
+}
+.gNotice {
+  position: absolute;
+  top: var(--s3);
+  right: var(--s3);
   z-index: 2;
 }
 .gPanel {

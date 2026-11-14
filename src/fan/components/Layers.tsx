@@ -2,6 +2,7 @@
 // 特典の絵（GiftLayer）、感謝のメッセージ（ThanksLayer）、共有のシート（ShareSheet）。主な流れなので、最初に読む側に入れる（設計 D-40）。
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
+import { DEMO_NOTICE_TEXT } from '../../shared/components/DemoBadge';
 import { artistView } from '../art/registry';
 import { thanksOf } from '../text/thanks';
 import { SHARE_NAMES, SHARE_ORDER, buildPostText } from '../domain/share';
@@ -67,6 +68,7 @@ export function FxLayer({ fx, inert }: { fx: FxSpec; inert: boolean }) {
           <span>{fx.say}</span>
         </div>
       ) : null}
+      <span className={`${styles.chip} ${styles.fxNotice}`}>{DEMO_NOTICE_TEXT}</span>
       <span className={`${styles.chip} ${styles.fxChip}`}>デモ用の架空データ</span>
     </div>
   );
@@ -95,6 +97,7 @@ export function AchLayer({ ach }: { ach: AchSpec }) {
         <span className={styles.achP}>{ach.sub}</span>
       </div>
       {ach.flash ? <div className={styles.flash} /> : null}
+      <span className={`${styles.chip} ${styles.fxNotice}`}>{DEMO_NOTICE_TEXT}</span>
       <span className={`${styles.chip} ${styles.fxChip}`}>デモ用の架空データ</span>
     </div>
   );
@@ -144,6 +147,7 @@ export function GiftLayer({ replay, inert }: { replay: boolean; inert: boolean }
       inert={inert}
     >
       <div className={styles.gView} ref={ref}>
+        <span className={`${styles.chip} ${styles.gNotice}`}>{DEMO_NOTICE_TEXT}</span>
         <span className={`${styles.chip} ${styles.gChip}`}>デモ用の架空データ</span>
         <GiftArt a={o} idx={Math.max(0, k - 1)} ratio={q} alt={`${o.name}の特典の絵 ${k}/3`} />
       </div>
@@ -201,6 +205,9 @@ export function ThanksLayer({ inert }: { inert: boolean }) {
           <span className={styles.thanksClose}>押すと閉じます</span>
         </span>
       </button>
+      <span className={`${styles.chip} ${styles.fxNotice}`} style={{ zIndex: 49 }}>
+        {DEMO_NOTICE_TEXT}
+      </span>
       <span className={`${styles.chip} ${styles.fxChip}`} style={{ zIndex: 49 }}>
         デモ用の架空データ
       </span>

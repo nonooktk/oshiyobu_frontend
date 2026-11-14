@@ -950,6 +950,7 @@
 }
 .privHead {
   display: flex;
+  flex-wrap: wrap; /* 幅の狭い画面で、札が 2 枚になっても、見出しを潰さずに、札を次の行へ送る */
   align-items: center;
   gap: var(--s3);
   padding: var(--s3) var(--s4);

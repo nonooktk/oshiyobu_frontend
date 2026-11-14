@@ -47,6 +47,17 @@ describe('CSP', () => {
     ).toBeGreaterThan(0);
   });
 
+  it('ひとり体験（共有メーターなし）では、接続先があっても、ファン向けに preconnect を入れない。connect-src は発表者用のために残す', () => {
+    const html = `<link rel="preconnect" href="${ORIGIN}" crossorigin="">`;
+    const solo = { apiOrigin: ORIGIN, sharedMeter: false };
+    expect(checkCsp({ config: withOrigin(), fanHtml: '<html></html>', ...solo })).toEqual([]);
+    expect(checkCsp({ config: withOrigin(), fanHtml: html, ...solo }).length).toBeGreaterThan(0);
+    // 共有メーターあり（VITE_SHARED_METER=on）は、これまでどおり preconnect が要る
+    expect(
+      checkCsp({ config: withOrigin(), fanHtml: html, apiOrigin: ORIGIN, sharedMeter: true }),
+    ).toEqual([]);
+  });
+
   it('埋め込みの script・style を許す指定（unsafe-inline）を、全体の CSP に入れたら、エラー', () => {
     const bad = clone();
     bad.globalHeaders['content-security-policy'] += "; script-src 'self' 'unsafe-inline'";

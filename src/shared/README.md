@@ -16,7 +16,7 @@
 | 共有メーター | `meter/index.ts` | 実物（接続先が未設定なら、サーバーなしで動く） | 下の「共有メーター」 |
 | 先読み・遅れて読む画面 | `prefetch.tsx` | 実物（試験の途中） | 下の「先読み」 |
 | ルートの受け皿 | `mount.tsx` | 実物 | `mountPage` が `ErrorBoundary` で包む。各ページは何もしなくてよい |
-| 札 | `components/DemoBadge.tsx` | 実物 | `<DemoBadge className? />`。全画面に出す。消さない |
+| 札 | `components/DemoBadge.tsx` | 実物 | `<DemoBadge className? />`。全画面に出す。消さない。「動作確認用のデモ画面です」と「デモ用の架空データ」の 2 枚を 1 行に並べる |
 
 core（計算とデータ）は `src/core/`（backend の写し。手で直さない）から `import { conditionOf, ... } from '../core'` で使います。画面に出す人数・成立の判定は、`displayedCount`・`supportStatus` などを使い、画面の側で同じ式を書きません。
 
@@ -53,6 +53,7 @@ onMeterReset(() => { /* 自分の加算・擬似の仲間の加算を消す */ }
 - 隠れている間・回線が切れている間は取りません（戻ったら 1 回すぐ）。失敗が続くと 2 → 4 → 8 → 10 秒と間隔を空け、止めません。待ちは 8 秒で、遅れて届いた応答も使います
 - 画面の部品から `fetch` を呼びません（ESLint が止めます）。通信は `src/shared/meter/` の中だけです
 - **接続先**: ビルド時の環境変数 `VITE_API_BASE`（例: `https://api.example.test`）で渡します。**未設定なら、サーバーなしで動きます**（`joined` は 0、`status` は `offline`、通信しない）。設定してビルドすると、ファン向けの HTML に `preconnect` が入ります
+- **ファン向けが共有メーターを使うのは、ビルド時に `VITE_SHARED_METER=on` を渡したときだけ**です。既定（変数なし）は「ひとり体験」で、`VITE_API_BASE` が渡されていても、ファン向けは API を呼ばず、人数を端末の中だけで数えます（`isSoloMeter()` が true）。発表者用の画面の接続の確認・リセットは、この変数に関わらず、`VITE_API_BASE` を使います。共有メーターの作り（`meter/` のエンジン・通信・reset の検知）は、そのまま残してあります。発表の当日に、全員の人数を集める形へ戻すときは、`VITE_SHARED_METER=on` でビルドします
 - `status`（`offline`・`connecting`・`ok`・`failing`）は、ファン向けの画面に出しません（発表者用の画面で使う）
 - 発表者用の画面（F-1）: `resetSharedMeter(合言葉)` が、原因ごとの結果（`ok`・`unauthorized`・`not_configured`・`timeout`・`network`・`error`）を返します。`checkApiHealth()` が、生存確認の応答時間を返します
 
@@ -98,6 +99,8 @@ const state = useImageState(id); // 'ready' | 'loading' | 'missing'。missing �
 - 新しい色を足しません。通信は `meter/` の中だけです
 
 ## 更新履歴
+
+- ひとり体験を既定にした: `meter/config.ts` に `SHARED_METER_ON`・`METER_BASE`、`meter/index.ts` に `isSoloMeter()`、エンジンに `isSolo()` を追加（`VITE_SHARED_METER=on` のときだけ、ファン向けが API を使う）。`DemoBadge` が「動作確認用のデモ画面です」を足して 2 枚並べる（`DEMO_NOTICE_TEXT` を公開）。`useSharedMeter`・`joinPerformance` の型と動きは変わらない
 
 - F-0b 第 2 の区切り: 共有メーターを実物にした（`meter/client.ts`・`engine.ts`・`config.ts`。取得の契機 4 つ・下限 1.8 秒・待ち 8 秒・遅れた応答も使う・申し込みの再送・reset の検知・古い連番の捨て）。`useSharedMeter` に `{ poll: false }`、発表者用に `resetSharedMeter`・`checkApiHealth` を追加。`public/simulator.html`（script は元のまま。ハッシュで固定）と `public/assets/logo-wide.png` を配置。`vite.config.ts` に preconnect の差し込み、ESLint に `fetch` の禁止（`meter/` の中だけ許可）、`.prettierignore` に `public/simulator.html` を追加
 

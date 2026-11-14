@@ -26,3 +26,6 @@ export const PAGE_TITLES = {
 
 /** 特典を開く 3 つの行動の札（貢献の画面）。 */
 export const GIFT_LABELS = ['申し込む', 'SNSで広める', '仲間が申し込む'] as const;
+
+/** 操作が無いまま時間がたって、初めの状態に戻したときに出す、短い表示。 */
+export const IDLE_RESET_TEXT = 'しばらく操作がなかったので、最初に戻しました';

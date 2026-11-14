@@ -5,7 +5,8 @@ import { spawnSync } from 'node:child_process';
 
 const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-const env = { ...process.env, VITE_API_BASE: 'http://127.0.0.1:4391' };
+// 共有メーターの試験なので、共有メーターありでビルドする（既定は、ファン向けが API を呼ばない「ひとり体験」）
+const env = { ...process.env, VITE_API_BASE: 'http://127.0.0.1:4391', VITE_SHARED_METER: 'on' };
 const run = (command, args) => {
   const result = spawnSync(command, args, { stdio: 'inherit', env });
   if (result.status !== 0) process.exit(result.status ?? 1);

@@ -37,6 +37,7 @@ import {
   viewOf,
 } from '../domain/view';
 import type { FanView, MeterIn } from '../domain/view';
+import { canAddDeposit } from '../domain/deposit';
 import { postedText } from '../domain/share';
 import type { ShareChannel } from '../domain/share';
 import type { SoundCue } from '../sound';
@@ -436,8 +437,14 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
         ? !!state.done.teiki
         : nextDepositTarget(state.acct.deposit) === undefined;
 
-  const runAcct = (id: AcctId, from: Page): void => {
-    if (acctDone(id)) return;
+  /**
+   * 口座と預金の行動を進める。預金は、amount（円）を渡すと、その額だけ足す（利用者が入れた額。「口座と預金」の入力欄）。
+   * 渡さないと、次に開くコースの預金までちょうど足す（次のアクションの「預金を積み増す」）。
+   * 足せない額（整数でない・1 円未満・合計が上限を超える）は、何も変えない（画面が先に理由を出して断る）。
+   */
+  const runAcct = (id: AcctId, from: Page, amount?: number): void => {
+    const added = id === 'deposit' ? amount : undefined; // 利用者が決めた額（無ければ undefined）
+    if (added !== undefined ? !canAddDeposit(added, state.acct.deposit) : acctDone(id)) return;
     clearAch();
     const v0 = view();
     const t = v0.joined ? null : v0.target;
@@ -449,11 +456,11 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
           .map((i) => i.id)
       : [];
     const wasOk = t ? canApplyOf(v0, t) : false;
-    // 状態を進める（押すたびに、次に開くコースの預金までちょうど増える。擬似）
+    // 状態を進める（利用者が決めた額を足す。額が無いときは、次に開くコースの預金までちょうど足す。擬似）
     const acct = { ...state.acct };
     if (id === 'main') acct.pay = true;
     else if (id === 'deposit') {
-      acct.deposit = nextDepositTarget(d0) ?? d0;
+      acct.deposit = added !== undefined ? d0 + added : (nextDepositTarget(d0) ?? d0);
       acct.times += 1;
     } else acct.deposit += TEIKI.monthlyYen;
     set({ acct, done: { ...state.done, [id]: true } });
@@ -471,7 +478,9 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       id === 'main'
         ? 'メイン口座にしました'
         : id === 'deposit'
-          ? `預金が ${yen(d1)}になりました`
+          ? added !== undefined
+            ? `${yen(added)}を積み増しました（預金 ${yen(d1)}）`
+            : `預金が ${yen(d1)}になりました`
           : `推し活定期をはじめました（預金 ${yen(d0)} → ${yen(d1)}）`;
     let prog = '';
     if (strong && t1) prog = `${t1.name}に申し込めます`;
@@ -480,11 +489,16 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       prog = t1
         ? `${opened.join('・')}にも申し込めます`
         : `${opened.join('・')}の条件がそろいました`;
+    // 預金の増えた額は、利用者が決めた額のときは「◯◯円を積み増しました」（detail）で言うので、ここでは重ねない
+    const gain =
+      added !== undefined ? `${yen(added)}を積み増しました` : `預金が ${yen(d1 - d0)}増えました`;
     const head = strong
       ? '条件がそろいました'
       : gotCond
         ? '条件を1つ達成！'
-        : `預金が ${yen(d1 - d0)}増えました`;
+        : added !== undefined
+          ? ''
+          : gain;
     const detail = did + (prog ? '。' + prog : '');
     const nm =
       id === 'main'
@@ -522,11 +536,11 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       showAch({
         kind: 'one',
         title: 'ナイス！',
-        small: `預金が ${yen(d1 - d0)}増えました`,
+        small: gain,
         sub: nm,
       });
     toast(detail, 3600);
-    announce(`${head}${/[！。]$/.test(head) ? '' : '。'}${detail}。`);
+    announce(`${head === '' || /[！。]$/.test(head) ? head : `${head}。`}${detail}。`);
   };
 
   /* ---------- 共有 ---------- */

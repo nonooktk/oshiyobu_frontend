@@ -249,7 +249,7 @@ export function ShareSheet({ mode, inert }: { mode: ShareMode; inert: boolean })
       role="presentation"
     >
       <div className={styles.sheet} role="dialog" aria-modal="true" aria-label={SHARE_TITLE[mode]}>
-        <h2 className={styles.shareTitle}>{SHARE_TITLE[mode]}</h2>
+        <h2>{SHARE_TITLE[mode]}</h2>
         <div
           className={styles.shareFrame}
           role="img"

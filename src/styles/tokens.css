@@ -56,9 +56,42 @@
   --font:
     'MOBO', 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
   /*
-    推し・応援の熱が出る所だけに当てる書体（Corporate Logo Rounded）。うしろは --font と同じ並び。
-    当てる場所は、src/fan/fan.module.css の 1 つの規則（一覧は docs/フォント.md）。
-    やめるときは、その規則を消す（または、ここの先頭の書体を消す）。
+    ファン向け（/fan/）の書体は、Corporate Logo Rounded Bold ver3（太さ 700 の 1 本だけ。fonts.css）。
+    ファン向けの根の要素（html）に付く data-page="fan"（src/fan/main.tsx が付ける）のときだけ、下の規則で --font をこれに差し替える。
+    事務所向け・発表者用・シミュレーターは MOBO のまま。
+    MOBO は並べない（ファン向けが MOBO を読み込まないため。body も同じ書体にするので、html に付ける）。
+    この書体に無い字（今は ✓ だけ）は、うしろの端末の書体で出す。
+    やめるときは、下の :root[data-page='fan'] の規則を消す。
   */
-  --font-display: 'Corporate Logo Rounded Bold ver3', var(--font);
+  --font-fan:
+    'Corporate Logo Rounded Bold ver3', 'Noto Sans JP', 'Hiragino Sans',
+    'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+
+  /*
+    文字の大きさの段と行間・字間（ファン向け。src/fan の CSS は、px を直接書かず、この段で使う）。
+    となり合う段の比は 1.2 倍以上。note は 12px を下回らない（tests/unit/type-scale.test.ts が検査する）。
+      hero    演出の大きい数字（80%・成立など）。演出の中の大きさは、段の外
+      figure  背の高いスマホで、メーターの「あと N 人」の数字だけ
+      title   画面のタイトル・シートの見出し・主な金額
+      lead    カードの名前・その画面の主役（メーターの「達成率」・次のアクションの題）
+      body    本文・ボタン・セリフ
+      note    説明文・注記・条件・札
+  */
+  --fs-hero: 96px;
+  --fs-figure: 40px;
+  --fs-title: 30px;
+  --fs-lead: 22px;
+  --fs-body: 16px;
+  --fs-note: 13px;
+  /* 行間: 1 行の見出し・ボタンは詰め、数行になる文は、行と行が寄らないよう広く取る */
+  --lh-tight: 1.3;
+  --lh-body: 1.6;
+  --lh-note: 1.7;
+  /* 字間: 太字の丸い書体は、字が詰まって見えるので、少し開ける（em） */
+  --ls-text: 0.03em;
+}
+
+/* ファン向けだけ、書体を差し替える（--font-fan の説明は上）。事務所向け・発表者用には data-page が付かないので、効かない */
+:root[data-page='fan'] {
+  --font: var(--font-fan);
 }

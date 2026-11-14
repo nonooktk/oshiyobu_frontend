@@ -32,6 +32,18 @@ describe('配信の設定', () => {
     expect(headersOf('/bundle/*')?.['cache-control']).toBe('public, max-age=31536000, immutable');
   });
 
+  it('書体（/fonts/*）は、1 日キャッシュする。ファイル名にハッシュが無いので、変わらない扱い（immutable）にはしない', () => {
+    const value = headersOf('/fonts/*')?.['cache-control'];
+    expect(value).toBe('public, max-age=86400');
+    expect(value).not.toContain('immutable');
+  });
+
+  it("CSP は、書体の読み込み先を、同じサイト（default-src 'self'）だけにしている（font-src で外へ広げない）", () => {
+    const csp = config.globalHeaders?.['content-security-policy'] ?? '';
+    expect(csp).toContain("default-src 'self'");
+    expect(csp).not.toContain('font-src');
+  });
+
   // HTML を毎回確かめるから、直しが必ず届く（D-40）。
   // route は、index.html の完全一致で書く。末尾に * を付けた書き方（/fan/* など）は /fan/ に一致しないため
   it.each(PAGES)('$html は、毎回確かめる（no-cache）', ({ html }) => {

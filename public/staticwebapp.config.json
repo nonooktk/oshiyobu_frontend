@@ -20,6 +20,12 @@
       }
     },
     {
+      "route": "/fonts/*",
+      "headers": {
+        "cache-control": "public, max-age=86400"
+      }
+    },
+    {
       "route": "/index.html",
       "headers": {
         "cache-control": "no-cache"

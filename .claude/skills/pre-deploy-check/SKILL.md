@@ -10,6 +10,7 @@ description: PR を出す前、または main に入れる前に使う確認。�
 - 確認の段階は 2 つある。**A: PR を出す前**（項目 1〜8）と、**B: main に入れる前**（項目 1〜8 に、項目 9〜10 を足す）。
 - コマンドは、Mac・Linux の bash 用と、Windows の PowerShell 用を並べてある。自分のシェルに合うほうを使う。
 - `.env` や `*.env` を開いて中身を読むことは、この確認でもしない。
+- **差分とログの比較先は `origin/dev`**（作業ブランチは `dev` から切り、PR は `dev` 向けのため）。比べる前に `git fetch origin` で、`origin/dev` を最新にする。PR の向き先が `dev` でないときは、その向き先のブランチに読み替える。
 
 ## 確認項目
 
@@ -19,13 +20,14 @@ description: PR を出す前、または main に入れる前に使う確認。�
 git branch --show-current
 ```
 
-`main` ではなく、作業用のブランチ名が出れば ○。
+`main` でも `dev` でもなく、作業用のブランチ名が出れば ○。
 
 ### 2. 差分が、意図したファイルだけ
 
 ```
+git fetch origin
 git status --short
-git diff --stat main...HEAD
+git diff --stat origin/dev...HEAD
 ```
 
 変えるつもりのファイルだけが並んでいれば ○。次のものが混ざっていたら ×。
@@ -42,20 +44,20 @@ git diff --stat main...HEAD
 bash:
 
 ```
-git diff main...HEAD | grep -n -i -E "api[_-]?key|secret|token|passw|private key|ghp_|github_pat_|sk-|AKIA|[A-Za-z0-9._-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"
+git diff origin/dev...HEAD | grep -n -i -E "api[_-]?key|secret|token|passw|private key|ghp_|github_pat_|sk-|AKIA|[A-Za-z0-9._-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"
 ```
 
 PowerShell:
 
 ```
-git diff main...HEAD | Select-String -Pattern 'api[_-]?key|secret|token|passw|private key|ghp_|github_pat_|sk-|AKIA|[A-Za-z0-9._-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
+git diff origin/dev...HEAD | Select-String -Pattern 'api[_-]?key|secret|token|passw|private key|ghp_|github_pat_|sk-|AKIA|[A-Za-z0-9._-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
 ```
 
 - 何も出なければ ○。出たら、1 件ずつ中身を確かめる。本物の値や個人のメールアドレスなら ×。画面の文言やコード上の変数名で、秘匿値ではないと言い切れるものは、○にしてよい（理由を表に書く）。
 - あわせて、commit の作者のメールアドレスを確かめる。
 
 ```
-git log main..HEAD --format="%h %an <%ae>"
+git log origin/dev..HEAD --format="%h %an <%ae>"
 ```
 
 `@users.noreply.github.com` で終わっていれば ○。個人のメールアドレスが出たら ×（直し方は `docs/はじめに.md` の「作者の名前とメールアドレスを決める」）。
@@ -76,13 +78,13 @@ git grep -n -E "新しい口座を開く|口座開設|確約" -- . ':!CLAUDE.md'
 git grep -n "デモ用の架空データ"
 ```
 
-- 表示のある箇所が出て、main と比べて**減っていなければ** ○。減っていたら ×。
+- 表示のある箇所が出て、`origin/dev` と比べて**減っていなければ** ○。減っていたら ×。
 - あわせて、ローカルで**全画面**を開き、どの画面にも表示が出ていることを、目で確かめる。画面を足した場合は、足した画面にも出ていること。
 
-main との比較（箇所の数）:
+`origin/dev` との比較（箇所の数）:
 
 ```
-git grep -c "デモ用の架空データ" main
+git grep -c "デモ用の架空データ" origin/dev
 git grep -c "デモ用の架空データ"
 ```
 

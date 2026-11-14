@@ -11,6 +11,11 @@
       "Bash(git push * main *)",
       "Bash(git push *:main)",
       "Bash(git push *:main *)",
+      "Bash(git push * dev)",
+      "Bash(git push * dev *)",
+      "Bash(git push *:dev)",
+      "Bash(git push *:dev *)",
+      "Bash(git push *:refs/heads/dev*)",
       "Bash(git push *:refs/heads/main*)",
       "Bash(git push *--force*)",
       "Bash(git push -f*)",
@@ -30,6 +35,10 @@
       "Bash(gh pr merge *)",
       "Bash(gh api *)",
       "Bash(gh workflow run *)",
+      "Bash(gh secret *)",
+      "Bash(gh variable *)",
+      "Bash(gh -R *)",
+      "Bash(gh --repo *)",
       "Bash(gh release *)",
       "Bash(az *)",
       "Bash(azd *)",
@@ -38,6 +47,8 @@
       "Bash(npx @azure/static-web-apps-cli *)",
       "Bash(vercel *)",
       "Bash(netlify *)",
+      "Bash(npm run core:sync *)",
+      "Bash(node scripts/core-sync.mjs *)",
       "PowerShell(git -C *)",
       "PowerShell(git -c *)",
       "PowerShell(git push)",
@@ -47,6 +58,11 @@
       "PowerShell(git push * main *)",
       "PowerShell(git push *:main)",
       "PowerShell(git push *:main *)",
+      "PowerShell(git push * dev)",
+      "PowerShell(git push * dev *)",
+      "PowerShell(git push *:dev)",
+      "PowerShell(git push *:dev *)",
+      "PowerShell(git push *:refs/heads/dev*)",
       "PowerShell(git push *:refs/heads/main*)",
       "PowerShell(git push *--force*)",
       "PowerShell(git push -f*)",
@@ -66,6 +82,10 @@
       "PowerShell(gh pr merge *)",
       "PowerShell(gh api *)",
       "PowerShell(gh workflow run *)",
+      "PowerShell(gh secret *)",
+      "PowerShell(gh variable *)",
+      "PowerShell(gh -R *)",
+      "PowerShell(gh --repo *)",
       "PowerShell(gh release *)",
       "PowerShell(az *)",
       "PowerShell(azd *)",
@@ -74,6 +94,17 @@
       "PowerShell(npx @azure/static-web-apps-cli *)",
       "PowerShell(vercel *)",
       "PowerShell(netlify *)",
+      "PowerShell(npm run core:sync *)",
+      "PowerShell(node scripts/core-sync.mjs *)",
+      "Edit(/src/core/**)",
+      "Edit(/core.lock.json)",
+      "Edit(/.github/**)",
+      "Edit(/public/staticwebapp.config.json)",
+      "Edit(/docs/守ること.md)",
+      "Edit(/tests/guard/**)",
+      "Edit(/.claude/settings.json)",
+      "Edit(/.claude/settings.local.json)",
+      "Edit(/scripts/claude-brief.mjs)",
       "Read(.env)",
       "Read(.env.*)",
       "Read(*.env)",
@@ -81,6 +112,26 @@
       "Read(~/.ssh/**)",
       "Read(~/.azure/**)",
       "Read(~/.config/gh/**)"
+    ],
+    "ask": [
+      "Edit(/tests/unit/**)",
+      "Edit(/tests/integration/**)",
+      "Edit(/tests/helpers/**)",
+      "Edit(/e2e/**)",
+      "Edit(/e2e-solo/**)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/scripts/claude-brief.mjs\"",
+            "timeout": 10
+          }
+        ]
+      }
     ]
   }
 }

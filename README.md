@@ -17,6 +17,7 @@ backend には、共有メーターの小さな API があります。預かる�
 
 - 初めて触る人は、[docs/はじめに.md](docs/はじめに.md) の手順に沿って、道具の導入から Claude Code の起動まで進めてください（Mac と Windows の両方に対応しています）。
 - 作業の決まりは [CLAUDE.md](CLAUDE.md) にあります。Claude Code はこのファイルを自動で読みます。
+- 守ること（見た目は自由に、体験の流れと backend との通信は壊さない、という番号つきの決まり）は [docs/守ること.md](docs/守ること.md) にあります。Claude Code は、作業を始めるたびに、その要点を読みます。
 - 本番に反映するまでの流れは [docs/デプロイ手順.md](docs/デプロイ手順.md) にあります。
 - 変更を渡す前の検収（手元の検査と、画面が API と通信できていることの確認）は [docs/検収.md](docs/検収.md) にあります。
 - 書体と文字の大きさの決まりは [docs/フォント.md](docs/フォント.md) にあります。
@@ -65,13 +66,14 @@ PR を出す前に、`npm ci` のあと `npm run verify` が、エラーなし�
 ├── e2e/                          実ブラウザの試験（Playwright。任意）
 ├── scripts/                      core:sync・core:check・絵の変換・量と CSP の検査・配備後の確認・検収のスクリプト
 ├── docs/
+│   ├── 守ること.md               番号つきの決まり（体験の流れと通信を守る。管理者が管理）
 │   ├── はじめに.md               導入から初回の起動まで
 │   ├── デプロイ手順.md           本番に反映するまでの流れと、戻し方
 │   ├── フォント.md               書体・文字の大きさの決まり、字を足したときの手順
 │   ├── 検収.md                   検収（verify・check:api・check:live・accept）の使い方
 │   └── munderを使う場合.md       任意の付録
 ├── .claude/
-│   ├── settings.json             Claude Code に許さない操作の設定
+│   ├── settings.json             Claude Code に許さない操作と、作業の始めに要点を出す設定
 │   └── skills/
 │       ├── start-task/           作業のはじめ方（/start-task）
 │       ├── pre-deploy-check/     PR を出す前・main に入れる前の確認（/pre-deploy-check）

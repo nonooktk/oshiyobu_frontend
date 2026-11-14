@@ -24,7 +24,7 @@ export type Page =
   | 'opt'
   | 'priv';
 
-export type ShareMode = 'friend' | 'share' | 'notice';
+export type ShareMode = 'friend' | 'share';
 
 /** 端末の中の、ファン向けの進み（SP「端末の中の状態」）。 */
 export type Fan = {

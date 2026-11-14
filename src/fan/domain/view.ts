@@ -189,6 +189,10 @@ export type NextHead =
   | { kind: 'going'; heat: Heat };
 export type NextView = { head: NextHead; rows: NextRow[]; hint: string };
 
+/** 申し込んだあとの熱量（数字は出さず、段階で伝える）。申し込むボタンの 2 行目に使う。 */
+const heatAfterJoin = (v: FanView): Heat =>
+  heatOf({ supporters: v.status.supporters + 1, established: false }, v.cond.min);
+
 /** 次のアクション（SP-42）。いまできる行動の一覧と、ホームの 2 行目に出す 1 行。 */
 export function nextViewOf(v: FanView): NextView {
   const { fan, cond, status } = v;
@@ -201,8 +205,7 @@ export function nextViewOf(v: FanView): NextView {
     const ok = canApplyOf(v, t);
     const needMain = t.mainAccount && !p;
     const to = nextDepositTarget(d);
-    // 申し込んだあとの熱量（数字は出さず、段階の名前で伝える）
-    const after = heatOf({ supporters: status.supporters + 1, established: false }, cond.min);
+    const after = heatAfterJoin(v);
     const afterJoin = after.stage > v.heat.stage ? `${after.name}へ進みます` : '熱が高まります';
     if (ok) {
       rows.push({
@@ -322,7 +325,7 @@ export function homeActionOf(v: FanView): HomeAction {
   const id = first?.id ?? 'deposit';
   switch (id) {
     case 'apply': {
-      const after = heatOf({ supporters: v.status.supporters + 1, established: false }, v.cond.min);
+      const after = heatAfterJoin(v);
       const up = after.stage > v.heat.stage;
       return {
         id,

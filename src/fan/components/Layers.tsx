@@ -282,7 +282,6 @@ export function ThanksLayer({ inert }: { inert: boolean }) {
 
 const SHARE_TITLE: Record<ShareMode, string> = {
   share: 'SNSに投稿する',
-  notice: '仲間に知らせる',
   friend: '仲間を呼ぶ',
 };
 

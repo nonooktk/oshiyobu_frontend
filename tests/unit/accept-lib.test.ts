@@ -114,6 +114,10 @@ describe('落ちたときの案内', () => {
     ['live.page.fan', 'fail'],
     ['live.page.presenter', 'fail'],
     ['live.meter', 'fail'],
+    ['live.fan.solo', 'fail'],
+    ['live.presenter.health', 'fail'],
+    ['live.solo', 'fail'],
+    ['live.solo', 'skip'],
   ];
 
   it.each(ids)('%s（%s）に、案内がある', (id, status) => {

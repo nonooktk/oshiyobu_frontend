@@ -166,3 +166,97 @@ export function judgeLiveMeter({ responses, pageOrigin, apiOrigin = '', failures
   }
   return { ok: true, detail: `取得 ${responses.length} 回・すべて 200・CORS で許されている` };
 }
+
+// ---------------------------------------------------------------------------
+// 既定の「ひとり体験」（共有メーターではない）の確かめ方。
+// ファン向け（/fan/）は、既定では API を呼ばない。発表者用（/presenter/）の「接続の確認」だけが、/healthz を呼ぶ
+// ---------------------------------------------------------------------------
+/** 画面が出した通信が、API への通信か。API の接続先（origin）と同じ origin か、画面とは別の origin への /api/v1/・/healthz */
+export function isApiRequestUrl(url, { apiOrigin = '', pageOrigin = '' } = {}) {
+  let parsed;
+  try {
+    parsed = new URL(String(url));
+  } catch {
+    return false;
+  }
+  if (apiOrigin !== '' && parsed.origin === apiOrigin) return true;
+  return parsed.origin !== pageOrigin && /^\/(api\/v1\/|healthz$)/.test(parsed.pathname);
+}
+
+/** 接続の確認（GET /healthz）の URL か */
+export function isHealthUrl(url) {
+  try {
+    return new URL(String(url)).pathname === '/healthz';
+  } catch {
+    return false;
+  }
+}
+
+/** ひとり体験のファン向け: API への通信が 0 件であること（apiRequests: [{ method, path }]。URL は持たない） */
+export function judgeSoloFan({ apiRequests }) {
+  if (apiRequests.length === 0) {
+    return { ok: true, detail: 'API への通信が 0 件（ひとり体験の決まりどおり）' };
+  }
+  const first = apiRequests[0];
+  return {
+    ok: false,
+    detail: `API への通信が ${apiRequests.length} 件ありました（先頭: ${first.method} ${first.path}）。ひとり体験では 0 件のはずです`,
+  };
+}
+
+/**
+ * 発表者用の「接続の確認」: ボタンを押すと、GET /healthz が出て 200 が返り、応答が CORS で許され、
+ * 画面に応答の時間（shownMs。出ていなければ null）が出ること。
+ * responses: [{ status, allowOrigin, origin }]。failures は、通信そのものが失敗した理由
+ */
+export function judgePresenterHealth({
+  responses,
+  failures = [],
+  shownMs,
+  pageOrigin,
+  apiOrigin = '',
+}) {
+  if (responses.length === 0) {
+    return failures.length > 0
+      ? { ok: false, detail: `接続の確認の通信が失敗しました（${failures[0]}）` }
+      : {
+          ok: false,
+          detail:
+            '接続の確認の通信（GET /healthz）が出ていません（ビルドに API の接続先が入っていない？）',
+        };
+  }
+  if (apiOrigin !== '' && !responses.some((r) => r.origin === apiOrigin)) {
+    return {
+      ok: false,
+      detail:
+        '通信が、指定した API の接続先に出ていません（ビルドに入った VITE_API_BASE が違う？）',
+    };
+  }
+  const bad = responses.find((r) => r.status !== 200);
+  if (bad) return { ok: false, detail: `/healthz に、状態 ${bad.status} が返りました` };
+  const noCors = responses.find((r) => r.allowOrigin !== pageOrigin && r.allowOrigin !== '*');
+  if (noCors) {
+    return {
+      ok: false,
+      detail: '応答に、画面の接続元を許す Access-Control-Allow-Origin がありません',
+    };
+  }
+  if (typeof shownMs !== 'number') {
+    return { ok: false, detail: '/healthz は 200 でしたが、画面に応答の時間が出ていません' };
+  }
+  return { ok: true, detail: `/healthz が 200・CORS で許され、画面に「応答 ${shownMs} ms」が出た` };
+}
+
+/**
+ * 画面の文から、「応答 N ms」の N を読む。prefix・suffix は、結果の文（src/presenter/text/page.ts の healthOk）の、
+ * N の前後の文字。見つからない・整数でないときは null
+ */
+export function parseShownMs(text, prefix, suffix) {
+  const start = String(text).indexOf(prefix);
+  if (start < 0) return null;
+  const rest = String(text).slice(start + prefix.length);
+  const end = rest.indexOf(suffix);
+  if (end < 0) return null;
+  const digits = rest.slice(0, end);
+  return /^\d+$/.test(digits) ? Number(digits) : null;
+}

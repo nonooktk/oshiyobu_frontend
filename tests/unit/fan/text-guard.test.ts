@@ -80,26 +80,29 @@ describe('推しのセリフ（SP-30・決定 26）', () => {
     }
   });
 
-  it('使わない語を含まない。あと N 人と市の名前が差し込まれる', () => {
+  it('使わない語を含まない。人数・割合の数字を言わない。市の名前が差し込まれる', () => {
     for (const id of ARTIST_IDS) {
       const v = VOICES[id];
       const lines = [
-        ...Object.values(v.home).flatMap((f) => f(18, '久留米市')),
+        ...([1, 2, 3, 4, 5] as const).flatMap((stage) =>
+          Object.values(v.home).flatMap((f) => f(stage, '久留米市')),
+        ),
         v.say.join('久留米市'),
         v.say.share(),
         v.say.friend(),
         v.say.quit(),
         v.say.gift('特典 1/3'),
       ];
-      for (const line of lines)
+      for (const line of lines) {
         for (const w of FORBIDDEN) expect(line.includes(w), `${id}: ${line}`).toBe(false);
+        expect(line, `${id}: ${line}`).not.toMatch(/\d+人|\d+%|あと\d|達成率|最低人数/);
+      }
     }
-    expect(VOICES.tech0.home.pre(18, '久留米市').join('')).toContain('あと18人');
-    expect(VOICES.tech0.home.pre(18, '久留米市').join('')).toContain('久留米市');
+    expect(VOICES.tech0.home.pre(1, '久留米市').join('')).toContain('久留米市');
   });
 
   it('りじちょーの口調は「あれっす！」で始まり、語尾は「っす！」。ホームの 1 つのセリフは、折り返しの区切りごとに持つ', () => {
-    const lines = VOICES.riji.home.post(18, '久留米市');
+    const lines = VOICES.riji.home.post(4, '久留米市');
     expect(lines[0]).toBe('あれっす！');
     expect(lines.length).toBeGreaterThan(1);
     expect(VOICES.tech0.who).toBe('カマヤーン');

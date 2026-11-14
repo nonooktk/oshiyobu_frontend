@@ -2,6 +2,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { PREFETCH_IMAGES, PREFETCH_PLAN } from '../../../src/fan/art/registry';
 import { loadLayersChunk, loadPagesChunk } from '../../../src/fan/prefetch';
+import { getAppStore } from '../../../src/fan/store/FanProvider';
 import { App } from '../../../src/fan/App';
 import { STORAGE_KEYS } from '../../../src/shared/device';
 import { configurePrefetch } from '../../../src/shared/prefetch';
@@ -105,7 +106,7 @@ describe('推しの口調（A-42）', () => {
     [4, 'tech0', /カマヤーン[\s\S]*申し込みありがとう/],
     [10, 'krs48', /えへへ/],
     [12, 'riji', /あれっす！ありがとうっす！/],
-    [14, 'terao', /君を/],
+    [14, 'terao', /胸が高鳴ります/],
     [15, 'heisei', /サンキュー/],
   ];
   it.each(MARK)('?p=%i（%s）は、組ごとの口調でホームのコメントを出す', (no, _id, re) => {
@@ -129,7 +130,8 @@ describe('推しの口調（A-42）', () => {
     fireEvent.click(seat as HTMLElement);
     click('このコースを目指して始める');
     const before = bubbleText();
-    expect(before).toContain('あと19人');
+    expect(before).toContain('だいぶ熱くなってきたね。'); // 申し込む前（熱量はヒートアップ）。人数は言わない
+    expect(before).not.toMatch(/\d+人/);
     click(/^次のアクション/);
     for (const label of [/^メイン口座にする/, /^預金を積み増す/])
       fireEvent.click(screen.getByRole('button', { name: label }));
@@ -218,11 +220,12 @@ describe('共有（A-29〜A-32・I-29）', () => {
     return screen.getByRole('textbox') as HTMLTextAreaElement;
   }
 
-  it('投稿文に、推しの名前・市・達成率・あと N 人が入り、URL（仮の公開 URL を含む）と個人の情報は入らない', async () => {
+  it('投稿文に、推しの名前・市・開催熱量と距離のことばが入り（人数・達成率は入らない）、URL（仮の公開 URL を含む）と個人の情報は入らない', async () => {
     const box = await toShare();
     expect(box.value).toBe(
-      'Tech0サステナアイドルを久留米市に呼びたい！ いま80%まで来ています。ライブ開催まであと18人です。いっしょに応援してください！ #OSHIYOBU',
+      'Tech0サステナアイドルを久留米市に呼びたい！ いま開催熱量は「FEVER 目前」です。開催まで、あと一歩です。いっしょに応援してください！ #OSHIYOBU',
     );
+    expect(box.value).not.toMatch(/\d+人|\d+%|達成率|最低人数/);
     expect(box.value).not.toMatch(/https?:|example\.test|\?p=|90,000|預金|口座/);
   });
 
@@ -443,7 +446,8 @@ describe('遅れて読む画面と、受け皿（I-119・I-121・I-103）', () =
     await closeGiftAfterFx();
     cleanup();
     render(<App />); // 作り直し（再読み込みではない）
-    expect(screen.getByRole('img', { name: /^支援者75人/ })).toBeTruthy();
+    expect(getAppStore().view().status.supporters).toBe(75); // 内部の人数は、ストアの状態で確かめる
+    expect(screen.getByRole('img', { name: /^開催熱量。FEVER 目前/ })).toBeTruthy();
   });
 
   it('操作のあとの localStorage のキーは、端末の番号だけ（I-103）。「情報の扱い」の一覧も、同じ数のキーから作る', async () => {
@@ -477,7 +481,7 @@ describe('メーターに金額を出さない（A-69・SP-56）', () => {
     mountFan('?p=4');
     passStart();
     await closeGiftAfterFx();
-    const gauge = screen.getByRole('img', { name: /^支援者\d+人、最低人数/ });
+    const gauge = screen.getByRole('img', { name: /^開催熱量。/ });
     expect(`${gauge.getAttribute('aria-label')}${gauge.textContent}`).not.toMatch(/[円万]/);
     click(/^次のアクション/);
     click(/^SNSで広める/);
@@ -489,7 +493,7 @@ describe('メーターに金額を出さない（A-69・SP-56）', () => {
     await settle();
     click(/^貢献/);
     await settle();
-    const card = screen.getByText('全体の達成率と、成立までの不足').closest('div') as HTMLElement;
+    const card = screen.getByText('みんなの開催熱量').closest('div') as HTMLElement;
     expect(card.textContent).not.toMatch(/[円万]/);
   });
 });

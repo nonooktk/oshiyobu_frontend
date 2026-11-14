@@ -41,9 +41,9 @@ describe('基準の流れ（人物 4・tech0・久留米市・Cボックス）',
     const top = h.state().layers[0];
     expect(top).toMatchObject({
       kind: 'fx',
-      fx: { title: '80%', small: '突破！', sub: 'ライブ開催まで あと18人' },
+      fx: { title: 'FEVER 目前！', small: 'あなたの一歩で、', sub: 'FEVER 目前まで来ました' },
     });
-    // 特典の演出は重ねず、80% の演出の下の枠で伝える
+    // 特典の演出は重ねず、FEVER 目前の演出の下の枠で伝える
     expect(top && top.kind === 'fx' && top.fx.say).toContain('特典 1/3');
     vi.advanceTimersByTime(2500 + 10);
     expect(layerKinds(h)).toEqual(['gift']);
@@ -141,12 +141,13 @@ describe('共有（X・Instagram・Facebook は、外のサイトを開かず・
     expect(h.state().gifts).toEqual([true, true, false]);
   });
 
-  it('投稿文に、推しの名前・市・達成率・あと N 人が入り、人物の番号・預金額・口座・URL は入らない', () => {
+  it('投稿文に、推しの名前・市・開催熱量と距離のことばが入り（人数・達成率は入らない）、人物の番号・預金額・口座・URL は入らない', () => {
     const h = toShareSheet();
     const text = buildPostText(h.view());
     expect(text).toContain(
-      'Tech0サステナアイドルを久留米市に呼びたい！ いま80%まで来ています。ライブ開催まであと18人です。',
+      'Tech0サステナアイドルを久留米市に呼びたい！ いま開催熱量は「FEVER 目前」です。開催まで、あと一歩です。',
     );
+    expect(text).not.toMatch(/\d+人|\d+%|達成率|最低人数/);
     expect(text).not.toMatch(/p=\d|90,?000|預金|口座/);
     // 仮の URL を、班のメンバーに見せない。URL は文に入れず、ハッシュタグで終わる
     expect(text).not.toMatch(/https?:|example\.test|\/fan\//);
@@ -216,7 +217,7 @@ describe('サーバーの件数と 80% の判定（I-123）', () => {
     const h = harness(4);
     passStart(h);
     vi.advanceTimersByTime(700);
-    expect(h.state().layers[0]).toMatchObject({ kind: 'fx', fx: { title: '80%' } });
+    expect(h.state().layers[0]).toMatchObject({ kind: 'fx', fx: { title: 'FEVER 目前！' } });
   });
 
   it('演出の時点で取れた人数で判定する。判定のあとに届いた応答では、出した演出を取り消さない', () => {

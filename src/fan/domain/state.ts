@@ -151,10 +151,9 @@ export type CarrySnap = {
   pay: boolean;
   held: number;
   seatPrice: number;
-  supporters: number;
-  pct: number;
+  /** 引き継いだときの熱量の段階の名前（数字は持たない）。 */
+  heatName: string;
   venueName: string;
-  min: number;
 };
 
 /** 人物（番号）の初めの値でファン向けを作る。 */

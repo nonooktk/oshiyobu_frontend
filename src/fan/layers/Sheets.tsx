@@ -1,8 +1,8 @@
 // あとから読む層の中身（設計 D-40 の fan-layers）: 申し込みをやめる確認（SP-51）と、引き継ぎ（SP-25）。
 // 枠（背景・見出し・閉じる）は、読み込み前から出ている（components/SheetShell）。
 import { useEffect, useRef } from 'react';
-import { achievementPct } from '../../core';
 import { ACT_IDS } from '../domain/state';
+import { heatOf } from '../domain/heat';
 import { ACT_NAMES } from '../text/ui';
 import { yen } from '../text/format';
 import fan from '../fan.module.css';
@@ -18,8 +18,10 @@ export function CancelBody() {
     no.current?.focus({ preventScroll: true });
   }, []);
   const held = my?.price ?? 0;
-  const n = status.supporters;
-  const after = achievementPct(n - (view.joined ? 1 : 0), cond.min);
+  // やめたあとの熱量（数字は出さず、段階の名前で伝える）
+  const after = view.joined
+    ? heatOf({ supporters: status.supporters - 1, established: false }, cond.min)
+    : view.heat;
   return (
     <>
       <p className={pages.plain} style={{ margin: 0 }}>
@@ -29,9 +31,6 @@ export function CancelBody() {
             ? '成立したあとの取り消しは、今後の対応範囲です。'
             : '成立前なので、確保しているお金は解除されます。負担は0円になります。'}
       </p>
-      <div className={fan.barH} role="img" aria-label={`達成率 ${status.pct}%。支援者 ${n}人`}>
-        <i style={{ width: `${status.fill.toFixed(1)}%` }} />
-      </div>
       <p className={pages.subH}>戻る金額</p>
       <dl className={pages.facts}>
         <dt>確保額</dt>
@@ -43,13 +42,9 @@ export function CancelBody() {
         <dd className={fan.num}>{yen(held)}（確保を解除）</dd>
         <dt>負担</dt>
         <dd className={fan.num}>0円</dd>
-        <dt>支援者</dt>
-        <dd className={fan.num}>
-          {n}人 → {view.joined ? n - 1 : n}人
-        </dd>
-        <dt>達成率</dt>
-        <dd className={fan.num}>
-          {status.pct}% → {view.joined ? after : status.pct}%
+        <dt>開催熱量</dt>
+        <dd>
+          {view.heat.name} → {after.name}
         </dd>
       </dl>
       <p className={pages.subH}>残るもの</p>
@@ -60,8 +55,8 @@ export function CancelBody() {
         <dd>
           {view.doneCount} / {ACT_IDS.length}
         </dd>
-        <dt>呼んだ仲間の数</dt>
-        <dd>{state.called}人</dd>
+        <dt>仲間を呼んだか</dt>
+        <dd>{state.called > 0 ? '呼びました' : 'まだです'}</dd>
       </dl>
       <div className={fan.sheetBtns}>
         <button
@@ -112,8 +107,8 @@ export function CarryBody() {
           {c.doneCount} / {ACT_IDS.length}（
           {c.doneNames.map((id) => ACT_NAMES[id]).join('・') || 'なし'}）
         </dd>
-        <dt>呼んだ仲間の数</dt>
-        <dd>{c.called}人</dd>
+        <dt>仲間を呼んだか</dt>
+        <dd>{c.called > 0 ? '呼びました' : 'まだです'}</dd>
         <dt>口座の設定（擬似）</dt>
         <dd>
           預金 {yen(c.deposit)}・メイン口座 {c.pay ? 'はい' : 'いいえ'}
@@ -125,9 +120,9 @@ export function CarryBody() {
         <dd>
           {yen(c.held)} → 0円（申し込み直すと、新しい条件の{yen(c.seatPrice)}で取り直します）
         </dd>
-        <dt>公演のメーター</dt>
+        <dt>公演の開催熱量</dt>
         <dd>
-          支援者 {c.supporters}人・達成率 {c.pct}%から（{c.venueName}。最低人数は {c.min}人）
+          「{c.heatName}」から（{c.venueName}）
         </dd>
       </dl>
       <div className={fan.sheetBtns}>

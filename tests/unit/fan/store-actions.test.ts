@@ -155,7 +155,7 @@ describe('次のアクション（SP-42）', () => {
     const h = harness(4);
     passStart(h);
     expect(nextViewOf(h.view()).rows.map((r) => r.id)).toEqual(['friend', 'share']);
-    expect(nextViewOf(h.view()).rows[0]?.hint).toBe('仲間を呼ぶと、あと18人が17人に');
+    expect(nextViewOf(h.view()).rows[0]?.hint).toBe('仲間を呼ぶと、熱が高まります'); // 人数は言わない
     const h2 = harness(4, { server: 19 });
     passStart(h2);
     expect(nextViewOf(h2.view()).rows.map((r) => r.id)).toEqual(['notice']);

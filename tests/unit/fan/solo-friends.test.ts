@@ -57,9 +57,9 @@ describe('基準の公演（人物 4）で、申し込む → 仲間を呼ぶ', 
     expect(layerKinds(h)).toEqual([]);
     vi.advanceTimersByTime(700);
     expect(topFx(h)).toMatchObject({
-      title: '100%',
-      small: '成立！',
-      sub: 'ライブの開催が決まりました',
+      title: 'FEVER！',
+      small: '仲間を呼んでくれてありがとう',
+      sub: 'あなたの声が届いて、開催が決まりました',
     });
     vi.advanceTimersByTime(2500 + 10);
     expect(topFx(h)).toMatchObject({ title: 'ごほうび', small: '特典 2/3 が開いた！' });
@@ -73,7 +73,7 @@ describe('基準の公演（人物 4）で、申し込む → 仲間を呼ぶ', 
     applied(h);
     callFriends(h);
     vi.advanceTimersByTime(5);
-    expect(topFx(h)).toMatchObject({ small: '成立！' });
+    expect(topFx(h)).toMatchObject({ title: 'FEVER！' });
   });
 
   it('成立のあとに、もう一度仲間を呼んでも、人数は増えず、演出も出ない（落ちない）', () => {

@@ -94,20 +94,13 @@ export function NextAction() {
             <p className={`${styles.nxV} ${styles.nxVsm}`}>ライブの開催が決まりました</p>
             <p className={styles.nxSub}>仲間に、開催が決まったことを知らせましょう</p>
           </>
-        ) : h.kind === 'gat' ? (
-          <>
-            <p className={`${styles.nxV} ${styles.nxVsm}`}>人数は集まりました</p>
-            <p className={styles.nxSub}>あと少しの支援で、開催が決まります</p>
-            <div className={styles.barH} role="img" aria-label={`達成率 ${h.pct}%`}>
-              <i style={{ width: `${h.fill.toFixed(1)}%` }} />
-            </div>
-          </>
         ) : (
           <>
-            <p className={styles.nxK}>ライブ開催まで</p>
-            <p className={styles.nxV}>あと {h.left}人</p>
-            <div className={styles.barH} role="img" aria-label={`達成率 ${h.pct}%`}>
-              <i style={{ width: `${h.fill.toFixed(1)}%` }} />
+            <p className={styles.nxK}>開催熱量</p>
+            <p className={`${styles.nxV} ${styles.nxVsm}`}>{h.heat.name}</p>
+            <p className={styles.nxSub}>{h.heat.distance}</p>
+            <div className={styles.barH} role="img" aria-label={`開催熱量。${h.heat.name}`}>
+              <i style={{ '--g': Math.max(h.heat.fill, 0.02) } as CSSProperties} />
             </div>
           </>
         )}

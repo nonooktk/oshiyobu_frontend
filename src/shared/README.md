@@ -11,8 +11,7 @@
 | --- | --- | --- | --- |
 | 端末の番号 | `device.ts` | 実物 | `getDeviceId()`。localStorage の `oshiyobu.v1.device` に 1 つだけ残る。使えなければメモリの番号 |
 | 人物 | `persona.ts` | 実物 | `getPersona()` が、`?p=1〜15` か端末の番号から人物を返す。`getPersonaPerformance(persona)` で、初めの公演 ID と会場 |
-| 同じ端末の連動 | `link.ts` | 実物 | 下の「連動」 |
-| いま出す条件 | `condition.ts` | 実物 | `useEffectiveCondition(venueId)`。いま出している会場の条件。事務所向けの選択は、同じ会場のときだけ反映（決定 14） |
+| 同じ端末の連動 | `link.ts` | 実物 | 下の「連動」。伝えるのは「デモを最初に戻す」だけ |
 | 共有メーター | `meter/index.ts` | 実物（接続先が未設定なら、サーバーなしで動く） | 下の「共有メーター」 |
 | 先読み・遅れて読む画面 | `prefetch.tsx` | 実物（試験の途中） | 下の「先読み」 |
 | ルートの受け皿 | `mount.tsx` | 実物 | `mountPage` が `ErrorBoundary` で包む。各ページは何もしなくてよい |
@@ -23,17 +22,15 @@ core（計算とデータ）は `src/core/`（backend の写し。手で直さ�
 ### 連動（`link.ts`。設計 D-44）
 
 ```ts
-// 事務所向け: 選択が変わるたびに呼ぶ（100 ms でまとめて送る）。起動直後にも 1 回呼ぶ
-publishOffice({ venueId, costs, minPeople }); // minPeople は手で決めていなければ null
-broadcastResetAll(); // 「デモを最初に戻す」
+// 事務所向け:「デモを最初に戻す」
+broadcastResetAll();
 
 // ファン向け
-const linked = useLinkedOffice(); // { selection, receivedAt } か null。届くたびに描き直す
 useEffect(() => onResetAll(resetFan), []); // resetFan は F-2 が作る（人物の初期値に戻す）。共有メーターには触らない
 ```
 
-- 開く順は、事務所向け（`/`）が先、ファン向け（`/fan/`）があと。ファン向けが起動時に hello を送り、事務所向けが選択を返します
-- 起動直後に先に描くのは人物の値です。連動の返事が 300 ms 以内に来て（`receivedAt` と起動時刻の差で判断）、まだ選び直していなければ、初めの値（市）を取り替えます（F-2 が行う）
+- **伝えるのは「デモを最初に戻す」（resetAll）だけです。** 事務所向けで選んだ会場・費用・最低人数は、ファン向けへ伝えません。ファン向けは、core の既定の条件（久留米市・既定の会場）だけを使います（`store/FanProvider.tsx` が `conditionOf` で作る）。事務所向けの作り直しで、ファン向けの「申し込む → 仲間を呼ぶ で必ず成立に届く」決まり（G-02）が崩れないようにするためです（統括の決定 2026-11-14）。昔の版が送っていた選択（`office`）・`hello` のメッセージが届いても、読まずに捨てます
+- 事務所向けの画面の中の動き（判定・提案の 1 枚・シミュレーターへの入口）は、この連動と関係なく、事務所向けの中だけで動きます
 - BroadcastChannel が使えなくても、エラーにしません（連動しないだけ）
 
 ### 共有メーター（`meter/index.ts`。設計 D-17・D-18・D-41）

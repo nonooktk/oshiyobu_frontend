@@ -13,12 +13,9 @@ export const postedText = (ch: ShareChannel): string =>
   `${SHARE_NAMES[ch]}に投稿しました（デモ・未投稿）`;
 
 export function buildPostText(v: FanView): string {
-  const s = v.status;
-  const tail = s.established
+  const tail = v.status.established
     ? 'ライブの開催が決まりました！'
-    : s.gathered
-      ? '人数は集まりました。あと少しで開催が決まります。'
-      : `ライブ開催まであと${s.left}人です。`;
+    : `開催まで、${v.heat.distance}です。`;
   const name = artistView(v.fan.oshiId).name;
-  return `${name}を${v.cond.city}に呼びたい！ いま${s.pct}%まで来ています。${tail}いっしょに応援してください！ #OSHIYOBU`;
+  return `${name}を${v.cond.city}に呼びたい！ いま開催熱量は「${v.heat.name}」です。${tail}いっしょに応援してください！ #OSHIYOBU`;
 }

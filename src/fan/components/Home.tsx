@@ -18,7 +18,7 @@ export function Home() {
   const voice = VOICES[o.id];
   const next = nextViewOf(view);
   const key = homeKeyOf(view);
-  const lines = voice.home[key](view.status.left, view.cond.city);
+  const lines = voice.home[key](view.heat.stage, view.cond.city);
   const src = o.art.imgs ? (o.art.imgs[Math.max(0, state.homeIdx)] ?? o.art.imgs[0]) : o.art.img;
   const nextBtn = useRef<HTMLButtonElement>(null);
   // ホームに着いたら、「次のアクション」にフォーカスを置く

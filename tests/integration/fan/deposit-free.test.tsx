@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { setMeterEngineForTest } from '../../../src/shared/meter';
 import { createMeterEngine } from '../../../src/shared/meter/engine';
 import { DEPOSIT_MAX } from '../../../src/fan/domain/deposit';
+import { getAppStore } from '../../../src/fan/store/FanProvider';
 import { act, click, fireEvent, mountFan, screen, setupFanTest, tick, within } from './helpers';
 
 setupFanTest();
@@ -112,8 +113,9 @@ describe('足す → 預金の額と、コースの条件が、その場で変�
     await settle();
     const card = document.getElementById('course-normal') as HTMLElement;
     fireEvent.click(within(card).getByRole('button', { name: '申し込む' }));
-    // 申し込めて、ホームに戻り、支援者が 74 人から 75 人になる
-    expect(screen.getByRole('img', { name: /^支援者75人/ })).toBeTruthy();
+    // 申し込めて、ホームに戻り、内部の人数が 74 人から 75 人になる（画面には人数を出さない。ストアの状態で確かめ、画面は熱量で確かめる）
+    expect(getAppStore().view().status.supporters).toBe(75);
+    expect(screen.getByRole('img', { name: /^開催熱量。FEVER 目前/ })).toBeTruthy();
   });
 
   it('全角の数字とカンマ（１，０００）も受けて、半角の 1,000円として足す', async () => {

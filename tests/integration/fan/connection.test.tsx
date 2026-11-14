@@ -1,7 +1,9 @@
 // ファン向けの、サーバーが止まっている・遅いときと、遅れて読む塊が読めないときの画面（上層: A-59・A-60・I-46・I-52・I-55・I-94・I-120・I-25・I-30・I-21）。
 // 共有の部品（メーターの仕組み）は本物で、サーバーだけ偽物（FakeApi）。画面は通信を待たない。
 import { describe, expect, it, vi } from 'vitest';
+import { areaFor, conditionOf } from '../../../src/core';
 import { PREFETCH_IMAGES, PREFETCH_PLAN } from '../../../src/fan/art/registry';
+import { getAppStore } from '../../../src/fan/store/FanProvider';
 import { configurePrefetch } from '../../../src/shared/prefetch';
 import {
   act,
@@ -21,7 +23,8 @@ import {
 
 setupFanTest();
 
-const meter = () => screen.getByRole('img', { name: /^支援者\d+人、最低人数/ });
+/** 内部の人数は、画面の文ではなく、ストアの状態で確かめる（ファン向けの画面に人数を出さないため。G-08） */
+const supporters = () => getAppStore().view().status.supporters;
 const settle = async (): Promise<void> => {
   await act(async () => {
     await vi.dynamicImportSettled();
@@ -34,10 +37,10 @@ describe('サーバーが止まっている・遅いとき（N-09・N-21・N-23�
     mountFan('?p=4');
     expect(screen.getByRole('heading', { name: '推しを選ぶ' })).toBeTruthy();
     passStart();
-    expect(meter().getAttribute('aria-label')).toContain('支援者75人');
+    expect(supporters()).toBe(75);
     await closeGiftAfterFx();
     await tick(20000);
-    expect(meter().getAttribute('aria-label')).toContain('支援者75人'); // 最後に取れた値（なければ初期値）のまま
+    expect(supporters()).toBe(75); // 最後に取れた値（なければ初期値）のまま
     expect(screen.queryByText(/エラー|失敗|通信/)).toBeNull();
   });
 
@@ -45,9 +48,9 @@ describe('サーバーが止まっている・遅いとき（N-09・N-21・N-23�
     api.latency = 10000;
     mountFan('?p=4');
     passStart();
-    expect(meter().getAttribute('aria-label')).toContain('支援者75人');
+    expect(supporters()).toBe(75);
     await tick(700);
-    expect(layer('fx')?.textContent).toContain('80%'); // 演出も、サーバーを待たずに出る
+    expect(layer('fx')?.textContent).toContain('FEVER 目前！'); // 演出も、サーバーを待たずに出る
   });
 
   it('止まっているあいだに申し込んだ分は、戻ったときに 1 回だけ数えられ、自分の分が二重にならない（A4・I-55）', async () => {
@@ -60,7 +63,7 @@ describe('サーバーが止まっている・遅いとき（N-09・N-21・N-23�
     api.down = false;
     for (let i = 0; i < 6; i++) await tick(5000);
     expect(api.joined).toBe(1);
-    expect(meter().getAttribute('aria-label')).toContain('支援者75人');
+    expect(supporters()).toBe(75);
   });
 });
 
@@ -145,7 +148,7 @@ describe('申し込みをやめる・コースの札・支援の状況（I-25・
     expect(screen.getAllByRole('button', { name: '口座と預金へ' })).toHaveLength(3);
   });
 
-  it('支援の状況: 74 人の内訳（福岡県 60・久留米市 43 が地元・佐賀県 7・熊本県 5・そのほか 2）と、申し込み後の 75 人（I-30）', async () => {
+  it('支援の状況: 画面は人数を出さず（G-08）、県・市の行と「地元」の札と熱量を出す。内訳の計算（74 人: 福岡県 60・久留米市 43 が地元・佐賀県 7・熊本県 5・そのほか 2。申し込み後の 75 人）は、core の関数で確かめる（I-30）', async () => {
     mountFan('?p=4');
     click('次へ');
     click('次へ');
@@ -158,11 +161,21 @@ describe('申し込みをやめる・コースの札・支援の状況（I-25・
     await settle();
     const table = screen.getByRole('table');
     const text = table.textContent ?? '';
-    // 申し込み後（75 人）: 地元の市に +1（久留米市 44・福岡県 61）
-    expect(text).toContain('福岡県61人');
-    expect(text).toContain('久留米市地元44人');
-    expect(text).toContain('佐賀県7人');
-    expect(text).toContain('熊本県5人');
-    expect(text).toContain('そのほか2人');
+    // 画面: 県・市の名前と「地元」の札だけ。人数の数字は出さない
+    for (const name of ['福岡県', '久留米市地元', '佐賀県', '熊本県', 'そのほか'])
+      expect(text).toContain(name);
+    expect(text).not.toMatch(/\d/);
+    // 内訳の計算（core）: 74 人 → 申し込み後（75 人）は、地元の市に +1（久留米市 44・福岡県 61）
+    const before = areaFor(conditionOf('cbox').start, '久留米市', 0);
+    expect(before.map((p) => [p.pref, p.n])).toEqual([
+      ['福岡県', 60],
+      ['佐賀県', 7],
+      ['熊本県', 5],
+      ['そのほか', 2],
+    ]);
+    expect(before[0]?.cities.find((c) => c.isHome)).toMatchObject({ name: '久留米市', n: 43 });
+    const after = areaFor(conditionOf('cbox').start, '久留米市', 1);
+    expect(after[0]).toMatchObject({ pref: '福岡県', n: 61 });
+    expect(after[0]?.cities.find((c) => c.isHome)).toMatchObject({ name: '久留米市', n: 44 });
   });
 });

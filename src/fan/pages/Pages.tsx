@@ -1,4 +1,5 @@
 // メニュー配下の画面（あとから読む側。設計 D-40 の fan-pages）。枠（札の帯・戻る）は、読み込み前から出ている。
+import type { CSSProperties } from 'react';
 import type { ReactNode } from 'react';
 import { RECRUITMENT_DEADLINE, areaFor } from '../../core';
 import { STORAGE_KEYS } from '../../shared/device';
@@ -225,26 +226,18 @@ function AreaPage() {
   return (
     <>
       <div className={fan.card}>
-        <p className={`${styles.aonBig} ${fan.num}`}>
-          達成率 <b>{status.pct}%</b>
+        <p className={styles.aonBig}>
+          開催熱量 <b>{view.heat.name}</b>
         </p>
-        <div className={fan.barH} role="img" aria-label={`達成率 ${status.pct}%`}>
-          <i style={{ width: `${status.fill.toFixed(1)}%` }} />
+        <div className={fan.barH} role="img" aria-label={`開催熱量。${view.heat.name}`}>
+          <i style={{ '--g': Math.max(view.heat.fill, 0.02) } as CSSProperties} />
         </div>
-        <p className={`${styles.plain} ${fan.num}`}>
-          支援者 <b>{status.supporters}人</b>／最低人数 {cond.min}人
-          {status.established
-            ? '（成立しました）'
-            : status.gathered
-              ? '（人数は集まりました）'
-              : `（あと${status.left}人）`}
-        </p>
+        <p className={styles.plain}>{view.heat.distance}</p>
         <table className={styles.area} style={{ marginTop: 'var(--s2)' }}>
           <thead className={fan.srOnly}>
             <tr>
               <th scope="col">地域</th>
-              <th scope="col">人数</th>
-              <th scope="col">割合</th>
+              <th scope="col">広がり</th>
             </tr>
           </thead>
           <tbody>
@@ -270,10 +263,7 @@ function AreaRows({ pref, max }: { pref: AreaPref; max: number }) {
     <>
       <tr className={styles.prefRow}>
         <th scope="row">{pref.pref}</th>
-        <td className={fan.num} style={{ textAlign: 'right', fontWeight: 700 }}>
-          {pref.n}人
-        </td>
-        <td style={{ width: '38%' }}>
+        <td style={{ width: '55%' }}>
           <span className={styles.areaBar} style={{ width: `${(pref.n / max) * 100}%` }} />
         </td>
       </tr>
@@ -282,9 +272,6 @@ function AreaRows({ pref, max }: { pref: AreaPref; max: number }) {
           <td style={{ paddingLeft: 'var(--s3)' }}>
             {c.name}
             {c.isHome ? <span className={styles.meTag}>地元</span> : null}
-          </td>
-          <td className={fan.num} style={{ textAlign: 'right', fontWeight: 700 }}>
-            {c.n}人
           </td>
           <td>
             <span className={styles.areaBar} style={{ width: `${(c.n / max) * 100}%` }} />
@@ -303,7 +290,7 @@ function HowPage() {
     <>
       <div className={fan.card}>
         <p className={styles.aonBig}>
-          <b>支援者 {cond.min}人</b>以上、かつ、支援の合計が目標の金額以上で開催。
+          <b>開催熱量が FEVER に届く</b>と、開催が決まります。
           <br />
           届かなければ、お金は動かない。
         </p>
@@ -332,10 +319,9 @@ function HowPage() {
           <li>
             <i>3</i>
             <span>
-              支援の合計が目標の金額に届き、支援者が最低人数に届いたら、開催が決まる
+              開催熱量が FEVER に届いたら、開催が決まる
               <small>
-                数えるのは、資金を確保できた支援者だけ（1人1回）。上位のコースでも、人数は 1
-                人ぶん。金額は、そのコースの金額で数えます
+                数えるのは、資金を確保できた申し込みだけ。申し込みは、おひとりにつき一度です。上位のコースでも、熱量への加わり方は同じです
               </small>
             </span>
           </li>
@@ -387,7 +373,7 @@ function PrivPage() {
       view.my ? `申し込み中（${view.my.name}。確保 ${yen(view.my.price)}）` : '未申し込み',
     ],
     ['目指すコース', view.target ? view.target.name : 'なし（申し込み済み）'],
-    ['呼んだ仲間の数', `${state.called}人`],
+    ['仲間を呼んだか', state.called > 0 ? 'はい' : 'いいえ'],
     ['達成した行動', `${view.doneCount} / ${ACT_IDS.length}`],
     ['開いた特典', `${view.giftCount} / 3`],
     [

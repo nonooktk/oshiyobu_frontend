@@ -1,6 +1,7 @@
 // ファン向けのストアのテストの共通部品。通信は無い（共有メーターは、テストが env で作る）。
 import { conditionOf, performanceIdOf } from '../../../src/core';
 import type { PerformanceId } from '../../../src/core';
+import type { SoundCue } from '../../../src/fan/sound';
 import { createFanStore } from '../../../src/fan/store/store';
 import type { Deps } from '../../../src/fan/store/store';
 
@@ -12,7 +13,14 @@ export type Harness = ReturnType<typeof harness>;
  */
 export function harness(
   personaNo = 4,
-  opts: { reduceMotion?: boolean; server?: number; minPeople?: number; solo?: boolean } = {},
+  opts: {
+    reduceMotion?: boolean;
+    server?: number;
+    minPeople?: number;
+    solo?: boolean;
+    /** 称賛の音を鳴らす合図が、ここに順に入る（省略しても動く） */
+    sounds?: SoundCue[];
+  } = {},
 ) {
   const joins: PerformanceId[] = [];
   const fetches: string[] = [];
@@ -37,6 +45,7 @@ export function harness(
     reduceMotion: () => opts.reduceMotion ?? false,
     random: () => 0.5,
     solo: () => opts.solo ?? false,
+    sound: (cue) => opts.sounds?.push(cue),
   };
   const store = createFanStore({ personaNo, deps });
   function sync() {

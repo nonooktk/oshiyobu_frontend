@@ -123,4 +123,15 @@ describe('ファン向けの全画面', () => {
     const carry = layer('sheet') as HTMLElement;
     expect(within(carry).getAllByText(NOTICE)).toHaveLength(1);
   });
+
+  it('共有のシートの中にも、札 2 枚が出る（P-01）', async () => {
+    mountFan('?p=4');
+    passStart();
+    await closeGiftAfterFx();
+    click(/^次のアクション/);
+    click(/^仲間を呼ぶ/);
+    const share = layer('share') as HTMLElement;
+    expect(within(share).getAllByText(NOTICE)).toHaveLength(1);
+    expect(within(share).getAllByText(BADGE)).toHaveLength(1);
+  });
 });

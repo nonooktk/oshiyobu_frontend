@@ -2,7 +2,7 @@
 // 特典の絵（GiftLayer）、感謝のメッセージ（ThanksLayer）、共有のシート（ShareSheet）。主な流れなので、最初に読む側に入れる（設計 D-40）。
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
-import { DEMO_NOTICE_TEXT } from '../../shared/components/DemoBadge';
+import { DEMO_NOTICE_TEXT, DemoBadge } from '../../shared/components/DemoBadge';
 import { artistView } from '../art/registry';
 import { thanksOf } from '../text/thanks';
 import { SHARE_NAMES, SHARE_ORDER, buildPostText } from '../domain/share';
@@ -230,13 +230,9 @@ export function ShareSheet({ mode, inert }: { mode: ShareMode; inert: boolean })
   useEffect(() => {
     close.current?.focus({ preventScroll: true });
   }, []);
-  const s = view.status;
-  const big = s.established
-    ? ['ライブの開催が', '決まりました']
-    : s.gathered
-      ? ['人数は', '集まりました']
-      : null;
-  const plain = big ? big.join('') : `ライブ開催まで あと${s.left}人`;
+  const { heat } = view;
+  const big = view.status.established ? ['ライブの開催が', '決まりました'] : null;
+  const plain = big ? big.join('') : `開催熱量は${heat.name}。${heat.distance}`;
   const text = buildPostText(view);
   return (
     <div
@@ -247,11 +243,15 @@ export function ShareSheet({ mode, inert }: { mode: ShareMode; inert: boolean })
       role="presentation"
     >
       <div className={styles.sheet} role="dialog" aria-modal="true" aria-label={SHARE_TITLE[mode]}>
-        <h2>{SHARE_TITLE[mode]}</h2>
+        {/* 札は、シートの見出しの行に置く（後ろの画面が下へスクロールされていても見える。P-01） */}
+        <div className={styles.sheetHead}>
+          <h2>{SHARE_TITLE[mode]}</h2>
+          <DemoBadge />
+        </div>
         <div
           className={styles.shareFrame}
           role="img"
-          aria-label={`共有用の画像。達成率${s.pct}%。${plain.replace(/\s+/g, '')}`}
+          aria-label={`共有用の画像。${plain.replace(/\s+/g, '')}`}
         >
           <span className={styles.shareTag}>#OSHIYOBU</span>
           <span className={styles.shareOm}>
@@ -266,9 +266,9 @@ export function ShareSheet({ mode, inert }: { mode: ShareMode; inert: boolean })
               </>
             ) : (
               <>
-                ライブ開催まで
+                開催熱量
                 <br />
-                あと<b className={styles.num}>{s.left}</b>人
+                <b className={styles.num}>{heat.name}</b>
               </>
             )}
           </p>
@@ -276,7 +276,7 @@ export function ShareSheet({ mode, inert }: { mode: ShareMode; inert: boolean })
             {view.cond.city} ／ {view.cond.venue.day}
           </p>
           <div className={styles.shareMini}>
-            <i style={{ width: `${s.fill.toFixed(1)}%` }} />
+            <i style={{ '--g': Math.max(heat.fill, 0.02) } as CSSProperties} />
           </div>
         </div>
         <label className={styles.postLab} htmlFor="fan-post-text">

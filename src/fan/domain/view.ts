@@ -2,6 +2,8 @@
 // 数字・成立の判定は core の関数だけを使う（画面の側で同じ式を書かない）。
 import { TEIKI, canApply, nextDepositTarget, restParts, supportStatus } from '../../core';
 import type { Condition, CourseId, CourseOffer, SupportStatus } from '../../core';
+import { heatOf } from './heat';
+import type { Heat } from './heat';
 import type { Seg } from '../text/format';
 import { yen } from '../text/format';
 import type { HomeKey } from '../text/voices';
@@ -20,11 +22,13 @@ export type FanView = {
   /** 目指すコース（申し込む前だけ。登録していなければ、希望のコース）。 */
   target: CourseOffer | null;
   status: SupportStatus;
+  /** 開催熱量（ゲージの長さ・段階・距離のことば）。画面に出すのは、これだけ（数字は出さない。G-08）。 */
+  heat: Heat;
   /** 0 ＝ 未申し込み → 1 ＝ 申し込み後 → 2 ＝ 仲間が申し込んだあと。 */
   stage: 0 | 1 | 2;
   giftCount: number;
   doneCount: number;
-  /** 達成率が 80% 以上か（コメントの区切り）。 */
+  /** 熱量が FEVER 目前以上か（コメントの区切り）。 */
   soon: boolean;
   /** ひとり体験で、仲間を呼べば成立に届くか（次のアクションの予告に使う。共有メーターありは false）。 */
   friendsClinch: boolean;
@@ -66,6 +70,7 @@ export function viewOf(fan: Fan, cond: Condition, meter: MeterIn, solo = false):
   const targetId = joined ? null : (fan.aim ?? fan.seat);
   const target = targetId !== null ? courseOf(cond, targetId) : null;
   const status = statusOf(fan, cond, meter);
+  const heat = heatOf(status, cond.min);
   return {
     cond,
     fan,
@@ -73,10 +78,11 @@ export function viewOf(fan: Fan, cond: Condition, meter: MeterIn, solo = false):
     my,
     target,
     status,
+    heat,
     stage: !joined ? 0 : fan.done.friend ? 2 : 1,
     giftCount: fan.gifts.filter(Boolean).length,
     doneCount: ACT_IDS.filter((id) => fan.done[id]).length,
-    soon: status.pct >= 80,
+    soon: heat.stage >= 4,
     friendsClinch: solo && joined && friendsToClinch(fan, cond, meter) !== null,
   };
 }
@@ -179,8 +185,8 @@ export type NextRow = { id: NextRowId; label: string; why: readonly Seg[]; hint:
 export type NextHead =
   | { kind: 'pre'; course: CourseOffer; items: CondItem[]; ok: boolean }
   | { kind: 'est' }
-  | { kind: 'gat'; pct: number; fill: number }
-  | { kind: 'going'; left: number; pct: number; fill: number };
+  | { kind: 'gat'; heat: Heat }
+  | { kind: 'going'; heat: Heat };
 export type NextView = { head: NextHead; rows: NextRow[]; hint: string };
 
 /** 次のアクション（SP-42）。いまできる行動の一覧と、ホームの 2 行目に出す 1 行。 */
@@ -195,15 +201,14 @@ export function nextViewOf(v: FanView): NextView {
     const ok = canApplyOf(v, t);
     const needMain = t.mainAccount && !p;
     const to = nextDepositTarget(d);
+    // 申し込んだあとの熱量（数字は出さず、段階の名前で伝える）
+    const after = heatOf({ supporters: status.supporters + 1, established: false }, cond.min);
+    const afterJoin = after.stage > v.heat.stage ? `${after.name}へ進みます` : '熱が高まります';
     if (ok) {
       rows.push({
         id: 'apply',
         label: `${t.name}に申し込む`,
-        why: [
-          `${yen(t.price)}。支援者 `,
-          { nw: `${status.supporters}人 → ${status.supporters + 1}人` },
-          '。申し込むと確定します',
-        ],
+        why: [`${yen(t.price)}。申し込むと、${afterJoin}。申し込むと確定します`],
         hint: '',
       });
     }
@@ -242,37 +247,28 @@ export function nextViewOf(v: FanView): NextView {
     }
     if (!p && !needMain) rows.push(mainRow);
     const hint = ok
-      ? `${t.name}（${yen(t.price)}）に申し込めます`
+      ? `申し込む → ${after.stage > v.heat.stage ? `${after.name}へ` : '熱が高まります'}（${yen(t.price)}）`
       : `${t.name}まで、残りは ${restText(t, d, p)}`;
     return { head: { kind: 'pre', course: t, items: condItems(v, t), ok }, rows, hint };
   }
 
-  const L = status.left;
   if (status.established) {
     rows.push({
       id: 'notice',
       label: '仲間に知らせる',
-      why: [`いまの達成率は ${status.pct}%。投稿文は、いまの数字で作られます`],
-      hint: '仲間に知らせましょう',
+      why: [`いまの熱量は ${v.heat.name}。投稿文は、いまの熱量で作られます`],
+      hint: '仲間に知らせる → 開催が決まったことを伝える',
     });
   } else {
     // 仲間を呼ぶと成立する（ひとり体験は、必ず成立に届く所まで増える）
     const clinch = {
       why: '仲間が申し込むと、ライブの開催が決まります',
-      hint: '仲間を呼ぶと、ライブの開催が決まります',
+      hint: '仲間を呼ぶ → FEVER（開催決定）へ',
     };
-    const ft = v.friendsClinch
-      ? clinch
-      : L >= 2
-        ? {
-            why: `仲間が申し込むと、あと${L}人が${L - 1}人になります`,
-            hint: `仲間を呼ぶと、あと${L}人が${L - 1}人に`,
-          }
-        : status.friendClinches
-          ? clinch
-          : L === 1
-            ? { why: '仲間が申し込むと、人数が集まります', hint: '仲間を呼ぶと、人数が集まります' }
-            : { why: '仲間が申し込むと、支援が増えます', hint: '仲間を呼ぶと、支援が増えます' };
+    const ft =
+      v.friendsClinch || status.friendClinches
+        ? clinch
+        : { why: '仲間が申し込むと、熱が高まります', hint: '仲間を呼ぶ → 熱が高まります' };
     const gc = v.giftCount;
     if (!fan.done.friend)
       rows.push({ id: 'friend', label: '仲間を呼ぶ', why: [ft.why], hint: ft.hint });
@@ -288,18 +284,18 @@ export function nextViewOf(v: FanView): NextView {
       rows.push({
         id: 'again',
         label: 'もう一度、仲間を呼ぶ',
-        why: [`いまの達成率は ${status.pct}%。投稿文は、いまの数字で作り直せます`],
+        why: [`いまの熱量は ${v.heat.name}。投稿文は、いまの熱量で作り直せます`],
         hint: status.gathered
-          ? '人数は集まりました。もう一度、仲間を呼べます'
-          : `あと${L}人。もう一度、仲間を呼べます`,
+          ? 'FEVER 目前です。もう一度、仲間を呼べます'
+          : 'もう一度、仲間を呼べます',
       });
     }
   }
   const head: NextHead = status.established
     ? { kind: 'est' }
     : status.gathered
-      ? { kind: 'gat', pct: status.pct, fill: status.fill }
-      : { kind: 'going', left: L, pct: status.pct, fill: status.fill };
+      ? { kind: 'gat', heat: v.heat }
+      : { kind: 'going', heat: v.heat };
   return { head, rows, hint: rows[0]?.hint ?? '' };
 }
 

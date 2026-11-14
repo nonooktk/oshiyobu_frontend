@@ -126,6 +126,8 @@ export type FanState = Fan & {
   toast: { id: number; text: string } | null;
   /** 読み上げ（aria-live）に伝える一文。 */
   live: string;
+  /** 称賛の音のオン・オフ（既定はオン。画面の音ボタン。端末の中だけ）。 */
+  soundOn: boolean;
   /** 条件を変えた直後の「引き継いだもの」の記録。 */
   carry: CarrySnap | null;
   /** ✓ が付く動きを待たせる時間（秒）。達成のエフェクトを飛ばしたら 0。 */
@@ -151,10 +153,9 @@ export type CarrySnap = {
   pay: boolean;
   held: number;
   seatPrice: number;
-  supporters: number;
-  pct: number;
+  /** 引き継いだときの熱量の段階の名前（数字は持たない）。 */
+  heatName: string;
   venueName: string;
-  min: number;
 };
 
 /** 人物（番号）の初めの値でファン向けを作る。 */
@@ -192,6 +193,7 @@ export function initialState(personaNo: number): FanState {
     ach: null,
     toast: null,
     live: '',
+    soundOn: true,
     carry: null,
     ckDelay: 1,
     fresh: null,

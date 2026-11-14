@@ -1,7 +1,7 @@
 // 応援コース（SP-43）と、口座と預金（SP-44）。メニュー配下の画面（あとから読む側）。
 import { useEffect } from 'react';
 import type { CSSProperties } from 'react';
-import { TEIKI, achievementPct, canApply } from '../../core';
+import { TEIKI, canApply } from '../../core';
 import { artistView } from '../art/registry';
 import { CourseFace } from '../components/CourseFace';
 import type { AcctId } from '../domain/state';
@@ -16,10 +16,9 @@ import styles from './pages.module.css';
 /** 応援コース。4 枚のカードが、金額・手に入るもの・枠・条件・自分の状態つきで並ぶ。 */
 export function CoursesPage() {
   const { state, view, actions } = useFan();
-  const { cond, status } = view;
+  const { cond } = view;
   const o = artistView(state.oshiId);
   const { deposit, pay } = state.acct;
-  const nextN = status.supporters + (view.joined ? 0 : 1);
   return (
     <>
       <div className={`${fan.card} ${fan.cardNext}`}>
@@ -41,16 +40,7 @@ export function CoursesPage() {
           <>
             <p className={styles.bigV}>まだ申し込んでいません</p>
             <p className={styles.dSub}>
-              条件がそろったコースで「申し込む」と、支援者として数えます（どのコースでも 1
-              人。支援者{' '}
-              <span className={fan.nw}>
-                {status.supporters}人 → {nextN}人
-              </span>
-              、達成率{' '}
-              <span className={fan.nw}>
-                {status.pct}% → {achievementPct(nextN, cond.min)}%
-              </span>
-              ）。
+              条件がそろったコースで「申し込む」と、開催熱量が高まります（どのコースでも、高まり方は同じです）。
             </p>
             {view.target ? (
               <p className={styles.dSub}>

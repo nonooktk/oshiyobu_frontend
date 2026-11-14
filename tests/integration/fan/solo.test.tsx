@@ -27,7 +27,7 @@ setupFanTest();
 
 const IDLE_MS = 300_000;
 const IDLE_TEXT = 'しばらく操作がなかったので、最初に戻しました';
-const meter = () => screen.getByRole('img', { name: /^支援者\d+人、最低人数/ });
+const meter = () => screen.getByRole('img', { name: /^開催熱量。/ });
 const shell = () => document.querySelector('div[data-page]')?.getAttribute('data-page');
 const supporters = () => getAppStore().view().status.supporters;
 /** 閉じる・再読み込み・別のページへ（ブラウザが pagehide を出す） */
@@ -51,17 +51,16 @@ describe('ひとり体験（既定）', () => {
   it('はじめの画面 → 申し込む（75 人・80%）→ 仲間を呼ぶ（93 人・成立）まで、サーバーを 1 回も呼ばずに進む', async () => {
     mountFan('?p=4');
     passStart();
-    expect(meter().getAttribute('aria-label')).toBe(
-      '支援者75人、最低人数93人。ライブ開催まで あと18人。達成率80%',
-    );
+    expect(supporters()).toBe(75);
+    expect(meter().getAttribute('aria-label')).toBe('開催熱量。FEVER 目前。あと一歩');
     await closeGiftAfterFx();
     click(/^次のアクション/);
     fireEvent.click(screen.getByRole('button', { name: /^仲間を呼ぶ/ }));
     fireEvent.click(within(layer('share') as HTMLElement).getByRole('button', { name: '閉じる' }));
     await tick(2000 + 700);
     // 成立の演出
-    expect(layer('fx')?.textContent).toContain('成立！');
-    expect(layer('fx')?.textContent).toContain('ライブの開催が決まりました');
+    expect(layer('fx')?.textContent).toContain('FEVER！');
+    expect(layer('fx')?.textContent).toContain('あなたの声が届いて、開催が決まりました');
     await tick(2500 + 10 + 2200 + 10);
     click('閉じる'); // 特典の絵
     expect(supporters()).toBe(93);
@@ -74,7 +73,7 @@ describe('ひとり体験（既定）', () => {
     passStart();
     await closeGiftAfterFx();
     expect(screen.getByRole('button', { name: /^次のアクション/ }).textContent).toContain(
-      '仲間を呼ぶと、ライブの開催が決まります',
+      '仲間を呼ぶ → FEVER（開催決定）へ',
     );
   });
 

@@ -1,6 +1,7 @@
 // ファン向けの基準の流れと、前方の席を目指す流れ（上層: A-15〜A-18・A-24〜A-27・A-34・A-35・A-40・A-41・A-45・A-46・I-23・I-24・I-74）。
 // 通信は無い。共有メーターは、仮の I/F のメモリの値（サーバーへの申し込みの合図は、画面の人数に足されないことを確かめる）。
 import { describe, expect, it, vi } from 'vitest';
+import { getAppStore } from '../../../src/fan/store/FanProvider';
 import { createLink } from '../../../src/shared/link';
 import { asBroadcastChannel, FakeChannel } from '../../helpers/fakeChannel';
 import {
@@ -22,7 +23,10 @@ import {
 
 setupFanTest();
 
-const meter = () => screen.getByRole('img', { name: /^支援者\d+人、最低人数/ });
+/** ホームの熱量のゲージ（読み上げ用の文。人数・割合の数字は入らない。G-08） */
+const meter = () => screen.getByRole('img', { name: /^開催熱量。/ });
+/** 内部の人数は、画面の文ではなく、ストアの状態で確かめる（ファン向けの画面に人数を出さないため） */
+const supporters = () => getAppStore().view().status.supporters;
 const seatCard = (name: string) =>
   screen
     .getAllByRole('button')
@@ -44,13 +48,14 @@ describe('基準の流れ（人物 4・tech0・久留米市・Cボックス）',
     expect(btn('この内容で申し込む')).toBeTruthy();
   });
 
-  it('3 回押すとホームに着き、支援者が 74 人から 75 人・80%・あと 18 人に進む（A-16・A-18）', async () => {
+  it('3 回押すとホームに着き、内部の人数が 74 人から 75 人（80%）に進み、熱量は ヒートアップ から FEVER 目前 になる（A-16・A-18）', async () => {
     mountFan('?p=4');
     expect(screen.getByRole('heading', { name: '推しを選ぶ' })).toBeTruthy();
+    expect(supporters()).toBe(74);
     passStart();
-    expect(meter().getAttribute('aria-label')).toBe(
-      '支援者75人、最低人数93人。ライブ開催まで あと18人。達成率80%',
-    );
+    expect(supporters()).toBe(75);
+    expect(getAppStore().view().status).toMatchObject({ pct: 80, left: 18 });
+    expect(meter().getAttribute('aria-label')).toBe('開催熱量。FEVER 目前。あと一歩');
     expect(screen.getByText('デモ用の架空データ')).toBeTruthy();
   });
 
@@ -65,12 +70,12 @@ describe('基準の流れ（人物 4・tech0・久留米市・Cボックス）',
     expect(homeActionButtons()[0]).toMatch(/^次のアクション/);
   });
 
-  it('申し込むと 0.65 秒後に 80% の演出が出て、押すと飛ばせて、特典の絵が出る（A-40・A-41）', async () => {
+  it('申し込むと 0.65 秒後に FEVER 目前の演出が出て、押すと飛ばせて、特典の絵が出る（A-40・A-41）', async () => {
     mountFan('?p=4');
     passStart();
     expect(layer('fx')).toBeNull();
     await tick(650);
-    expect(layer('fx')?.textContent).toContain('80%');
+    expect(layer('fx')?.textContent).toContain('FEVER 目前！');
     fireEvent.click(layer('fx') as HTMLElement); // 押すと飛ばせる
     await tick(10);
     expect(layer('fx')).toBeNull();
@@ -112,7 +117,7 @@ describe('基準の流れ（人物 4・tech0・久留米市・Cボックス）',
       within(layer('sheet') as HTMLElement).getByRole('button', { name: '申し込みをやめる' }),
     );
     await tick(10);
-    expect(meter().getAttribute('aria-label')).toContain('支援者74人');
+    expect(supporters()).toBe(74);
     expect(
       screen.getAllByText(/申し込みをやめました。確保は解除され、負担は0円です。/).length,
     ).toBeGreaterThan(0);
@@ -143,7 +148,7 @@ describe('前方の席を目指す流れ（人物 4。A-24〜A-27・I-23）', ()
     expect(screen.getByText('条件がそろいました。')).toBeTruthy();
     const first = screen.getByRole('button', { name: /^前方の席に申し込む/ });
     fireEvent.click(first);
-    expect(meter().getAttribute('aria-label')).toContain('支援者75人');
+    expect(supporters()).toBe(75);
   });
 
   it('条件がそろうと、条件のチェックが ✓ になり、「条件がそろいました」の演出（全部そろった）が出る', async () => {
@@ -179,7 +184,7 @@ describe('前方の席を目指す流れ（人物 4。A-24〜A-27・I-23）', ()
     expect(screen.getByRole('button', { name: /^前方の席に申し込む/ })).toBe(apply);
     fireEvent.pointerUp(apply);
     fireEvent.click(apply);
-    expect(meter().getAttribute('aria-label')).toContain('支援者75人');
+    expect(supporters()).toBe(75);
   });
 
   it('動きを減らす設定では、紙吹雪と閃光を出さず、短いフェードだけ（N-04）', async () => {
@@ -226,10 +231,10 @@ describe('共有メーターの reset と連動（I-64・I-126・A-62 のファ�
     await closeGiftAfterFx();
     await tick(3000);
     expect(api.joined).toBe(1); // 自分の申し込みが、サーバーに 1 回だけ数えられた
-    expect(meter().getAttribute('aria-label')).toContain('支援者75人');
+    expect(supporters()).toBe(75);
     api.joined += 1; // ほかの端末が 1 人申し込んだ
     await tick(4000);
-    expect(meter().getAttribute('aria-label')).toContain('支援者76人');
+    expect(supporters()).toBe(76);
   });
 
   it('発表者の reset を検知すると 74 人に戻り、「未申し込み」になって、同じコースを押し直して申し込める', async () => {
@@ -237,16 +242,16 @@ describe('共有メーターの reset と連動（I-64・I-126・A-62 のファ�
     passStart();
     await closeGiftAfterFx();
     await tick(3000);
-    expect(meter().getAttribute('aria-label')).toContain('支援者75人');
+    expect(supporters()).toBe(75);
     api.reset();
     await tick(6000); // 次の取得で、resetAt の変化を見つける（3 秒前後）
-    expect(meter().getAttribute('aria-label')).toContain('支援者74人');
+    expect(supporters()).toBe(74);
     expect(screen.getByText('まだチケットと特典は入手できていません！')).toBeTruthy();
     click(/^次のアクション/);
     fireEvent.click(screen.getByRole('button', { name: /^通常の席に申し込む/ }));
     await tick(3000);
     expect(api.joined).toBe(1);
-    expect(meter().getAttribute('aria-label')).toContain('支援者75人');
+    expect(supporters()).toBe(75);
   });
 
   it('申し込みの応答だけが遅れ、あとに出した取得の応答より遅く着いても、75 人のまま（76 人にならない）。reset を検知すると 74 人に戻る（G2-01）', async () => {
@@ -257,10 +262,10 @@ describe('共有メーターの reset と連動（I-64・I-126・A-62 のファ�
     await closeGiftAfterFx();
     await tick(7000);
     expect(api.joined).toBe(1);
-    expect(meter().getAttribute('aria-label')).toContain('支援者75人');
+    expect(supporters()).toBe(75);
     api.reset();
     await tick(6000);
-    expect(meter().getAttribute('aria-label')).toContain('支援者74人');
+    expect(supporters()).toBe(74);
     expect(screen.getByText('まだチケットと特典は入手できていません！')).toBeTruthy();
   });
 

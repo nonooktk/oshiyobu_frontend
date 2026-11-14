@@ -116,9 +116,7 @@ export function Start() {
             <p className={styles.stVenue}>
               会場: {c.venue.name}（{c.venue.cap}
               {c.venue.unit}）<br />
-              成立は、最低人数 <span className={styles.nw}>{c.min}人</span>以上
-              <wbr />
-              と、目標の金額への到達
+              熱量が満ちると、開催が決まります
             </p>
           </>
         ) : null}

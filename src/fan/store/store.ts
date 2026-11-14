@@ -40,6 +40,7 @@ import type { FanView, MeterIn } from '../domain/view';
 import { canAddDeposit } from '../domain/deposit';
 import { postedText } from '../domain/share';
 import type { ShareChannel } from '../domain/share';
+import type { SoundCue } from '../sound';
 import { yen } from '../text/format';
 import { VOICES } from '../text/voices';
 
@@ -59,10 +60,12 @@ export type Deps = {
    * true のとき、仲間を呼ぶと、成立に届く所まで一度に増え、成立の演出が出る。
    */
   solo?: () => boolean;
+  /** 称賛の音を鳴らす（鳴るかどうかは、受け取る側が決める: オフ・操作の前・使えない環境では、何もしない）。 */
+  sound?: (cue: SoundCue) => void;
 };
 
 export const defaultDeps = (
-  partial: Pick<Deps, 'join' | 'fetch'> & Partial<Pick<Deps, 'solo'>>,
+  partial: Pick<Deps, 'join' | 'fetch'> & Partial<Pick<Deps, 'solo' | 'sound'>>,
 ): Deps => ({
   ...partial,
   reduceMotion: () =>
@@ -115,6 +118,8 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     env && env.cond.venueId === state.venueId ? env.cond : conditionOf(state.venueId);
   const pidNow = (): PerformanceId => performanceIdOf(state.oshiId, state.venueId);
   const solo = (): boolean => deps.solo?.() ?? false;
+  /** 称賛の音（行動の直後と、段階が上がった・FEVER の瞬間だけ） */
+  const sound = (cue: SoundCue): void => deps.sound?.(cue);
   /** いまの公演のメーター（Provider が渡した値が、いまの公演のものでなければ、取れていない扱い） */
   const meterNow = (): MeterIn =>
     env && env.pid === pidNow() ? env.meter : { serverJoined: 0, counted: false };
@@ -299,29 +304,35 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     else closeCarry();
   };
 
-  /** 80% の演出（自分が申し込んだ直後にだけ出す。1 回だけ）。成立・人数だけ届いたときも、この 1 回で伝える。 */
+  /** FEVER 目前の演出（自分が申し込んで、FEVER 目前に届いた直後にだけ出す。1 回だけ）。 */
   const showMilestone = (cb: () => void, withGift: boolean): void => {
     if (state.milestoneShown) {
       cb();
       return;
     }
     set({ milestoneShown: true });
-    showReached(cb, withGift);
+    showReached(cb, withGift, 'join');
   };
-  /** 達成率の演出の中身（80% 突破・人数が集まった・成立）。80% の演出と、仲間を呼んで成立したときの演出が使う。 */
-  const showReached = (cb: () => void, withGift: boolean): void => {
-    const v = view();
-    const { pct, left, established, gathered } = v.status;
+  /**
+   * 称賛の演出の中身（FEVER 目前・FEVER）。申し込んだ直後と、仲間を呼んで成立したときが使う。
+   * 褒めるのは行動だけ（あなたがしたこと → それで何が進んだか）。数字は出さない（G-08）。
+   */
+  const showReached = (cb: () => void, withGift: boolean, by: 'join' | 'friend'): void => {
+    const established = view().status.established;
+    sound(established ? 'fever' : 'stage');
     const t = established
-      ? { title: `${pct}%`, small: '成立！', sub: 'ライブの開催が決まりました', size: 104 }
-      : gathered
-        ? {
-            title: `${pct}%`,
-            small: '人数が集まった！',
-            sub: 'あと少しの支援で決まります',
-            size: 104,
-          }
-        : { title: '80%', small: '突破！', sub: `ライブ開催まで あと${left}人`, size: 120 };
+      ? {
+          title: 'FEVER！',
+          small: by === 'friend' ? '仲間を呼んでくれてありがとう' : '申し込んでくれてありがとう',
+          sub: 'あなたの声が届いて、開催が決まりました',
+          size: 76,
+        }
+      : {
+          title: 'FEVER 目前！',
+          small: 'あなたの一歩で、',
+          sub: 'FEVER 目前まで来ました',
+          size: 52,
+        };
     showFx({
       ...t,
       stroke: 12,
@@ -331,10 +342,8 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       ...(withGift ? { say: VOICES[state.oshiId].say.gift('特典 1/3') } : {}),
       live:
         (established
-          ? `達成率が${pct}%に届きました。支援者は${v.status.supporters}人で、ライブの開催が決まりました。`
-          : gathered
-            ? `達成率が${pct}%に届きました。人数は集まりました。あと少しの支援で、開催が決まります。`
-            : `80%に届きました。ライブ開催まで あと${left}人です。`) +
+          ? 'FEVER。あなたの声が届いて、ライブの開催が決まりました。'
+          : 'FEVER 目前。あなたの一歩で、ここまで来ました。') +
         (withGift ? 'ごほうびが開きました。特典 1/3。' : ''),
       onEnd: cb,
     });
@@ -379,6 +388,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     const first = !state.done.join;
     const had = v.joined;
     set({ course: id, aim: null, done: { ...state.done, join: true } });
+    if (!had) sound('join'); // 申し込んだ直後の称賛（新しい申し込みだけ。コースの変更は鳴らさない）
     if (!had) deps.join(pidNow()); // 新しい申し込みだけ送る（コースの変更・やめる・申し込み直しは数え直さない。決定 3）
     go('home');
     const after = (merged: boolean): void => {
@@ -399,18 +409,14 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     };
     later(reduce() ? 0 : 150, () => {
       if (!crosses()) {
-        announce(
-          `申し込みが確定しました。支援者は${view().status.supporters}人、達成率は${view().status.pct}%です。`,
-        );
+        announce(`申し込みが確定しました。熱量は${view().heat.name}です。`);
         after(false);
         return;
       }
       later(reduce() ? 0 : 500, () => {
         if (crosses()) showMilestone(() => after(true), first);
         else {
-          announce(
-            `申し込みが確定しました。支援者は${view().status.supporters}人、達成率は${view().status.pct}%です。`,
-          );
+          announce(`申し込みが確定しました。熱量は${view().heat.name}です。`);
           after(false);
         }
       });
@@ -564,17 +570,15 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     if (state.page !== 'next') go('home');
     const s = view().status;
     toast('呼んだ仲間が申し込みました');
+    sound('friend');
     announce(
-      `呼んだ仲間が申し込みました。達成率は${s.pct}%です。` +
-        (s.established
-          ? '金額と人数がそろって、ライブの開催が決まりました。'
-          : s.gathered
-            ? '人数は集まりました。あと少しの支援で、開催が決まります。'
-            : `ライブ開催まで あと${s.left}人です。`),
+      `呼んだ仲間が申し込みました。熱量は${view().heat.name}です。` +
+        (s.established ? 'ライブの開催が決まりました。' : ''),
     );
     // 仲間を呼んで成立したときは、成立の演出を出してから、特典 3/3 に進む
     later(reduce() ? 0 : 700, () => {
-      if (!wasEstablished && view().status.established) showReached(() => unlockGift(2), false);
+      if (!wasEstablished && view().status.established)
+        showReached(() => unlockGift(2), false, 'friend');
       else unlockGift(2);
     });
   };
@@ -585,6 +589,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
   const shareTo = (ch: ShareChannel): void => {
     const text = postedText(ch);
     toast(text);
+    sound('share');
     announce(`${text}。`); // トーストは読み上げの対象外なので、読み上げの領域でも伝える
     if (!state.done.share) {
       set({ done: { ...state.done, share: true } });
@@ -649,7 +654,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       toast(`「${k.name}」を目指すコースにしました。申し込みは、条件がそろってからです`, 4200);
       const v = view();
       announce(
-        `${artistView(state.oshiId).name}を${state.city}に呼ぶ。「${k.name}」を目指すコースにしました。申し込みはまだです。支援者は${v.status.supporters}人です。`,
+        `${artistView(state.oshiId).name}を${state.city}に呼ぶ。「${k.name}」を目指すコースにしました。申し込みはまだです。熱量は${v.heat.name}です。`,
       );
     }
   };
@@ -667,7 +672,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
   /** 初めの状態に戻す（人物の初めの値。タイマーを止めて、状態を作り直す。共有のメーターには触らない）。 */
   const backToStart = (): void => {
     clearTimers();
-    state = { ...initialState(personaNo), live: '' };
+    state = { ...initialState(personaNo), live: '', soundOn: state.soundOn }; // 音のオン・オフは、リセットで変えない
     emit();
   };
   /** ファン向けだけを、はじめの画面に戻す（「リセット（デモ用）」）。 */
@@ -741,7 +746,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       5000,
     );
     announce(
-      `申し込みをやめました。確保は解除され、負担は0円です。達成率は${view().status.pct}%です。`,
+      `申し込みをやめました。確保は解除され、負担は0円です。熱量は${view().heat.name}です。`,
     );
   };
 
@@ -813,10 +818,8 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
         pay: state.acct.pay,
         held,
         seatPrice: nk.price,
-        supporters: v.status.supporters,
-        pct: v.status.pct,
+        heatName: v.heat.name,
         venueName: v.cond.venue.name,
-        min: v.cond.min,
       },
     });
     pushLayer({ kind: 'carry' });
@@ -868,6 +871,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       toast,
       announce,
       friendJoins,
+      toggleSound: (): void => set({ soundOn: !state.soundOn }),
     },
   };
 }

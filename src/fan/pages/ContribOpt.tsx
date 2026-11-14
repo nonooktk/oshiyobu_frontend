@@ -1,4 +1,5 @@
 // 貢献（SP-45）と、推し・条件の変更（SP-49。デモ用の操作）。メニュー配下の画面（あとから読む側）。
+import type { CSSProperties } from 'react';
 import { CITY_NAMES, ARTIST_IDS, areaFor, canApply, conditionOf } from '../../core';
 import { ARTISTS_VIEW, artistView } from '../art/registry';
 import { useLinkedOffice } from '../../shared/link';
@@ -60,8 +61,8 @@ export function ContribPage() {
               ? `${yen(view.my.price)}（${view.my.name}。成立するまで確保）`
               : '0円（まだ申し込んでいません）'}
           </dd>
-          <dt>呼んだ仲間の数</dt>
-          <dd>{state.called}人</dd>
+          <dt>仲間を呼んだか</dt>
+          <dd>{state.called > 0 ? '呼びました' : 'まだです'}</dd>
           <dt>達成した行動</dt>
           <dd>
             {view.doneCount} / {ACT_IDS.length}
@@ -118,30 +119,20 @@ export function ContribPage() {
         </div>
       </div>
       <div className={fan.card}>
-        <p className={fan.bigK}>全体の達成率と、成立までの不足</p>
-        <p className={`${styles.aonBig} ${fan.num}`} style={{ marginTop: 'var(--s1)' }}>
-          達成率 <b>{status.pct}%</b>
+        <p className={fan.bigK}>みんなの開催熱量</p>
+        <p className={styles.aonBig} style={{ marginTop: 'var(--s1)' }}>
+          開催熱量 <b>{view.heat.name}</b>
         </p>
-        <div className={fan.barH} role="img" aria-label={`達成率 ${status.pct}%`}>
-          <i style={{ width: `${status.fill.toFixed(1)}%` }} />
+        <div className={fan.barH} role="img" aria-label={`開催熱量。${view.heat.name}`}>
+          <i style={{ '--g': Math.max(view.heat.fill, 0.02) } as CSSProperties} />
         </div>
         <dl className={styles.facts} style={{ marginTop: 'var(--s2)' }}>
-          <dt>支援者</dt>
-          <dd>
-            {status.supporters}人／最低人数 {cond.min}人
-          </dd>
           <dt>ライブ開催まで</dt>
-          <dd>
-            {status.established
-              ? 'ライブの開催が決まりました'
-              : status.gathered
-                ? '人数は集まりました。あと少しの支援で、開催が決まります'
-                : `あと${status.left}人`}
-          </dd>
+          <dd>{view.heat.distance}</dd>
         </dl>
         <p className={styles.dSub}>
-          達成率は、支援者 ÷ 最低人数（切り捨て）です。上位のコースに申し込んでも、人数は 1
-          人ぶんです。成立には、支援の合計が目標の金額に届くことも要ります。
+          熱量は、みんなの申し込みで高まります。上位のコースに申し込んでも、高まり方は同じです。開催が決まると、FEVER
+          になります。
         </p>
       </div>
       <div className={fan.card}>
@@ -150,8 +141,7 @@ export function ContribPage() {
           <thead className={fan.srOnly}>
             <tr>
               <th scope="col">市</th>
-              <th scope="col">人数</th>
-              <th scope="col">割合</th>
+              <th scope="col">広がり</th>
             </tr>
           </thead>
           <tbody>
@@ -161,10 +151,7 @@ export function ContribPage() {
                   {x.name}
                   {x.isHome ? <span className={styles.meTag}>地元</span> : null}
                 </td>
-                <td className={fan.num} style={{ textAlign: 'right', fontWeight: 700 }}>
-                  {x.n}人
-                </td>
-                <td style={{ width: '38%' }}>
+                <td style={{ width: '55%' }}>
                   <span className={styles.areaBar} style={{ width: `${(x.n / max) * 100}%` }} />
                 </td>
               </tr>
@@ -174,9 +161,9 @@ export function ContribPage() {
         <p className={styles.plain}>
           {state.called === 0
             ? '仲間はまだ呼んでいません'
-            : `仲間を${state.called}人呼びました` +
+            : '仲間を呼びました' +
               (state.friends < state.called
-                ? '（引き継いだ記録です。新しい条件の人数には入っていません）'
+                ? '（引き継いだ記録です。新しい条件の熱量には入っていません）'
                 : '（申し込み済み）')}
         </p>
       </div>
@@ -258,8 +245,7 @@ export function OptPage() {
         </div>
         <p className={styles.dSub}>
           {pend.city}の会場: {pc.venue.name}（{pc.venue.cap}
-          {pc.venue.unit}）／ {pc.venue.day}（架空）／ 到達ライン {yen(pc.line)}（{pc.need}人 ×{' '}
-          {yen(pc.price)}）／ 成立は、到達ライン以上、かつ、最低人数 {pc.min}人以上
+          {pc.venue.unit}）／ {pc.venue.day}（架空）
         </p>
       </div>
       <div className={fan.card}>
@@ -307,8 +293,8 @@ export function OptPage() {
               </dd>
               <dt>残るもの</dt>
               <dd>
-                特典 {view.giftCount}/3・達成 {view.doneCount}/{ACT_IDS.length}・呼んだ仲間{' '}
-                {state.called}人
+                特典 {view.giftCount}/3・達成 {view.doneCount}/{ACT_IDS.length}・仲間を呼んだか{' '}
+                {state.called > 0 ? 'はい' : 'いいえ'}
               </dd>
             </>
           ) : (

@@ -17,12 +17,12 @@ describe('鳴る時点の一覧', () => {
     expect(sounds).toEqual([]); // 開いただけでは鳴らない
     passStartOnly(h);
     expect(sounds).toEqual([]); // はじめの画面を進めただけでは鳴らない
-    fundAndApply(h); // 推し活定期（share）→ 積み増し（share）→ 申し込み（join）
-    expect(sounds).toEqual(['share', 'share', 'join']);
+    fundAndApply(h); // 推し活定期（段階が上がる: stage）→ 条件に届く積み増し（段階が上がる: stage）→ 申し込み（join）
+    expect(sounds).toEqual(['stage', 'stage', 'join']);
     vi.advanceTimersByTime(700);
-    expect(sounds).toEqual(['share', 'share', 'join', 'stage']);
+    expect(sounds).toEqual(['stage', 'stage', 'join', 'stage']);
     vi.advanceTimersByTime(60_000); // 待っている間
-    expect(sounds).toEqual(['share', 'share', 'join', 'stage']);
+    expect(sounds).toEqual(['stage', 'stage', 'join', 'stage']);
   });
 
   it('投稿した直後に share', async () => {

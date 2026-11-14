@@ -62,6 +62,36 @@
 .soundBtn[aria-pressed='false'] {
   color: var(--ink-soft);
 }
+/* 全画面の層（演出・特典・感謝）が出ているあいだ、層の上に重ねる音のボタン。層の札（上の端）の行の下に置いて、札を隠さない。暗幕の上でも見えるよう、白い丸の地を付ける */
+.soundFloat {
+  position: absolute;
+  top: var(--tap);
+  left: var(--s2);
+  z-index: 70;
+  margin-left: 0;
+  background: var(--surface);
+}
+/* ホームの上の称賛の演出: 暗くした範囲の下の端、「タップで閉じます」（その高さの中心）の右に置く。大きい文字・褒めことば・札に重ならない */
+.soundFx {
+  top: calc(var(--fx-cut, 100%) - 63px);
+  right: var(--s3);
+  left: auto;
+}
+/* 下から出るシートの中（見出しの行の右）の音のボタン。帯のように、左へ食い込ませない。見出しの行の高さは増やさない（上下の余白に食い込ませる） */
+.soundSheet {
+  margin-block: calc(var(--s2) * -1);
+  margin-left: auto;
+}
+/* 幅 320 の画面: 音のボタン・札 2 枚が、1 行に収まるよう、帯の左右の余白を詰める（右の札が画面の右端をはみ出さない。QA H-04） */
+@container phone (max-width: 339px) {
+  .strip {
+    gap: var(--s1);
+    padding: 0 var(--s2) 0 0;
+  }
+  .soundBtn {
+    margin-left: 0;
+  }
+}
 .chip {
   display: inline-block;
   padding: 0 var(--s2);
@@ -601,6 +631,16 @@
   background: var(--primary-dark);
   border-color: var(--primary-dark);
 }
+/* 押した直後（次の押下を受けない間。0.6 秒ほどか、称賛が終わるまで）は、少し淡くして、押したことを受け取ったと見せる。固まって見えないよう、すぐ戻る */
+.homeNext,
+.shareBtn {
+  transition: opacity 0.15s;
+}
+.homeNext[aria-busy='true'],
+.shareBtn[aria-busy='true'],
+.nxRow[aria-busy='true'] {
+  opacity: 0.8;
+}
 /* 同じ動きの名前を 2 つ持ち、交互に付けて、ボタンを作り直さずにはずみを再生する（フォーカスを失わない） */
 @keyframes btnpop2 {
   0% {
@@ -1109,6 +1149,7 @@ button.rcard:hover {
   font: inherit;
   text-align: left;
   cursor: pointer;
+  transition: opacity 0.15s;
 }
 .nxRow:hover {
   background: var(--bg-c);
@@ -1565,6 +1606,15 @@ button.rcard:hover {
   display: grid;
   gap: var(--s2);
   margin-top: var(--s3);
+}
+/* 縦が足りない画面（幅 320 など）でも、「閉じる」がスクロールの外へ出ないよう、シートの下端に貼る（シートの下の余白 --s4 の分まで寄せる） */
+.sheetBtnsStick {
+  position: sticky;
+  bottom: calc(var(--s4) * -1);
+  margin-bottom: calc(var(--s4) * -1);
+  margin-top: var(--s2);
+  padding: var(--s2) 0 var(--s4);
+  background: var(--surface);
 }
 
 /* 演出（称賛・ごほうび・感謝）。装飾なので、読み上げは別の領域で伝える */
@@ -2149,6 +2199,10 @@ button.rcard:hover {
   }
   .achCard {
     animation: none;
+  }
+  /* 小さい通知（トースト）も、下から上がる動きを止めて、すっと現れるだけにする（QA H-06） */
+  .toast {
+    animation: fadeIn 0.3s both;
   }
   .ck li.got,
   .ck li.got .ckB,

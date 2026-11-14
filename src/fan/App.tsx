@@ -7,6 +7,8 @@ import { Home } from './components/Home';
 import { DetailPage, LiveRegion, SheetShell, Toast } from './components/Frame';
 import { AchLayer, FxLayer, GiftLayer, ShareSheet, ThanksLayer } from './components/Layers';
 import { NextAction } from './components/NextAction';
+import { SoundToggle } from './components/SoundToggle';
+import type { SoundPlace } from './components/SoundToggle';
 import { Start } from './components/Start';
 import type { LayersModule, PagesModule } from './prefetch';
 import { setupFanPrefetch } from './prefetch';
@@ -39,6 +41,16 @@ function BackOnly({ label, onClick }: { label: string; onClick: () => void }) {
 function Screen() {
   const { state, actions } = useFan();
   const { layers, ach, page } = state;
+  // 層の上に重ねる音のボタンの置き場所（最上位の層で決まる。シートは、シート自身が持つ）
+  const top = layers[layers.length - 1];
+  const soundPlace: SoundPlace | null =
+    top?.kind === 'fx'
+      ? top.fx.overHome
+        ? 'fx'
+        : 'float'
+      : top?.kind === 'gift' || top?.kind === 'thanks'
+        ? 'float'
+        : null;
 
   // ファン向けを開いた直後に、共有メーターの人数を 1 回取りに行く（取得の契機①。設計 D-18）
   useEffect(() => {
@@ -58,6 +70,16 @@ function Screen() {
   // Esc でいちばん上の層を閉じる。押す・キーを押すと、条件の達成のエフェクトは、すぐ消える
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
+      // Enter の押しっぱなし（キーのリピート）は、ボタン・入力欄では受けない。押した先で、フォーカスの移った次のボタンまで
+      // 続けて押されて、2 段進む・開いてすぐ閉じる、を防ぐ（click は、最初の 1 回だけ起こす）
+      if (
+        e.key === 'Enter' &&
+        e.repeat &&
+        e.target instanceof Element &&
+        e.target.closest('button, input')
+      ) {
+        e.preventDefault();
+      }
       if (e.key === 'Escape') actions.escape();
       actions.clearAch();
     };
@@ -160,6 +182,9 @@ function Screen() {
             );
         }
       })}
+      {/* 層が出ているあいだも、音のボタンだけは押せる（帯の音のボタンは、層の下で押せなくなるため）。
+          全画面の演出・特典・感謝は、札の行の下に 1 つ重ねる。シートは、見出しの行に、シート自身が持つ */}
+      {soundPlace ? <SoundToggle place={soundPlace} /> : null}
       {ach ? <AchLayer key={ach.id} ach={ach} /> : null}
       <Toast />
       <LiveRegion />

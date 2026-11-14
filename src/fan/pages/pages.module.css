@@ -376,6 +376,10 @@
   font-weight: 700;
   color: var(--success-ink);
 }
+.actDone.actDoneNone {
+  /* まだ積み増していないときは、見えないまま、1 行ぶんの高さだけ取っておく */
+  visibility: hidden;
+}
 .actDone.got {
   transform-origin: left center;
   animation: actGot 1s ease-out var(--ck-delay, 0s) both;

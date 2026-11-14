@@ -122,7 +122,8 @@ export function NextAction() {
                 .filter(Boolean)
                 .join(' ')}
               style={delay}
-              onClick={() => run(row)}
+              aria-busy={state.held}
+              onClick={() => actions.press(() => run(row))}
             >
               <b>{row.label}</b>
               <small>

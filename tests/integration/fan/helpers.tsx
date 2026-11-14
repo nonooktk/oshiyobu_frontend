@@ -4,7 +4,11 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { afterEach, beforeEach, vi } from 'vitest';
 import { App } from '../../../src/fan/App';
 import { setupFanPrefetch } from '../../../src/fan/prefetch';
-import { getAppStore, resetAppStoreForTest } from '../../../src/fan/store/FanProvider';
+import {
+  getAppStore,
+  resetAppStoreForTest,
+  setSettleMsForTest,
+} from '../../../src/fan/store/FanProvider';
 import { forgetDeviceIdForTest } from '../../../src/shared/device';
 import { resetLinkForTest } from '../../../src/shared/link';
 import { setMeterEngineForTest } from '../../../src/shared/meter';
@@ -46,6 +50,9 @@ export function setupFanTest(): void {
     resetPrefetchForTest();
     setupFanPrefetch();
     resetAppStoreForTest();
+    // 主・副のボタンは、押したあと 0.6 秒ほど次の押下を受けない（連打の防止。press-guard.test.tsx が確かめる）。
+    // ほかのテストは、間を置かずに続けて押す書き方なので、この間は 0 にする（演出が終わるまで押せない決まりは、そのまま）
+    setSettleMsForTest(0);
   });
   afterEach(() => {
     cleanup();

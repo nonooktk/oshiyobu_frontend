@@ -33,7 +33,7 @@ describe('口座と預金の 3 つの行動（I-22・A-26）', () => {
     );
     expect(h.state().ach).toMatchObject({
       title: 'はじめてくれてありがとう。',
-      sub: '預金を積み増せるようになりました',
+      sub: '熱量が「あたたまってきた」へ進みました。預金を積み増せるようになりました',
     });
   });
 
@@ -52,12 +52,12 @@ describe('口座と預金の 3 つの行動（I-22・A-26）', () => {
     h.a.runAcct('main', 'next');
     expect(h.state().ach).toMatchObject({
       title: 'メイン口座にしてくれてありがとう。',
-      sub: '前方の席まで、残りは 預金 100,000円',
+      sub: '熱量が少し高まりました。前方の席まで、残りは 預金 100,000円',
     });
     h.a.runAcct('deposit', 'next', 100_000);
     expect(h.state().ach).toMatchObject({
       title: '積み増しありがとう。',
-      sub: '申し込めるようになりました',
+      sub: '熱量が「ヒートアップ」へ進みました。申し込めるようになりました',
     });
     expect(h.state().fresh).toMatchObject({ all: true, act: 'deposit' });
     // 押すと消える。待っていた ✓ の動きは、すぐ始まる（待ち時間 0）

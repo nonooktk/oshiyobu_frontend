@@ -4,6 +4,7 @@
 // 起動条件: 巡回した場面の数が、決めた数以上であること（0 件で通る空振りを防ぐ）。
 // 置き場: tests/guard/ に移すのは管理者（この PR では、決まりの文書と guard を変えないため、通常のテストとして置く）。
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { getAppStore } from '../../../src/fan/store/FanProvider';
 import { setMeterEngineForTest } from '../../../src/shared/meter';
 import { createMeterEngine } from '../../../src/shared/meter/engine';
 import {
@@ -217,5 +218,69 @@ describe('ファン向けの画面に、人数・達成率・目標の金額の�
         FORBIDDEN.some(([, re]) => re.test(text)),
         text,
       ).toBe(false);
+  });
+});
+
+describe('行動のたびに段階が上がる進み方の各段階にも、数字が出ない（G-08）', () => {
+  beforeEach(() => {
+    setMeterEngineForTest(createMeterEngine({ apiBase: '', random: () => 0.5 }));
+  });
+
+  /** ホームのメーター（開催熱量。段階の名前。距離のことば）の読み上げの文 */
+  const gauge = (): string =>
+    screen.getByRole('img', { name: /^開催熱量。/ }).getAttribute('aria-label') ?? '';
+
+  it('前方の席（メイン口座・預金）: 点火 → あたたまってきた → メイン口座・届かない額（段階はそのまま）→ ヒートアップ → 申し込み', async () => {
+    const seen: { scene: string; text: string }[] = [];
+    const look = (scene: string, root?: ParentNode) => seen.push({ scene, text: collect(root) });
+    const stages: string[] = [];
+    mountFan('?p=4');
+    click('次へ');
+    click(/前方の席/);
+    click('このコースを目指して始める');
+    look('ホーム（点火）');
+    stages.push(gauge());
+    fireEvent.click(screen.getByRole('button', { name: /^推し活定期をはじめる/ }));
+    look('推し活定期の直後（段階が上がった称賛の札）');
+    fireEvent.pointerDown(document.body);
+    look('ホーム（あたたまってきた）');
+    stages.push(gauge());
+    fireEvent.click(screen.getByRole('button', { name: /^メイン口座にする/ }));
+    look('メイン口座の直後（段階は上がらない称賛の札）');
+    fireEvent.pointerDown(document.body);
+    look('ホーム（メイン口座のあと）');
+    stages.push(gauge());
+    act(() => getAppStore().actions.runAcct('deposit', 'home', 1_000)); // 条件に届かない額
+    look('届かない額の直後（段階は上がらない称賛の札）');
+    fireEvent.pointerDown(document.body);
+    look('ホーム（届かない額のあと）');
+    stages.push(gauge());
+    act(() => getAppStore().actions.runAcct('deposit', 'home', 99_000)); // 条件に届く
+    look('条件に届いた直後（段階が上がった称賛の札）');
+    fireEvent.pointerDown(document.body);
+    look('ホーム（ヒートアップ）');
+    stages.push(gauge());
+    fireEvent.click(screen.getByRole('button', { name: /^申し込む/ }));
+    await tick(700);
+    look('演出（FEVER 目前）', layer('fx') as HTMLElement);
+
+    // 段階は、点火 → あたたまってきた（メイン口座・届かない額では動かない）→ ヒートアップ
+    expect(stages.map((t) => t.split('。')[1])).toEqual([
+      '点火',
+      'あたたまってきた',
+      'あたたまってきた',
+      'あたたまってきた',
+      'ヒートアップ',
+    ]);
+    expect(seen.length).toBeGreaterThanOrEqual(10);
+    const violations = seen.flatMap(({ scene, text }) =>
+      FORBIDDEN.filter(([, re]) => re.test(text)).map(
+        ([name, re]) => `${scene}: 「${name}」 ${text.match(re)?.[0] ?? ''}`,
+      ),
+    );
+    expect(
+      violations,
+      'G-08 に反しています（ファン向けに、人数・達成率・目標の金額を出さない）',
+    ).toEqual([]);
   });
 });

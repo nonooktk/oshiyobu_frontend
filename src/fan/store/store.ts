@@ -69,10 +69,12 @@ export type Deps = {
   solo?: () => boolean;
   /** 称賛の音を鳴らす（鳴るかどうかは、受け取る側が決める: オフ・操作の前・使えない環境では、何もしない）。 */
   sound?: (cue: SoundCue) => void;
+  /** 主・副のボタンを押したあと、次の押下を受けない長さ（ミリ秒）。省略は SETTLE_MS。テストが 0 にして、続けて押せるようにする。 */
+  settleMs?: () => number;
 };
 
 export const defaultDeps = (
-  partial: Pick<Deps, 'join' | 'fetch'> & Partial<Pick<Deps, 'solo' | 'sound'>>,
+  partial: Pick<Deps, 'join' | 'fetch'> & Partial<Pick<Deps, 'solo' | 'sound' | 'settleMs'>>,
 ): Deps => ({
   ...partial,
   reduceMotion: () =>
@@ -81,6 +83,9 @@ export const defaultDeps = (
     window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   random: Math.random,
 });
+
+/** 主・副のボタンを押したあと、次の押下を受けない長さ（ミリ秒）。ボタンの名前が変わった直後の、ダブルタップ・連打を止める。 */
+export const SETTLE_MS = 600;
 
 const CONFETTI_COLORS = [
   'var(--yellow)',
@@ -100,6 +105,13 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
   let seq = 0;
   /** 仲間を呼んでいる最中か（押し続けても、1 回ぶんしか進めない）。 */
   let calling = false;
+  /**
+   * 主・副のボタンを押した直後の短い間（SETTLE_MS）。押した瞬間に、同じ場所のボタンが次の段の名前に変わるので、
+   * ダブルタップ・連打・Enter の連打の 2 回目が、次の段を押したことにならないよう、この間は受けない（G2-12）。
+   */
+  let settling = false;
+  /** 申し込みの称賛・演出が終わるまで（称賛は、押した 0.15〜0.65 秒あとに出る。その隙間と、演出の最中を受けない）。 */
+  let applying = false;
   let achTimer: ReturnType<typeof setTimeout> | null = null;
   const timers = new Set<ReturnType<typeof setTimeout>>();
   const fxEnd = new Map<number, () => void>();
@@ -118,6 +130,13 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     timers.add(t);
   };
   const reduce = (): boolean => deps.reduceMotion();
+
+  /** 主・副のボタンを受けない間か。見た目（aria-busy）にも出す。 */
+  const heldNow = (): boolean => settling || applying || calling;
+  const syncHeld = (): void => {
+    const held = heldNow();
+    if (state.held !== held) set({ held });
+  };
 
   /** いまの条件。Provider が渡した条件が、いまの会場のものでなければ、会場の標準の条件を使う。 */
   const condNow = (): Condition =>
@@ -448,11 +467,14 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     if (!canApplyOf(v, k) || state.course === id) return;
     const first = !state.done.join;
     const had = v.joined;
-    set({ course: id, aim: null, done: { ...state.done, join: true } });
+    applying = true; // 称賛・演出が終わるまで、主・副のボタンの押下を受けない（下の after で解く）
+    set({ course: id, aim: null, done: { ...state.done, join: true }, held: true });
     if (!had) sound('join'); // 申し込んだ直後の称賛（新しい申し込みだけ。コースの変更は鳴らさない）
     if (!had) deps.join(pidNow()); // 新しい申し込みだけ送る（コースの変更・やめる・申し込み直しは数え直さない。決定 3）
     go('home');
     const after = (merged: boolean): void => {
+      applying = false;
+      syncHeld();
       if (first) unlockGift(0, merged);
       else
         toast(
@@ -539,6 +561,13 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
           .map((i) => i.id)
       : [];
     const rest = t1 && !reached && !canApplyOf(v1, t1) ? restText(t1, acct.deposit, acct.pay) : '';
+    // 熱量の段階が上がったか（ひとり体験は、行動のたびに上がる。共有メーターありは、人数が変わらないので上がらない）
+    const up = v1.heat.stage > v0.heat.stage;
+    const bump = !v1.solo
+      ? ''
+      : up
+        ? `熱量が「${v1.heat.name}」へ進みました。`
+        : '熱量が少し高まりました。';
     // 画面に出す文（トースト・読み上げ）と、短い称賛（行動 → それで何が進んだか）
     const toastText =
       id === 'teiki'
@@ -548,14 +577,16 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
           : `${yen(amount ?? 0)}を積み増しました（預金 ${yen(acct.deposit)}）`;
     const praise =
       id === 'teiki'
-        ? { title: 'はじめてくれてありがとう。', sub: '預金を積み増せるようになりました' }
+        ? { title: 'はじめてくれてありがとう。', sub: `${bump}預金を積み増せるようになりました` }
         : {
             title: id === 'main' ? 'メイン口座にしてくれてありがとう。' : '積み増しありがとう。',
-            sub: reached
-              ? '申し込めるようになりました'
-              : t1
-                ? `${t1.name}まで、残りは ${rest}`
-                : '申し込みの条件が 1 つそろいました',
+            sub:
+              bump +
+              (reached
+                ? '申し込めるようになりました'
+                : t1
+                  ? `${t1.name}まで、残りは ${rest}`
+                  : '申し込みの条件が 1 つそろいました'),
           };
     // 条件の ✓ が付く動きは、称賛が薄れていく頃に始める（動きを減らす設定では 0）
     set({
@@ -569,7 +600,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       },
     });
     if (reached) popLayer('deposit'); // 条件に届いたら、額の入力を閉じて、ホームの「申し込む」へ
-    sound('share');
+    sound(up ? 'stage' : 'share'); // 段階が上がったときは、段階の音。上がらない行動は、行動の音
     showAch(praise);
     toast(toastText, 3600);
     announce(`${praise.title}${praise.sub}。${toastText}。`);
@@ -600,11 +631,17 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     if (calling || state.course === null || state.done.friend) return;
     if (view().status.established || state.layers.length) return;
     calling = true;
+    syncHeld();
     clearAch();
     if (state.page !== 'home') go('home'); // ゲージが見える画面で伸ばす
     const v0 = view();
     const add = solo() ? Math.max(1, friendsToClinch(state, condNow(), meterNow()) ?? 1) : 1;
-    const v1 = viewOf({ ...state, friends: state.friends + add }, condNow(), meterNow(), solo());
+    const v1 = viewOf(
+      { ...state, friends: state.friends + add, done: { ...state.done, friend: true } },
+      condNow(),
+      meterNow(),
+      solo(),
+    );
     const reach = v1.status.established;
     const ms = reduce() ? (reach ? 1800 : 1500) : reach ? 2600 : 1200;
     sound('friend');
@@ -620,6 +657,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     later(ms, () => {
       hideFx(fxId); // 「届いた！」が残っていれば、ここで閉じる（飛ばしていても、ゲージの伸びは続いている）
       calling = false;
+      syncHeld();
       if (state.course === null) {
         set({ gaugeRun: null }); // 伸びている間に、申し込みをやめた・条件を変えた
         return;
@@ -677,6 +715,24 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
         onEnd: () => unlockGift(1),
       });
     }
+  };
+  /**
+   * 主のボタン・副のボタン・次のアクションの行を押したときの入口。押したあと、行動の称賛・演出が終わるまで
+   * （演出が出ない行動は SETTLE_MS の間）、次の押下を受けない。層（演出・シート）が出ているあいだも受けない。
+   * 押した瞬間に、同じ場所のボタンが次の段の名前に変わるため、ダブルタップ・連打が 2 段進むのを止める（G2-12）。
+   */
+  const press = (run: () => void): void => {
+    if (heldNow() || state.layers.length > 0) return;
+    const ms = deps.settleMs?.() ?? SETTLE_MS;
+    if (ms > 0) {
+      settling = true;
+      syncHeld();
+      later(ms, () => {
+        settling = false;
+        syncHeld();
+      });
+    }
+    run();
   };
   /** ホームの主のボタン。ゲージの下の 1 つの行動を、その場で進める（別の画面で選ばせない）。 */
   const homePrimary = (): void => {
@@ -770,6 +826,8 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     timers.forEach(clearTimeout);
     timers.clear();
     calling = false;
+    settling = false;
+    applying = false;
     if (achTimer) clearTimeout(achTimer);
     achTimer = null;
     fxEnd.clear();
@@ -918,6 +976,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       closeShare,
       shareTo,
       homePrimary,
+      press,
       openDeposit,
       closeDeposit,
       callFriends,

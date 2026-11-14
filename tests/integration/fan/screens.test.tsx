@@ -1,7 +1,6 @@
 // ファン向けの画面ごとの確かめ（上層: A-17・A-29〜A-32・A-42・A-54・A-56・A-57・I-29・I-67・I-69・I-74・I-101・I-117・I-118）。
 import { describe, expect, it, vi } from 'vitest';
 import { PREFETCH_IMAGES, PREFETCH_PLAN } from '../../../src/fan/art/registry';
-import { PUBLIC_URL } from '../../../src/fan/domain/share';
 import { loadLayersChunk, loadPagesChunk } from '../../../src/fan/prefetch';
 import { App } from '../../../src/fan/App';
 import { STORAGE_KEYS } from '../../../src/shared/device';
@@ -219,15 +218,15 @@ describe('共有（A-29〜A-32・I-29）', () => {
     return screen.getByRole('textbox') as HTMLTextAreaElement;
   }
 
-  it('投稿文に、推しの名前・市・達成率・あと N 人と、公開 URL（人物の番号なし）が入り、個人の情報は入らない', async () => {
+  it('投稿文に、推しの名前・市・達成率・あと N 人が入り、URL（仮の公開 URL を含む）と個人の情報は入らない', async () => {
     const box = await toShare();
     expect(box.value).toBe(
-      `Tech0サステナアイドルを久留米市に呼びたい！ いま80%まで来ています。ライブ開催まであと18人です。いっしょに応援してください！ #OSHIYOBU\n${PUBLIC_URL}`,
+      'Tech0サステナアイドルを久留米市に呼びたい！ いま80%まで来ています。ライブ開催まであと18人です。いっしょに応援してください！ #OSHIYOBU',
     );
-    expect(box.value).not.toMatch(/\?p=|90,000|預金|口座/);
+    expect(box.value).not.toMatch(/https?:|example\.test|\?p=|90,000|預金|口座/);
   });
 
-  it('X・Facebook は別タブ（noopener,noreferrer）で投稿画面を開き、Instagram は文面をコピーする', async () => {
+  it('X・Facebook は、外のサイトを開かず（別タブも外へのリンクも無い）、押すと投稿したことが出る。Instagram は文面をコピーする', async () => {
     const box = await toShare();
     const open = vi.spyOn(window, 'open').mockReturnValue(null);
     const write = vi.fn().mockResolvedValue(undefined);
@@ -235,15 +234,21 @@ describe('共有（A-29〜A-32・I-29）', () => {
       value: { writeText: write },
       configurable: true,
     });
+    const sheet = layer('share') as HTMLElement;
+    expect(sheet.querySelectorAll('a')).toHaveLength(0);
+    // シートの説明が、実際の動きと合う（別のタブを開くとは言わない）
+    expect(sheet.textContent).toContain('押すと投稿したことになります');
+    expect(sheet.textContent).not.toMatch(/別のタブ|投稿画面を開き/);
     fireEvent.click(btn('X'));
-    expect(open).toHaveBeenLastCalledWith(
-      `https://x.com/intent/post?text=${encodeURIComponent(box.value)}`,
-      '_blank',
-      'noopener,noreferrer',
-    );
+    expect(
+      screen.getAllByText('Xに投稿しました（デモのため、実際には投稿されません）').length,
+    ).toBeGreaterThan(0);
     fireEvent.click(btn('Facebook'));
-    const fb = String(open.mock.calls.at(-1)?.[0]);
-    expect(fb).toContain(`sharer.php?u=${encodeURIComponent(PUBLIC_URL)}&quote=`);
+    expect(
+      screen.getAllByText('Facebookに投稿しました（デモのため、実際には投稿されません）').length,
+    ).toBeGreaterThan(0);
+    expect(open).not.toHaveBeenCalled();
+    expect(write).not.toHaveBeenCalled(); // X・Facebook では、コピーもしない
     await act(async () => {
       fireEvent.click(btn('Instagram'));
     });

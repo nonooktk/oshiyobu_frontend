@@ -214,7 +214,7 @@ const SHARE_TITLE: Record<ShareMode, string> = {
   friend: '仲間を呼ぶ',
 };
 
-/** 共有のシート（SP-52）。X・Instagram・Facebook。ボタンを押したときだけ、外へ出る。 */
+/** 共有のシート（SP-52）。X・Instagram・Facebook。X・Facebook は、押すと投稿したことになる（外へは出ない）。Instagram は、文面をコピーする。 */
 export function ShareSheet({ mode, inert }: { mode: ShareMode; inert: boolean }) {
   const { state, view, actions } = useFan();
   const o = artistView(state.oshiId);
@@ -286,7 +286,7 @@ export function ShareSheet({ mode, inert }: { mode: ShareMode; inert: boolean })
         </label>
         <textarea id="fan-post-text" ref={area} className={styles.postText} readOnly value={text} />
         <p className={styles.shareNote}>
-          ボタンを押したときだけ、投稿画面を開きます（X・Facebook）。Instagramでは、文面をコピーします。
+          XとFacebookは、押すと投稿したことになります（デモのため、実際には投稿されません）。Instagramは、文面をコピーします。
         </p>
         <div className={styles.shareBtns}>
           <button

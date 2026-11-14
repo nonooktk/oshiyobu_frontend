@@ -66,6 +66,29 @@
   --font-fan:
     'Corporate Logo Rounded Bold ver3', 'Noto Sans JP', 'Hiragino Sans',
     'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+
+  /*
+    文字の大きさの段と行間・字間（ファン向け。src/fan の CSS は、px を直接書かず、この段で使う）。
+    となり合う段の比は 1.2 倍以上。note は 12px を下回らない（tests/unit/type-scale.test.ts が検査する）。
+      hero    演出の大きい数字（80%・成立など）。演出の中の大きさは、段の外
+      figure  背の高いスマホで、メーターの「あと N 人」の数字だけ
+      title   画面のタイトル・シートの見出し・主な金額
+      lead    カードの名前・その画面の主役（メーターの「達成率」・次のアクションの題）
+      body    本文・ボタン・セリフ
+      note    説明文・注記・条件・札
+  */
+  --fs-hero: 96px;
+  --fs-figure: 40px;
+  --fs-title: 30px;
+  --fs-lead: 22px;
+  --fs-body: 16px;
+  --fs-note: 13px;
+  /* 行間: 1 行の見出し・ボタンは詰め、数行になる文は、行と行が寄らないよう広く取る */
+  --lh-tight: 1.3;
+  --lh-body: 1.6;
+  --lh-note: 1.7;
+  /* 字間: 太字の丸い書体は、字が詰まって見えるので、少し開ける（em） */
+  --ls-text: 0.03em;
 }
 
 /* ファン向けだけ、書体を差し替える（--font-fan の説明は上）。事務所向け・発表者用には data-page が付かないので、効かない */

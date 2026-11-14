@@ -22,6 +22,8 @@
 - 全画面に札「デモ用の架空データ」を出します（`shared/components/DemoBadge`、特典・演出の層は専用の札）。下から出るシート（やめる確認・引き継ぎ）は、枠（`SheetShell`）の見出しの行に札を置きます（後ろの画面が下へスクロールされていても見えるように）。消しません
 - 幅 375px で全部の操作ができ、ホームは幅 375px・高さ 667px と 812px で、スクロールなしに収まります（N-01・N-06）
 - 操作する要素は高さ 44px 以上。色は `tokens.css` の値だけ（新しい色を足さない）
+- 書体は Corporate Logo Rounded Bold ver3（太さ 700 の 1 本。`tokens.css` の `:root[data-page='fan']` が `--font` を差し替える。`main.tsx` が `data-page` を付ける）。400 の指定の字も 700 の面で出るので、本文と見出しの区別は、太さでなく、大きさ・行間・色で付ける
+- 文字の大きさは、`tokens.css` の段（`--fs-hero`・`--fs-figure`・`--fs-title`・`--fs-lead`・`--fs-body`・`--fs-note`）と行間（`--lh-*`）で決める。px を直書きしない（演出の中だけ別。`tests/unit/type-scale.test.ts` が検査する）。段の表は `docs/フォント.md` の「2. 文字の大きさの段」
 - 画面の操作は通信を待たずに見た目が変わります（N-21）。通信の成否で操作を止めず、エラーの画面は出しません
 - 使わない語は、文言ガード（`tests/unit/forbidden-words.test.ts`）が検査します。語の一覧は、そちらにあります
 - `shared/`・`styles/`・`core/` は、直さずに、コーディネーターに頼みます

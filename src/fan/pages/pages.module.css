@@ -5,12 +5,13 @@
 }
 .homeH {
   margin: var(--s3) var(--s3) 0;
-  font-size: 14px;
+  font-size: var(--fs-lead);
   font-weight: 700;
   color: var(--ink-soft);
+  line-height: var(--lh-tight);
 }
 .homeH small {
-  font-size: 12px;
+  font-size: var(--fs-note);
   font-weight: 400;
 }
 .homeMenu {
@@ -29,7 +30,7 @@
   border-radius: var(--r);
   background: var(--surface);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--fs-body);
   font-weight: 700;
   color: var(--primary);
   cursor: pointer;
@@ -44,7 +45,7 @@
 .tileT {
   display: grid;
   gap: 2px;
-  line-height: 1.3;
+  line-height: var(--lh-tight);
 }
 .tileT .demoChip {
   justify-self: start;
@@ -69,9 +70,9 @@
   background: var(--surface);
   color: var(--primary);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--fs-note);
   font-weight: 700;
-  line-height: 1.25;
+  line-height: var(--lh-tight);
   text-align: center;
   word-break: keep-all;
   cursor: pointer;
@@ -93,7 +94,7 @@
   background: transparent;
   color: var(--ink-soft);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--fs-body);
   font-weight: 400;
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -109,9 +110,9 @@
   align-items: flex-start;
   gap: var(--s2);
   margin: var(--s2) 0 0;
-  font-size: 12px;
+  font-size: var(--fs-note);
   font-weight: 700;
-  line-height: 1.5;
+  line-height: var(--lh-note);
   color: var(--ink);
 }
 .demoLine .demoChip {
@@ -124,7 +125,7 @@
   border-radius: var(--r);
   background: var(--yellow);
   color: var(--ink);
-  font-size: 12px;
+  font-size: var(--fs-note);
   font-weight: 700;
   line-height: 20px;
   white-space: nowrap;
@@ -134,18 +135,20 @@
 }
 .bigV {
   margin: var(--s1) 0 0;
-  font-size: 20px;
+  font-size: var(--fs-lead);
   font-weight: 700;
-  line-height: 1.4;
+  line-height: var(--lh-tight);
 }
 .plain {
   margin: var(--s2) 0 0;
-  font-size: 14px;
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
 }
 .dSub {
   margin: var(--s2) 0 0;
-  font-size: 12px;
+  font-size: var(--fs-note);
   color: var(--ink-soft);
+  line-height: var(--lh-note);
 }
 .cardNext .dSub,
 .cardNext .plain {
@@ -156,7 +159,8 @@
   grid-template-columns: auto 1fr;
   gap: var(--s1) var(--s3);
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
 }
 .facts dt {
   font-weight: 700;
@@ -178,9 +182,9 @@
 }
 .aonBig {
   margin: 0;
-  font-size: 20px;
+  font-size: var(--fs-lead);
   font-weight: 700;
-  line-height: 1.5;
+  line-height: var(--lh-tight);
 }
 .aonBig b {
   color: var(--primary);
@@ -194,14 +198,16 @@
 }
 .rcAct > p {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-note);
+  line-height: var(--lh-note);
 }
 .rcAct .demoLine {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-note);
+  line-height: var(--lh-note);
 }
 .rcAct .demoChip {
-  font-size: 14px;
+  font-size: var(--fs-note);
   line-height: 22px;
 }
 .enter {
@@ -243,7 +249,7 @@
   top: 100%;
   left: 0;
   padding-top: 2px;
-  font-size: 12px;
+  font-size: var(--fs-note);
   font-weight: 700;
   white-space: nowrap;
   transform: translateX(-50%);
@@ -262,21 +268,23 @@
   border-radius: var(--r);
   background: var(--surface);
   color: var(--warning-ink);
-  font-size: 12px;
+  font-size: var(--fs-note);
   font-weight: 700;
 }
 .actH {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--fs-lead);
   font-weight: 700;
+  line-height: var(--lh-tight);
 }
 .actD {
   margin: var(--s1) 0 var(--s2);
-  font-size: 14px;
+  font-size: var(--fs-note);
+  line-height: var(--lh-note);
 }
 .before {
   margin: 0 0 var(--s1);
-  font-size: 12px;
+  font-size: var(--fs-note);
   font-weight: 700;
   color: var(--ink-soft);
 }
@@ -294,18 +302,18 @@
   gap: 2px;
 }
 .rows dt {
-  font-size: 12px;
+  font-size: var(--fs-note);
   font-weight: 700;
   color: var(--ink-soft);
 }
 .rows dd {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-body);
   font-weight: 700;
 }
 .actDone {
   margin: var(--s2) 0 0;
-  font-size: 14px;
+  font-size: var(--fs-body);
   font-weight: 700;
   color: var(--success-ink);
 }
@@ -365,21 +373,22 @@
   padding: var(--s3);
   background: var(--scrim);
   color: var(--surface);
-  font-size: 14px;
+  font-size: var(--fs-note);
   font-weight: 700;
   text-align: center;
+  line-height: var(--lh-note);
 }
 .artCap {
   display: flex;
   justify-content: space-between;
   gap: var(--s2);
   margin: var(--s2) 0 0;
-  font-size: 12px;
+  font-size: var(--fs-note);
   font-weight: 700;
   color: var(--ink-soft);
 }
 .artCap b {
-  font-size: 14px;
+  font-size: var(--fs-body);
   color: var(--ink);
 }
 .thanksBox {
@@ -388,14 +397,15 @@
   border: 1px solid var(--yellow);
   border-radius: var(--r);
   background: var(--yellow-light);
-  font-size: 14px;
+  font-size: var(--fs-body);
   font-weight: 700;
-  line-height: 1.7;
+  line-height: var(--lh-body);
 }
 .area {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
 }
 .area th,
 .area td {
@@ -432,7 +442,7 @@
   border-radius: var(--r);
   background: var(--surface);
   color: var(--warning-ink);
-  font-size: 12px;
+  font-size: var(--fs-note);
 }
 
 /* しくみ */
@@ -449,8 +459,9 @@
   align-items: flex-start;
   gap: var(--s2);
   padding: 0 0 var(--s3) 0;
-  font-size: 14px;
+  font-size: var(--fs-body);
   font-weight: 700;
+  line-height: var(--lh-body);
 }
 .flow li:last-child {
   padding-bottom: 0;
@@ -476,12 +487,12 @@
   border-radius: 50%;
   background: var(--primary);
   color: var(--surface);
-  font-size: 12px;
+  font-size: var(--fs-note);
   font-style: normal;
 }
 .flow small {
   display: block;
-  font-size: 12px;
+  font-size: var(--fs-note);
   font-weight: 400;
   color: var(--ink-soft);
 }
@@ -504,7 +515,7 @@
   background: var(--surface);
   color: var(--primary);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--fs-note);
   font-weight: 700;
   text-align: left;
   cursor: pointer;
@@ -530,7 +541,7 @@
   background: var(--surface);
   color: var(--primary);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--fs-body);
   font-weight: 700;
   cursor: pointer;
 }
@@ -558,7 +569,7 @@
   background: var(--surface);
   color: var(--primary);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--fs-body);
   font-weight: 700;
   text-align: left;
   cursor: pointer;
@@ -577,11 +588,11 @@
   cursor: not-allowed;
 }
 .seatOpt .p {
-  font-size: 20px;
+  font-size: var(--fs-lead);
 }
 .seatOpt small {
   display: block;
-  font-size: 12px;
+  font-size: var(--fs-note);
   font-weight: 400;
 }
 
@@ -592,7 +603,7 @@
   height: auto;
 }
 .privFig text {
-  font-size: 14px;
+  font-size: var(--fs-note);
   font-weight: 700;
   fill: var(--ink);
 }
@@ -619,7 +630,7 @@
 /* やめる・引き継ぎのシート */
 .subH {
   margin: var(--s2) 0 var(--s1);
-  font-size: 12px;
+  font-size: var(--fs-note);
   font-weight: 700;
   color: var(--ink-soft);
 }

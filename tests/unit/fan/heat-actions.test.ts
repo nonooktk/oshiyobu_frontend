@@ -50,13 +50,13 @@ describe('主のボタン（場面ごとの文）', () => {
       expect(action(h)).toMatchObject({
         id: 'teiki',
         label: '推し活定期をはじめる',
-        sub: '→ 預金を積み増せるようになります',
+        sub: '→ あたたまってきます',
       });
       h.a.homePrimary();
       expect(action(h)).toMatchObject({
         id: 'deposit',
         label: '預金を積み増す',
-        sub: '→ 申し込めるようになります',
+        sub: '→ ヒートアップへ',
       });
     }
   });
@@ -105,7 +105,7 @@ describe('主のボタンを押したときの動き', () => {
     expect(h.state().acct).toEqual({ pay: false, deposit: 0, times: 0 });
     expect(h.state().page).toBe('home');
     expect(h.state().ach).toMatchObject({ title: 'はじめてくれてありがとう。' });
-    expect(sounds).toEqual(['share']);
+    expect(sounds).toEqual(['stage']); // 段階が上がる（点火 → あたたまってきた）行動は、段階の音
   });
 
   it('「預金を積み増す」を押すと、ホームの上に、額の入力のシートが開く（口座と預金の画面へは移らない）', () => {
@@ -129,7 +129,9 @@ describe('主のボタンを押したときの動き', () => {
     h.a.runAcct('deposit', 'home', 15_000); // 20,000円に届く
     expect(layerKinds(h)).toEqual([]);
     expect(action(h)).toMatchObject({ id: 'apply' });
-    expect(h.state().ach).toMatchObject({ sub: '申し込めるようになりました' });
+    expect(h.state().ach).toMatchObject({
+      sub: '熱量が「ヒートアップ」へ進みました。申し込めるようになりました',
+    });
   });
 
   it('「申し込む」を押すと、その場で申し込みが進み、称賛の音が鳴る', () => {
@@ -366,7 +368,9 @@ describe('申し込んだ直後の称賛（見本の形: あなたがしたこ�
   });
 
   it('段階が上がらない申し込みでも、称賛が出る（「熱が高まりました」）', () => {
-    const h = harness(4, { solo: true, minPeople: 200 }); // 最低人数が多く、1 人増えても、段階は 1 のまま
+    // 共有メーターあり（人数の割合から段階を決める）。最低人数が多く、1 人増えても、段階は 1 のまま
+    // （ひとり体験は、申し込みで必ず FEVER 目前へ上がるので、段階が上がらない申し込みは、共有メーターありだけ）
+    const h = harness(4, { solo: false, minPeople: 200 });
     passStart(h);
     vi.advanceTimersByTime(700);
     expect(h.state().course).toBe('normal');

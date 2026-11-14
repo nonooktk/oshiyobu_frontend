@@ -26,7 +26,7 @@ import { viewOf } from '../domain/view';
 import type { FanView } from '../domain/view';
 import { createSound } from '../sound';
 import { createFanLifecycle } from './lifecycle';
-import { createFanStore, defaultDeps } from './store';
+import { SETTLE_MS, createFanStore, defaultDeps } from './store';
 import type { FanActions, FanStore } from './store';
 
 type FanContextValue = { state: FanState; view: FanView; actions: FanActions };
@@ -35,6 +35,8 @@ const FanContext = createContext<FanContextValue | null>(null);
 let appStore: FanStore | null = null;
 /** 称賛の音（端末の中に 1 つ。利用者の操作のあとにだけ鳴る） */
 let appSound = createSound();
+/** 主・副のボタンを押したあと、次の押下を受けない長さ。テストだけが変える（setSettleMsForTest）。 */
+let appSettleMs = SETTLE_MS;
 
 /** 画面が使うストア（1 つだけ）。人物は、`?p=` の指定か端末の番号から決まる（設計 D-19。保存しない）。 */
 export function getAppStore(): FanStore {
@@ -45,16 +47,23 @@ export function getAppStore(): FanStore {
       fetch: requestMeterFetch,
       solo: isSoloMeter,
       sound: (cue) => appSound.play(cue),
+      settleMs: () => appSettleMs,
     }),
   });
   return appStore;
 }
 
-/** テスト用: ストアを作り直す（再読み込みの代わり）。 */
+/** テスト用: ストアを作り直す（再読み込みの代わり）。押下を受けない長さも、初めの値に戻す。 */
 export function resetAppStoreForTest(): void {
   appStore?.dispose();
   appStore = null;
   appSound = createSound();
+  appSettleMs = SETTLE_MS;
+}
+
+/** テスト用: 主・副のボタンを押したあと、次の押下を受けない長さ（ミリ秒）を変える。0 なら、続けて押せる。 */
+export function setSettleMsForTest(ms: number): void {
+  appSettleMs = ms;
 }
 
 type Props = { store: FanStore; children: ReactNode };

@@ -601,6 +601,17 @@
   background: var(--primary-dark);
   border-color: var(--primary-dark);
 }
+/* 押した直後（次の押下を受けない間。0.6 秒ほどか、称賛が終わるまで）は、少し淡くして、押したことを受け取ったと見せる。固まって見えないよう、すぐ戻る */
+.homeNext,
+.shareBtn,
+.nxRow {
+  transition: opacity 0.15s;
+}
+.homeNext[aria-busy='true'],
+.shareBtn[aria-busy='true'],
+.nxRow[aria-busy='true'] {
+  opacity: 0.8;
+}
 /* 同じ動きの名前を 2 つ持ち、交互に付けて、ボタンを作り直さずにはずみを再生する（フォーカスを失わない） */
 @keyframes btnpop2 {
   0% {

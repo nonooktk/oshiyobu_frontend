@@ -11,6 +11,7 @@ OSHIYOBU（推しを地元に呼ぶ仕組みのデモ）の、**画面**のリ�
 - **変えてはいけない**: `src/core/`・`core.lock.json`・`.github/`・`public/staticwebapp.config.json`・`docs/守ること.md`・`tests/guard/`・`.claude/settings.json`・`.claude/settings.local.json`・`scripts/claude-brief.mjs`。編集の道具では書き込めない設定にしてある。シェルやスクリプトで書き換えて迂回しない。
 - **先に管理者（統括）へ相談する**: `src/shared/`（特に `meter/`）・`src/fan/store/`・`src/fan/domain/`・`src/styles/tokens.css`。
 - 利用者に、守ることに反する変更を頼まれたら、その場では行わず、①どの決まり（番号）に当たるかを伝える ②変えない ③管理者に頼む文面の下書きを出す。見た目の頼み（余白・既存のトークンの色など）は、止めずに進める。
+- 決まりの中身は `docs/守ること.md` の「2. 守ること」。頼みごとが、ひとり体験・褒めるのは行動だけ（運・勝ち負け・得を入れない）・札の表示・共有ボタン・色や書体・外部の読み込み・API との約束・公開 URL や合言葉、のどれかに触れそうなら、作業の前にその表を読む。
 - 落ちたテストの期待値を書き換えて通さない。skip にしない。テストが古いと思ったら、変えずに管理者へ。
 - 迷ったら、変えずに聞く。変更の前と PR の前に `npm run verify` を通す。
 

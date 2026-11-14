@@ -228,6 +228,21 @@ describe('共有メーターの reset と連動（I-64・I-126・A-62 のファ�
     expect(meter().getAttribute('aria-label')).toContain('支援者75人');
   });
 
+  it('申し込みの応答だけが遅れ、あとに出した取得の応答より遅く着いても、75 人のまま（76 人にならない）。reset を検知すると 74 人に戻る（G2-01）', async () => {
+    mountFan('?p=4');
+    api.latency = 2500; // 申し込み（POST）だけを遅くする（取得は、このあとすぐ 0 秒に戻す）
+    passStart();
+    api.latency = 0;
+    await closeGiftAfterFx();
+    await tick(7000);
+    expect(api.joined).toBe(1);
+    expect(meter().getAttribute('aria-label')).toContain('支援者75人');
+    api.reset();
+    await tick(6000);
+    expect(meter().getAttribute('aria-label')).toContain('支援者74人');
+    expect(screen.getByText('まだチケットと特典は入手できていません！')).toBeTruthy();
+  });
+
   it('事務所向けの「デモを最初に戻す」を受けた連動で、はじめの画面に戻る。共有のメーターには触らない', async () => {
     FakeChannel.reset();
     vi.stubGlobal('BroadcastChannel', asBroadcastChannel);

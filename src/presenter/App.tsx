@@ -6,11 +6,22 @@ import type { ResetOutcome } from '../shared/meter';
 import styles from './App.module.css';
 import { pageText } from './text/page';
 
+/**
+ * 合言葉は HTTP ヘッダー（X-Presenter-Key）に載せて送る。印字できる ASCII（半角の英数字と記号。空白を含む）以外の文字は
+ * ヘッダーに載せられず、ブラウザの通信が例外になる。正しい合言葉でも「通信できません」と出てしまうので、送る前にはじく（G2-03）
+ */
+const SENDABLE_PASSPHRASE = /^[\x20-\x7e]*$/;
+
+/** 結果の種類。サーバーに送った結果（ResetOutcome）のほかに、送る前に画面で見つけた「使えない文字」がある */
+type Outcome = ResetOutcome | { readonly kind: 'invalid_passphrase' };
+
 /** 結果の文言と種類。原因ごとに分けて出す（仕様 SP-67） */
-function describe(outcome: ResetOutcome): { readonly message: string; readonly ok: boolean } {
+function describe(outcome: Outcome): { readonly message: string; readonly ok: boolean } {
   switch (outcome.kind) {
     case 'ok':
       return { message: pageText.resultOk(outcome.resetAt), ok: true };
+    case 'invalid_passphrase':
+      return { message: pageText.resultInvalidPassphrase, ok: false };
     case 'unauthorized':
       return { message: pageText.resultUnauthorized, ok: false };
     case 'not_configured':
@@ -30,10 +41,14 @@ export function App() {
   const [armed, setArmed] = useState(false);
   const [confirm, setConfirm] = useState('');
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<ResetOutcome | null>(null);
+  const [result, setResult] = useState<Outcome | null>(null);
   const [health, setHealth] = useState<{ ok: boolean; ms: number } | 'checking' | null>(null);
 
   const execute = async () => {
+    if (!SENDABLE_PASSPHRASE.test(passphrase)) {
+      setResult({ kind: 'invalid_passphrase' });
+      return;
+    }
     setBusy(true);
     setResult(null);
     const outcome = await resetSharedMeter(passphrase);

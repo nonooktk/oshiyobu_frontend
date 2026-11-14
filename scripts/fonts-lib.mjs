@@ -423,8 +423,8 @@ const KNOWN_TAGS = [
   'Gloc', 'Feat', 'Sill',
 ];
 
-/** WOFF2 の cmap が持つコードポイントの集合を返す。表は 1 本の brotli にまとまっているので、Node の標準で開ける */
-export function readWoff2Cmap(buffer) {
+/** WOFF2 の表を、名前 → 中身（展開後）の対応で返す。表は 1 本の brotli にまとまっているので、Node の標準で開ける */
+function readWoff2Tables(buffer) {
   if (buffer.subarray(0, 4).toString('latin1') !== 'wOF2') throw new Error('WOFF2 ではありません');
   const numTables = buffer.readUInt16BE(12);
   const compressedSize = buffer.readUInt32BE(20);
@@ -454,17 +454,25 @@ export function readWoff2Cmap(buffer) {
     tables.push({ tag, size: transformed ? readBase128() : length });
   }
   const data = brotliDecompressSync(buffer.subarray(pos, pos + compressedSize));
+  const found = new Map();
   let offset = 0;
   for (const table of tables) {
-    if (table.tag === 'cmap') return readCmap(data.subarray(offset, offset + table.size));
+    found.set(table.tag, data.subarray(offset, offset + table.size));
     offset += table.size;
   }
-  throw new Error('WOFF2 に cmap がありません');
+  return found;
 }
 
-/** cmap の形式 4（BMP）と 12（全面）を読む */
+/** WOFF2 の cmap が持つコードポイントの集合を返す */
+export function readWoff2Cmap(buffer) {
+  const cmap = readWoff2Tables(buffer).get('cmap');
+  if (!cmap) throw new Error('WOFF2 に cmap がありません');
+  return new Set(readCmap(cmap).keys());
+}
+
+/** cmap の形式 4（BMP）と 12（全面）を読む。コードポイント → グリフ番号（0 = 字が無い、は含めない） */
 function readCmap(cmap) {
-  const found = new Set();
+  const found = new Map();
   const count = cmap.readUInt16BE(2);
   for (let i = 0; i < count; i++) {
     const at = cmap.readUInt32BE(4 + i * 8 + 4);
@@ -487,7 +495,7 @@ function readCmap(cmap) {
             const raw = cmap.readUInt16BE(rangeOffset + s * 2 + r + (c - first) * 2);
             glyph = raw === 0 ? 0 : (raw + d) & 0xffff;
           }
-          if (glyph !== 0) found.add(c);
+          if (glyph !== 0) found.set(c, glyph);
         }
       }
     } else if (format === 12) {
@@ -497,9 +505,138 @@ function readCmap(cmap) {
         const first = cmap.readUInt32BE(base);
         const last = cmap.readUInt32BE(base + 4);
         const glyph = cmap.readUInt32BE(base + 8);
-        for (let c = first; c <= last; c++) if (glyph + (c - first) !== 0) found.add(c);
+        for (let c = first; c <= last; c++)
+          if (glyph + (c - first) !== 0) found.set(c, glyph + (c - first));
       }
     }
   }
   return found;
+}
+
+// ---------- ④ 輪郭が空の字（形が無く、幅だけの字）を見つける ----------
+// 元の書体に、字は登録されているのに、輪郭が空のものがある（MOBO の Bold の ‹ › など）。
+// cmap だけを見ると「入っている」ように見えるが、画面では何も出ない（端末の書体にも落ちない）。
+// 配る WOFF2（CFF 形式）の charstring を読んで、何も描かない字を数える。
+
+/**
+ * CFF（Type 2）の charstring が、何も描かない（幅とヒントだけで終わる）かを返す。
+ * 描くための命令（moveto・line・curve・flex）か、サブルーチンの呼び出しを 1 つでも含めば「空ではない」。
+ */
+export function isEmptyCharString(cs) {
+  let args = 0; // いま積んでいる引数の数
+  let stems = 0; // ここまでに宣言した stem の数（hintmask の印の長さを決める）
+  let i = 0;
+  while (i < cs.length) {
+    const b = cs[i] ?? 0;
+    if (b >= 32 || b === 28) {
+      // 数
+      i += b === 28 ? 3 : b <= 246 ? 1 : b <= 254 ? 2 : 5;
+      args++;
+      continue;
+    }
+    switch (b) {
+      case 1: // hstem
+      case 3: // vstem
+      case 18: // hstemhm
+      case 23: // vstemhm
+        stems += args >> 1;
+        args = 0;
+        i++;
+        break;
+      case 19: // hintmask
+      case 20: // cntrmask（あとの stem の宣言を省いた分も数える）
+        stems += args >> 1;
+        args = 0;
+        i += 1 + Math.ceil(stems / 8); // 印のバイトは、命令と読まずに飛ばす
+        break;
+      case 14: // endchar。引数が 4 つ以上あるのは、部品を組み合わせて描く形（seac）
+        return args < 4;
+      case 11: // return
+        i++;
+        break;
+      default:
+        // moveto（4・21・22）・line・curve・flex（12）・callsubr（10）・callgsubr（29）ほか、描く側の命令
+        return false;
+    }
+  }
+  return true;
+}
+
+/** CFF の INDEX（個数・オフセットの並び・データ）を読む。各要素の [開始, 終了] と、次の位置を返す */
+function readCffIndex(cff, pos) {
+  const count = cff.readUInt16BE(pos);
+  if (count === 0) return { items: [], end: pos + 2 };
+  const offSize = cff[pos + 2] ?? 1;
+  const offsets = pos + 3;
+  const offset = (i) => {
+    let value = 0;
+    for (let k = 0; k < offSize; k++) value = value * 256 + (cff[offsets + i * offSize + k] ?? 0);
+    return value;
+  };
+  const data = offsets + (count + 1) * offSize - 1;
+  const items = [];
+  for (let i = 0; i < count; i++) items.push([data + offset(i), data + offset(i + 1)]);
+  return { items, end: data + offset(count) };
+}
+
+/** CFF の Top DICT から、CharStrings の位置（演算子 17 の引数）を取り出す */
+function readCharStringsOffset(cff, from, to) {
+  let operands = [];
+  let i = from;
+  while (i < to) {
+    const b = cff[i] ?? 0;
+    if (b <= 21) {
+      if (b === 17) return operands[operands.length - 1];
+      i += b === 12 ? 2 : 1;
+      operands = [];
+    } else if (b === 28) {
+      operands.push(cff.readInt16BE(i + 1));
+      i += 3;
+    } else if (b === 29) {
+      operands.push(cff.readInt32BE(i + 1));
+      i += 5;
+    } else if (b === 30) {
+      // 実数。半バイトずつ、0xf（終わり）まで
+      i++;
+      while (i < to) {
+        const nibbles = cff[i++] ?? 0;
+        if ((nibbles & 0x0f) === 0x0f || nibbles >> 4 === 0x0f) break;
+      }
+      operands.push(Number.NaN);
+    } else if (b >= 32 && b <= 246) {
+      operands.push(b - 139);
+      i++;
+    } else if (b >= 247 && b <= 250) {
+      operands.push((b - 247) * 256 + (cff[i + 1] ?? 0) + 108);
+      i += 2;
+    } else if (b >= 251 && b <= 254) {
+      operands.push(-(b - 251) * 256 - (cff[i + 1] ?? 0) - 108);
+      i += 2;
+    } else i++;
+  }
+  throw new Error('CFF に CharStrings がありません');
+}
+
+/**
+ * WOFF2（CFF 形式）で、cmap に登録されているのに、輪郭が空の字のコードポイントを返す。
+ * 空白類（U+0020・U+3000 など。もともと形が無い）は含めない。
+ */
+export function readWoff2EmptyGlyphs(buffer) {
+  const tables = readWoff2Tables(buffer);
+  const cmapTable = tables.get('cmap');
+  const cff = tables.get('CFF ');
+  if (!cmapTable) throw new Error('WOFF2 に cmap がありません');
+  if (!cff) throw new Error('CFF 形式の WOFF2 だけ、輪郭を検査できます');
+  const hdrSize = cff[2] ?? 4;
+  const names = readCffIndex(cff, hdrSize);
+  const tops = readCffIndex(cff, names.end);
+  const [from, to] = tops.items[0] ?? [0, 0];
+  const charStrings = readCffIndex(cff, readCharStringsOffset(cff, from, to)).items;
+  const empty = new Set();
+  for (const [cp, gid] of readCmap(cmapTable)) {
+    const range = charStrings[gid];
+    if (!range || /\s/u.test(String.fromCodePoint(cp))) continue;
+    if (isEmptyCharString(cff.subarray(range[0], range[1]))) empty.add(cp);
+  }
+  return empty;
 }

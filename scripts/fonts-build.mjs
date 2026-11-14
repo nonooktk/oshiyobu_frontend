@@ -21,6 +21,7 @@ import {
   findMissingGlyphs,
   formatGlyphs,
   readWoff2Cmap,
+  readWoff2EmptyGlyphs,
   requestedChars,
   simulatorCss,
 } from './fonts-lib.mjs';
@@ -138,6 +139,11 @@ try {
     for (const ch of listed.extra)
       if (!cmap.has(ch.codePointAt(0))) problems.push(`${name} に「${ch}」がありません`);
   }
+  for (const name of [...FONT_FILES, ...EXTRA_FILES, DISPLAY_FILE]) {
+    const empty = readWoff2EmptyGlyphs(readFileSync(join(ROOT, FONT_DIR, name)));
+    for (const cp of empty)
+      problems.push(`${name} に、輪郭が空の字「${String.fromCodePoint(cp)}」があります`);
+  }
   const displayCmap = cmapOf(DISPLAY_FILE);
   for (const ch of listed.display)
     if (!displayCmap.has(ch.codePointAt(0)))
@@ -157,6 +163,11 @@ try {
   );
   if (listed.missing.size > 0)
     console.log(`  MOBO に無い字（別の書体で表示される）: ${[...listed.missing].join(' ')}`);
+  if (report.emptyDropped || report.displayEmptyDropped) {
+    console.log(
+      `輪郭が空のため外した字（元の書体に登録はあるが、形が無い。端末の書体で表示される）: MOBO ${report.emptyDropped || 'なし'}・見出し書体 ${report.displayEmptyDropped || 'なし'}`,
+    );
+  }
   console.log(
     `見出し書体: ${listed.display.size} 字を収録・見出し書体に無い字 ${listed.displayMissing.size} 字（MOBO で表示される）`,
   );

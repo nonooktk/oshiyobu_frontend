@@ -23,10 +23,12 @@ import {
   findMissingDisplayGlyphs,
   findMissingGlyphs,
   formatGlyphs,
+  isEmptyCharString,
   missingMessage,
   parseGlyphs,
   parseUnicodeRange,
   readWoff2Cmap,
+  readWoff2EmptyGlyphs,
   simulatorCss,
   unicodeRange,
 } from '../../scripts/fonts-lib.mjs';
@@ -192,6 +194,42 @@ describe('見出し書体の漏れの検出（findMissingDisplayGlyphs）', () =
   });
 });
 
+describe('輪郭が空の字の判定（isEmptyCharString）', () => {
+  // CFF の Type 2 charstring。数は 32〜246 が 1 バイト（値 + 139）。14 = endchar、21 = rmoveto、5 = rlineto
+  const num = (n: number): number => n + 139;
+  it('幅だけ・何も描かずに終わる字は、空', () => {
+    expect(isEmptyCharString(Uint8Array.from([num(100), 14]))).toBe(true);
+    expect(isEmptyCharString(Uint8Array.from([14]))).toBe(true);
+  });
+
+  it('移動・線・曲線を含む字は、空ではない', () => {
+    expect(
+      isEmptyCharString(Uint8Array.from([num(100), num(1), num(2), 21, num(3), num(4), 5, 14])),
+    ).toBe(false);
+    expect(isEmptyCharString(Uint8Array.from([num(1), 22, 14]))).toBe(false);
+  });
+
+  it('ヒント（stem・hintmask）だけで、何も描かない字は、空。hintmask の印のバイトを読み飛ばす', () => {
+    // 幅 + stem 2 組（hstemhm = 18）→ hintmask（19）+ 印 1 バイト（0xff）→ endchar
+    const hinted = [num(100), num(1), num(2), num(3), num(4), 18, 19, 0xff, 14];
+    expect(isEmptyCharString(Uint8Array.from(hinted))).toBe(true);
+    // 印のバイトの値が、命令の番号（21 = rmoveto）と同じでも、命令と取り違えない
+    expect(isEmptyCharString(Uint8Array.from([num(100), num(1), num(2), 18, 19, 21, 14]))).toBe(
+      true,
+    );
+    // 印のあとに描く字は、空ではない
+    expect(
+      isEmptyCharString(
+        Uint8Array.from([num(100), num(1), num(2), 18, 19, 0x80, num(5), num(6), 21, 14]),
+      ),
+    ).toBe(false);
+  });
+
+  it('サブルーチンを呼ぶ字は、描いているとみなす（空ではない）', () => {
+    expect(isEmptyCharString(Uint8Array.from([num(100), num(-107), 10, 14]))).toBe(false);
+  });
+});
+
 describe('unicode-range（unicodeRange・parseUnicodeRange）', () => {
   it('続くコードポイントは 1 つの範囲にまとめ、離れたものは分ける', () => {
     expect(unicodeRange('乁七丂丁一')).toBe('U+4E00-4E03,U+4E41');
@@ -288,6 +326,21 @@ describe('配るフォント（public/fonts/）', () => {
     const all = [...FONT_FILES, ...EXTRA_FILES].map((name) => readWoff2Cmap(read(name)));
     const wrong = cps(listed().missing).filter((cp) => all.some((cmap) => cmap.has(cp)));
     expect(explain(wrong)).toEqual([]);
+  });
+
+  it.each([...FONT_FILES, ...EXTRA_FILES, DISPLAY_FILE])(
+    '%s は、輪郭が空の字（形が無く、幅だけの字）を 1 つも持たない（空白類を除く）',
+    (name) => {
+      expect(explain([...readWoff2EmptyGlyphs(read(name))])).toEqual([]);
+    },
+  );
+
+  it('MOBO の Bold に形が無い字（‹ › ‼ など）は、MOBO では出さない（[なし]。端末の書体で出す）', () => {
+    const { missing, included, extra } = listed();
+    for (const ch of '‹›‼·–—•ゕゖ') {
+      expect(missing.has(ch), `${ch} が [なし] にある`).toBe(true);
+      expect(included.has(ch) || extra.has(ch), `${ch} が [収録]・[追加] に無い`).toBe(false);
+    }
   });
 
   it('simulator.css は、一覧と今のソースから作った中身と、一字一句同じ（手で直していない）', () => {

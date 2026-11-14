@@ -34,3 +34,5 @@ export function unicodeRange(chars: string): string;
 export function parseUnicodeRange(range: string): Set<number>;
 export function simulatorCss(extra: string): string;
 export function readWoff2Cmap(buffer: Buffer): Set<number>;
+export function isEmptyCharString(charString: Uint8Array): boolean;
+export function readWoff2EmptyGlyphs(buffer: Buffer): Set<number>;

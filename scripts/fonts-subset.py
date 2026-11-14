@@ -27,6 +27,7 @@ from pathlib import Path
 
 try:
     from fontTools import subset
+    from fontTools.pens.boundsPen import BoundsPen
     from fontTools.ttLib import TTFont
 except ImportError:  # 初心者向けに、入れ方まで書く
     sys.exit("fonttools が入っていません。次を実行してください: python3 -m pip install fonttools brotli")
@@ -62,6 +63,30 @@ def cmap_of(otf):
     font = TTFont(str(otf), lazy=True)
     try:
         return set(font.getBestCmap())
+    finally:
+        font.close()
+
+
+def drawn_of(otf, chars):
+    """chars のうち、元のフォントに登録があり、しかも輪郭がある（何か描く）字のコードポイント。
+
+    元のフォントには、字は登録されているのに、輪郭が空（幅だけ）のものがある（MOBO の Bold の ‹ › など）。
+    そのまま入れると、画面では何も出ず、端末の書体にも落ちない。そのため、空の字は入れない。
+    """
+    font = TTFont(str(otf))
+    try:
+        cmap = font.getBestCmap()
+        glyphs = font.getGlyphSet()
+        drawn = set()
+        for c in chars:
+            name = cmap.get(ord(c))
+            if name is None:
+                continue
+            pen = BoundsPen(glyphs)
+            glyphs[name].draw(pen)
+            if pen.bounds is not None:
+                drawn.add(ord(c))
+        return drawn
     finally:
         font.close()
 
@@ -124,11 +149,14 @@ def main():
     if not display_family.startswith(DISPLAY_FAMILY_HEAD):
         sys.exit(f"{display_otf} の書体名が {DISPLAY_FAMILY_HEAD} ではありません（{display_family}）。別のフォントを渡していないか確かめてください")
 
-    # 400 と 700 の、どちらにも字がある字だけを入れる（片方だけにあると、太さによって別の書体に落ちるため）
-    cmaps = [cmap_of(path) for path in otf.values()]
-    both = set.intersection(*cmaps)
+    # 400 と 700 の、どちらにも「輪郭のある字」がある字だけを入れる（片方だけにあると、太さによって別の書体に落ちるため。
+    # 登録だけあって輪郭が空の字も、入れない）
     core = read_chars(args.core_chars)
     extra = read_chars(args.extra_chars) - core
+    requested = core | extra
+    both = set.intersection(*[drawn_of(path, requested) for path in otf.values()])
+    in_cmap_both = set.intersection(*[cmap_of(path) for path in otf.values()])
+    empty_dropped = {c for c in requested if ord(c) in in_cmap_both and ord(c) not in both}
     core_ok = {c for c in core if ord(c) in both}
     extra_ok = {c for c in extra if ord(c) in both}
     missing = (core | extra) - core_ok - extra_ok
@@ -143,9 +171,10 @@ def main():
         sizes[name] = subset_to_woff2(path, extra_ok, out / name)
 
     # 見出し書体: 核と同じ字の集合に絞る（見出しに出る字だけを機械では集められないため）。字が無い字は MOBO で表示される
-    display_cmap = cmap_of(display_otf)
-    display_ok = {c for c in core if ord(c) in display_cmap}
+    display_drawn = drawn_of(display_otf, core)
+    display_ok = {c for c in core if ord(c) in display_drawn}
     display_missing = core - display_ok
+    display_empty_dropped = {c for c in display_missing if ord(c) in cmap_of(display_otf)}
     sizes[DISPLAY_WOFF2] = subset_to_woff2(display_otf, display_ok | {chr(c) for c in ALWAYS}, out / DISPLAY_WOFF2)
 
     shutil.copyfile(license_src, out / LICENSE_MOBO)
@@ -157,6 +186,8 @@ def main():
         "missing": "".join(sorted(missing)),
         "display": "".join(sorted(display_ok)),
         "displayMissing": "".join(sorted(display_missing)),
+        "emptyDropped": "".join(sorted(empty_dropped)),
+        "displayEmptyDropped": "".join(sorted(display_empty_dropped)),
         "sizes": sizes,
     }
     Path(args.report).write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")

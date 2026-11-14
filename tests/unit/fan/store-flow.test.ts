@@ -1,5 +1,6 @@
 // ファン向けの主な流れ（申し込み → 80% の演出 → 特典 → 仲間 → 感謝）の順番と数字（上層: A-15〜A-18・A-40・A-41・A-44・I-20〜I-24・I-27・I-28・I-123）。
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { buildPostText } from '../../../src/fan/domain/share';
 import { harness, passStart } from './helpers';
 
 beforeEach(() => {
@@ -87,6 +88,72 @@ describe('基準の流れ（人物 4・tech0・久留米市・Cボックス）',
   });
 });
 
+describe('共有（X・Instagram・Facebook は、外のサイトを開かず・コピーもせず、アプリの中で「投稿した」ことになる）', () => {
+  /** 申し込み → 特典 1/3 を閉じる → 共有のシートを開いた状態 */
+  function toShareSheet() {
+    const h = harness(4);
+    passStart(h);
+    vi.advanceTimersByTime(700 + 2510);
+    h.a.closeGift();
+    h.a.openShare('share');
+    return h;
+  }
+
+  it.each([
+    ['x', 'Xに投稿しました（デモ・未投稿）'],
+    ['ig', 'Instagramに投稿しました（デモ・未投稿）'],
+    ['fb', 'Facebookに投稿しました（デモ・未投稿）'],
+  ] as const)(
+    '%s を押すと、外を開かず・コピーもせず、投稿したことが出て、共有した印が付き、0.4 秒後に特典 2/3 が開く',
+    (ch, text) => {
+      const open = vi.spyOn(window, 'open').mockReturnValue(null);
+      const write = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, 'clipboard', {
+        value: { writeText: write },
+        configurable: true,
+      });
+      const h = toShareSheet();
+      expect(h.state().done.share).toBeUndefined(); // まだ共有していない
+      h.a.shareTo(ch);
+      expect(open).not.toHaveBeenCalled();
+      expect(write).not.toHaveBeenCalled();
+      expect(h.state().toast?.text).toBe(text);
+      // 読み上げにも、投稿したことが伝わる（トーストは読み上げの対象外）
+      expect(h.state().live.replace('\u200b', '')).toBe(`${text}。`);
+      expect(h.state().done.share).toBe(true);
+      vi.advanceTimersByTime(400);
+      expect(h.view().giftCount).toBe(2);
+      expect(h.joins).toHaveLength(1); // API へ加算は送らない（決定 3）
+    },
+  );
+
+  it('続けて別のボタンを押しても、そのたびに投稿したことが出る。特典は 1 回しか開かない', () => {
+    const h = toShareSheet();
+    h.a.shareTo('ig');
+    vi.advanceTimersByTime(400);
+    expect(h.view().giftCount).toBe(2);
+    h.a.shareTo('x');
+    expect(h.state().toast?.text).toBe('Xに投稿しました（デモ・未投稿）');
+    h.a.shareTo('fb');
+    expect(h.state().toast?.text).toBe('Facebookに投稿しました（デモ・未投稿）');
+    vi.advanceTimersByTime(400 + 2300);
+    expect(h.view().giftCount).toBe(2);
+    expect(h.state().gifts).toEqual([true, true, false]);
+  });
+
+  it('投稿文に、推しの名前・市・達成率・あと N 人が入り、人物の番号・預金額・口座・URL は入らない', () => {
+    const h = toShareSheet();
+    const text = buildPostText(h.view());
+    expect(text).toContain(
+      'Tech0サステナアイドルを久留米市に呼びたい！ いま80%まで来ています。ライブ開催まであと18人です。',
+    );
+    expect(text).not.toMatch(/p=\d|90,?000|預金|口座/);
+    // 仮の URL を、班のメンバーに見せない。URL は文に入れず、ハッシュタグで終わる
+    expect(text).not.toMatch(/https?:|example\.test|\/fan\//);
+    expect(text.endsWith('#OSHIYOBU')).toBe(true);
+  });
+});
+
 describe('仲間と感謝（SNSで広める → 仲間が申し込む → 特典 3/3 → 感謝）', () => {
   function toHomeWithGift1() {
     const h = harness(4);
@@ -95,27 +162,6 @@ describe('仲間と感謝（SNSで広める → 仲間が申し込む → 特典
     h.a.closeGift();
     return h;
   }
-
-  it('Instagram を押すと文面がコピーされ、0.4 秒後に特典 2/3 が開く。API へ加算は送らない（決定 3）', async () => {
-    const h = toHomeWithGift1();
-    h.a.openShare('share');
-    await h.a.shareTo('ig');
-    expect(h.copied[0]).toContain(
-      'Tech0サステナアイドルを久留米市に呼びたい！ いま80%まで来ています。ライブ開催まであと18人です。',
-    );
-    expect(h.state().toast?.text).toBe('コピーしました。Instagramに貼り付けて投稿できます');
-    vi.advanceTimersByTime(400);
-    expect(h.view().giftCount).toBe(2);
-    expect(h.joins).toHaveLength(1);
-  });
-
-  it('投稿文に、人物の番号・預金額・口座が入らない', async () => {
-    const h = toHomeWithGift1();
-    await h.a.shareTo('ig');
-    const text = h.copied[0] ?? '';
-    expect(text).not.toMatch(/p=\d|90,?000|預金|口座/);
-    expect(text.endsWith('/fan/')).toBe(true);
-  });
 
   it('シートを閉じて 2 秒後に擬似の仲間が 1 人申し込み、76 人になり、0.7 秒後に特典 3/3 が開く', async () => {
     const h = toHomeWithGift1();
@@ -134,7 +180,7 @@ describe('仲間と感謝（SNSで広める → 仲間が申し込む → 特典
 
   it('3 つ目の特典の絵を閉じた直後に、感謝のメッセージが 1 回だけ出る（A-44・I-28）', async () => {
     const h = toHomeWithGift1();
-    await h.a.shareTo('x');
+    h.a.shareTo('x');
     vi.advanceTimersByTime(400 + 2300);
     h.a.closeGift();
     expect(h.state().layers.map((l) => l.kind)).toEqual([]);

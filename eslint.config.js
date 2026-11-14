@@ -11,6 +11,7 @@ export default defineConfig([
     'dist',
     'dist-e2e',
     'dist-solo',
+    'dist-accept',
     'coverage',
     'assets-src',
     'src/core',

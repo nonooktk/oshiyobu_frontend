@@ -18,6 +18,8 @@ backend には、共有メーターの小さな API があります。預かる�
 - 初めて触る人は、[docs/はじめに.md](docs/はじめに.md) の手順に沿って、道具の導入から Claude Code の起動まで進めてください（Mac と Windows の両方に対応しています）。
 - 作業の決まりは [CLAUDE.md](CLAUDE.md) にあります。Claude Code はこのファイルを自動で読みます。
 - 本番に反映するまでの流れは [docs/デプロイ手順.md](docs/デプロイ手順.md) にあります。
+- 変更を渡す前の検収（手元の検査と、画面が API と通信できていることの確認）は [docs/検収.md](docs/検収.md) にあります。
+- 書体と文字の大きさの決まりは [docs/フォント.md](docs/フォント.md) にあります。
 
 ## 今の状態
 
@@ -42,8 +44,10 @@ Node.js が要ります（22 LTS の 22.22.2 以降。24 LTS の 24.15.0 以降�
 | 絵の変換 | `npm run images`（元絵 `assets-src/` → `src/assets/img/` の WebP） |
 | 量・CSP の検査（ビルドのあと） | `npm run check:budget`・`npm run check:csp` |
 | 実ブラウザの試験（任意） | `npm run e2e`（手元の Chrome なら `E2E_CHANNEL=chrome npm run e2e`） |
+| 手元の検査をまとめて（CI と同じ） | `npm run verify` |
+| 検収（検査 → API → 画面の通信） | `npm run accept -- --local-api`（手元の API を立てて確かめる。詳しくは [docs/検収.md](docs/検収.md)） |
 
-PR を出す前に、`npm ci`・`npm run lint`・`npm run typecheck`・`npm test`・`npm run build`・`npm run check:budget`・`npm run check:csp` が、エラーなしで通ることを確かめてください。
+PR を出す前に、`npm ci` のあと `npm run verify` が、エラーなしで通ることを確かめてください（lint・型・整形・テスト・ビルド・量と CSP の検査・core の検査を順に回します。CI と同じ検査です）。
 
 ## 構成
 
@@ -59,15 +63,18 @@ PR を出す前に、`npm ci`・`npm run lint`・`npm run typecheck`・`npm test
 ├── public/                       そのまま配る設定（staticwebapp.config.json）
 ├── assets-src/                   絵の元絵（配信しない）
 ├── e2e/                          実ブラウザの試験（Playwright。任意）
-├── scripts/                      core:sync・core:check・絵の変換・量と CSP の検査・配備後の確認
+├── scripts/                      core:sync・core:check・絵の変換・量と CSP の検査・配備後の確認・検収のスクリプト
 ├── docs/
 │   ├── はじめに.md               導入から初回の起動まで
 │   ├── デプロイ手順.md           本番に反映するまでの流れと、戻し方
+│   ├── フォント.md               書体・文字の大きさの決まり、字を足したときの手順
+│   ├── 検収.md                   検収（verify・check:api・check:live・accept）の使い方
 │   └── munderを使う場合.md       任意の付録
 ├── .claude/
 │   ├── settings.json             Claude Code に許さない操作の設定
 │   └── skills/
 │       ├── start-task/           作業のはじめ方（/start-task）
-│       └── pre-deploy-check/     PR を出す前・main に入れる前の確認（/pre-deploy-check）
+│       ├── pre-deploy-check/     PR を出す前・main に入れる前の確認（/pre-deploy-check）
+│       └── accept/               検収の進め方（/accept）
 └── .github/                      PR のひな形・レビュー担当・依存の更新設定・CI（workflows/ci.yml）
 ```

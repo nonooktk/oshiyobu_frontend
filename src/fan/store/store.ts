@@ -37,7 +37,8 @@ import {
   viewOf,
 } from '../domain/view';
 import type { FanView, MeterIn } from '../domain/view';
-import { buildPostText, shareUrlFacebook, shareUrlX } from '../domain/share';
+import { postedText } from '../domain/share';
+import type { ShareChannel } from '../domain/share';
 import { yen } from '../text/format';
 import { VOICES } from '../text/voices';
 
@@ -51,10 +52,6 @@ export type Deps = {
   fetch: (reason: 'open' | 'course-select' | 'performance-changed', pid?: PerformanceId) => void;
   /** 動きを減らす設定か。 */
   reduceMotion: () => boolean;
-  /** 別タブで開く（X・Facebook）。 */
-  openWindow: (url: string) => void;
-  /** 文面のコピー。成功したら true。 */
-  copyText: (text: string) => Promise<boolean>;
   random: () => number;
   /**
    * ひとり体験（共有メーターなし。人数は端末の中だけで数える）か。省略は false（共有メーターあり）。
@@ -71,17 +68,6 @@ export const defaultDeps = (
     typeof window !== 'undefined' &&
     typeof window.matchMedia === 'function' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-  openWindow: (url) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
-  },
-  copyText: async (text) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch {
-      return false;
-    }
-  },
   random: Math.random,
 });
 
@@ -578,31 +564,18 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       else unlockGift(2);
     });
   };
-  /** 共有ボタン。Instagram は、コピーできたか（できなければ、画面が投稿文の欄を選択状態にする。SP-90）を返す。 */
-  const shareTo = async (ch: 'x' | 'fb' | 'ig'): Promise<boolean> => {
-    let copied = true;
-    const text = buildPostText(view());
-    if (ch === 'x') {
-      deps.openWindow(shareUrlX(text));
-      toast('Xの投稿画面を別のタブで開きました');
-    } else if (ch === 'fb') {
-      deps.openWindow(shareUrlFacebook(text));
-      toast('Facebookの投稿画面を別のタブで開きました');
-    } else {
-      const ok = await deps.copyText(text);
-      copied = ok;
-      toast(
-        ok
-          ? 'コピーしました。Instagramに貼り付けて投稿できます'
-          : 'コピーできませんでした。選んだ文面を手動でコピーしてください',
-      );
-      if (!ok) announce('コピーできませんでした。選んだ文面を手動でコピーしてください');
-    }
+  /**
+   * 共有ボタン。外のサイトは開かず、コピーもせず、押したら投稿したことにする（デモなので、実際には投稿しない。統括の決定 2026-11-14）。
+   * 投稿したことを画面と読み上げで伝え、共有した印を付ける（1 回目だけ、0.4 秒後に特典 2/3 が開く）。
+   */
+  const shareTo = (ch: ShareChannel): void => {
+    const text = postedText(ch);
+    toast(text);
+    announce(`${text}。`); // トーストは読み上げの対象外なので、読み上げの領域でも伝える
     if (!state.done.share) {
       set({ done: { ...state.done, share: true } });
       later(reduce() ? 0 : 400, () => unlockGift(1));
     }
-    return copied;
   };
 
   /* ---------- はじめの画面 ---------- */

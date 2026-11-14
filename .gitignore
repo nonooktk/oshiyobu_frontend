@@ -54,6 +54,7 @@ Desktop.ini
 # 実ブラウザの試験の成果物
 dist-e2e/
 dist-solo/
+dist-accept/
 e2e/results/
 test-results/
 playwright-report/

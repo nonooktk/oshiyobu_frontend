@@ -79,7 +79,7 @@ describe('遅れて読む塊がすべて読めなくても、主な流れは最�
     await closeGiftAfterFx();
     click(/^次のアクション/);
     click(/^SNSで広める/);
-    vi.spyOn(window, 'open').mockReturnValue(null);
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
     fireEvent.click(btn('X'));
     await tick(400 + 2300);
     fireEvent.click(within(layer('gift') as HTMLElement).getByRole('button', { name: '閉じる' }));
@@ -87,6 +87,7 @@ describe('遅れて読む塊がすべて読めなくても、主な流れは最�
     await tick(2000 + 700 + 2300);
     fireEvent.click(within(layer('gift') as HTMLElement).getByRole('button', { name: '閉じる' }));
     expect(layer('thanks')).not.toBeNull();
+    expect(open).not.toHaveBeenCalled(); // 共有で、外のサイトは開かない
   });
 });
 

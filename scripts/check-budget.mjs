@@ -1,6 +1,6 @@
 // 最初に読む JS と CSS（gzip で 200 KB 以下）と、変換後の絵の大きさを、ビルドの成果物（dist/）で検査する（設計 D-40・D-26）。
 //   npm run build の後に、npm run check:budget
-//   --strict-images: 元絵の形式（jpg・png）のまま配っていたら、エラーにする（deploy.yml が付ける。CI は警告だけ）
+//   --strict-images: 元絵の形式（jpg・png）のまま配っていたら、エラーにする（deploy.yml と npm run verify〈CI も呼ぶ〉が付ける。単独で実行するときは警告だけ）
 // 書体（dist/fonts/）: 核の WOFF2 の合計と、シミュレーター用の追加の合計を、別の枠で検査する（budget-lib.mjs の FONT_LIMIT・FONT_SIM_LIMIT）
 // 最初の画面に出る絵の合計（300 KB 以下）は、実ブラウザの通信の記録で測る（e2e/perf.spec.ts。I-87）
 import { existsSync, readdirSync, readFileSync } from 'node:fs';

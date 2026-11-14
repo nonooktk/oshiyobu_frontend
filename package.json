@@ -24,7 +24,12 @@
     "check:budget": "node scripts/check-budget.mjs",
     "check:csp": "node scripts/check-csp.mjs",
     "e2e": "node scripts/run-e2e.mjs",
-    "e2e:solo": "node scripts/run-e2e-solo.mjs"
+    "e2e:solo": "node scripts/run-e2e-solo.mjs",
+    "verify": "node scripts/verify.mjs",
+    "check:api": "node scripts/check-api.mjs",
+    "check:live": "node scripts/check-live.mjs",
+    "api:local": "node scripts/local-api.mjs",
+    "accept": "node scripts/accept.mjs"
   },
   "dependencies": {
     "react": "19.2.9",

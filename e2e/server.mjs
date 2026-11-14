@@ -17,6 +17,9 @@ const TYPES = {
   '.webp': 'image/webp',
   '.png': 'image/png',
   '.svg': 'image/svg+xml',
+  // 書体（/fonts/*.woff2）と、収録した字の一覧（glyphs.txt）。種類が無いと application/octet-stream で配られていた
+  '.woff2': 'font/woff2',
+  '.txt': 'text/plain; charset=utf-8',
 };
 const COMPRESSIBLE = new Set(['.html', '.js', '.css', '.json', '.svg']);
 

@@ -7,7 +7,17 @@ import { setMeterEngineForTest } from '../../../src/shared/meter';
 import { createMeterEngine } from '../../../src/shared/meter/engine';
 import { DEPOSIT_MAX } from '../../../src/fan/domain/deposit';
 import { getAppStore } from '../../../src/fan/store/FanProvider';
-import { act, click, fireEvent, mountFan, screen, setupFanTest, tick, within } from './helpers';
+import {
+  act,
+  click,
+  fireEvent,
+  mountFan,
+  openNextPage,
+  screen,
+  setupFanTest,
+  tick,
+  within,
+} from './helpers';
 
 setupFanTest();
 
@@ -276,7 +286,7 @@ describe('決まった額で進める従来の「預金を積み増す」（次�
     click('次へ');
     click('次へ');
     click(/^(この内容で申し込む|このコースを目指して始める)$/);
-    click(/^次のアクション/);
+    openNextPage(); // ホームの主のボタン「預金を積み増す」は、口座と預金の画面へ進む。近道は、いまできること の一覧に残してある
     fireEvent.click(screen.getByRole('button', { name: /^預金を積み増す ＋5,000円/ }));
     expect(screen.getByText('条件がそろいました。')).toBeTruthy();
   });

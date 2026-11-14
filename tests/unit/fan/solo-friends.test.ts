@@ -1,4 +1,5 @@
-// ひとり体験（共有メーターなし）の「仲間を呼ぶ」。人数が、その公演の最低人数に届く所まで一度に増え、成立の演出が出る。
+// ひとり体験（共有メーターなし）の「仲間を呼ぶ」（ホームの主のボタン。共有のシートは経由しない）。
+// 称賛（届いた！）→ ゲージが 2.6 秒で伸びる → 人数が、その公演の最低人数に届く所まで一度に増え、FEVER の瞬間の演出が出る。
 // 基準の公演（tech0・久留米市・Cボックス。人物 4）は、申し込んで 75 人・80%、仲間を呼んで 93 人・成立。
 // 共有メーターあり（solo: false。VITE_SHARED_METER=on）は、これまでどおり仲間が 1 人ずつ。
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -24,11 +25,10 @@ function applied(h: H) {
   vi.advanceTimersByTime(700 + 2510);
   h.a.closeGift();
 }
-/** 仲間を呼ぶ（共有のシートを開いて閉じ、2 秒後に仲間が申し込む） */
+/** 仲間を呼ぶ（主のボタン）。ゲージが伸びきる（2.6 秒）まで進めて、人数が変わった状態にする */
 function callFriends(h: H) {
-  h.a.openShare('friend');
-  h.a.closeShare();
-  vi.advanceTimersByTime(2000);
+  h.a.callFriends();
+  vi.advanceTimersByTime(2600);
 }
 
 describe('基準の公演（人物 4）で、申し込む → 仲間を呼ぶ', () => {
@@ -47,21 +47,21 @@ describe('基準の公演（人物 4）で、申し込む → 仲間を呼ぶ', 
     expect(s).toMatchObject({ supporters: 93, total: 651000, established: true, pct: 100 });
     expect(h.state()).toMatchObject({ friends: 18, called: 18 });
     expect(h.state().done.friend).toBe(true);
-    expect(h.state().toast?.text).toBe('呼んだ仲間が申し込みました');
+    // 知らせは、称賛の演出（FEVER の瞬間）と読み上げで伝える（トーストは重ねない）
+    expect(h.state().live.replace('\u200b', '')).toContain('開催が決まりました');
   });
 
-  it('成立の演出（「成立！」「ライブの開催が決まりました」）が 1 回出て、そのあと特典の演出に進む（申し込みと仲間で、特典 2/3）', () => {
+  it('成立の演出（FEVER の瞬間）が 1 回出て、そのあと特典の演出に進む（申し込みと仲間で、特典 2/3）', () => {
     const h = harness(4, { solo: true });
     applied(h);
     callFriends(h);
-    expect(layerKinds(h)).toEqual([]);
-    vi.advanceTimersByTime(700);
+    expect(layerKinds(h)).toEqual(['fx']);
     expect(topFx(h)).toMatchObject({
       title: 'FEVER！',
-      small: '仲間を呼んでくれてありがとう',
+      small: '仲間を呼んでくれてありがとう。',
       sub: 'あなたの声が届いて、開催が決まりました',
     });
-    vi.advanceTimersByTime(2500 + 10);
+    vi.advanceTimersByTime(3600 + 10);
     expect(topFx(h)).toMatchObject({ title: 'ごほうび', small: '特典 2/3 が開いた！' });
     vi.advanceTimersByTime(2200 + 10);
     expect(layerKinds(h)).toEqual(['gift']);
@@ -72,7 +72,6 @@ describe('基準の公演（人物 4）で、申し込む → 仲間を呼ぶ', 
     const h = harness(4, { solo: true, reduceMotion: true });
     applied(h);
     callFriends(h);
-    vi.advanceTimersByTime(5);
     expect(topFx(h)).toMatchObject({ title: 'FEVER！' });
   });
 
@@ -80,7 +79,7 @@ describe('基準の公演（人物 4）で、申し込む → 仲間を呼ぶ', 
     const h = harness(4, { solo: true });
     applied(h);
     callFriends(h);
-    vi.advanceTimersByTime(700 + 2510 + 2210);
+    vi.advanceTimersByTime(3600 + 10 + 2200 + 10);
     h.a.closeGift();
     h.a.closeThanks();
     const before = h.view().status;
@@ -93,8 +92,7 @@ describe('基準の公演（人物 4）で、申し込む → 仲間を呼ぶ', 
 
   it('申し込む前に、仲間を呼ぼうとしても、何も起きない（人数は 74 人のまま・落ちない）', () => {
     const h = harness(4, { solo: true });
-    h.a.openShare('friend');
-    h.a.closeShare();
+    h.a.callFriends();
     vi.advanceTimersByTime(10_000);
     expect(h.view().status.supporters).toBe(74);
     expect(h.state()).toMatchObject({ friends: 0, called: 0 });
@@ -105,7 +103,6 @@ describe('基準の公演（人物 4）で、申し込む → 仲間を呼ぶ', 
     const h = harness(4, { solo: false });
     applied(h);
     callFriends(h);
-    vi.advanceTimersByTime(700);
     expect(h.state()).toMatchObject({ friends: 1, called: 1 });
     expect(h.view().status).toMatchObject({ supporters: 76, established: false });
     expect(layerKinds(h)).not.toContain('thanks');

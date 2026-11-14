@@ -92,7 +92,9 @@ describe('成立の表示（A-07・A-64〜A-66・I-18）', () => {
     passStart(h);
     vi.advanceTimersByTime(200);
     const top = h.state().layers[0];
-    expect(top && top.kind === 'fx' && top.fx.title).toBe('ごほうび');
+    // 80% の演出（FEVER 目前・FEVER）は出ない。申し込みの称賛（段階が上がらないとき）だけが出る
+    expect(top && top.kind === 'fx' && top.fx.kind).toBe('join');
+    expect(top && top.kind === 'fx' && top.fx.title).toBe('ナイス！');
   });
 
   it('人数だけ届いたとき（最低人数 80・支援者 80・合計 560,000円）は「人数は集まりました」で、成立ではない（A-65）', () => {
@@ -234,9 +236,8 @@ describe('共有メーターの reset を検知したとき（I-126・A-61 の�
     passStart(h);
     vi.advanceTimersByTime(3500);
     h.a.closeGift();
-    h.a.openShare('friend');
-    h.a.closeShare();
-    vi.advanceTimersByTime(2000);
+    h.a.callFriends(); // 共有メーターありは、1 人ずつ（ゲージの伸びは 1.2 秒）
+    vi.advanceTimersByTime(1200);
     expect(h.view().status.supporters).toBe(76);
     h.a.serverReset(true);
     h.setServer(0);

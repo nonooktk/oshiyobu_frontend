@@ -4,7 +4,7 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { afterEach, beforeEach, vi } from 'vitest';
 import { App } from '../../../src/fan/App';
 import { setupFanPrefetch } from '../../../src/fan/prefetch';
-import { resetAppStoreForTest } from '../../../src/fan/store/FanProvider';
+import { getAppStore, resetAppStoreForTest } from '../../../src/fan/store/FanProvider';
 import { forgetDeviceIdForTest } from '../../../src/shared/device';
 import { resetLinkForTest } from '../../../src/shared/link';
 import { setMeterEngineForTest } from '../../../src/shared/meter';
@@ -90,6 +90,16 @@ export async function closeGiftAfterFx(): Promise<void> {
 
 export const layer = (name: string): HTMLElement | null =>
   document.querySelector(`[data-layer="${name}"]`);
+
+/**
+ * 「次のアクション」の画面を開く。ホームの主のボタンは、行動そのもの（申し込む・仲間を呼ぶ など）になり、この画面へは移らない。
+ * この画面（いまできること の一覧）は、貢献・支援の状況・しくみの画面の「次のアクション」から開く。ここでは、ストアの操作で開く。
+ */
+export function openNextPage(): void {
+  act(() => {
+    getAppStore().actions.go('next');
+  });
+}
 
 export const homeActionButtons = (): string[] =>
   screen

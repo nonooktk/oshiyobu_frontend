@@ -1,6 +1,6 @@
 // G-08 の歯止め（docs/守ること.md「予定」→ 有効にするための検査）。ファン向けの画面の文と読み上げ用の文に、
 // 人数・割合・最低人数・達成率・到達ライン・目標の金額が出ない。出してよい数字は、自分が払うコースの金額・預金・席数・日付・特典の n/3・ステップの 1 / 3 だけ。
-// 巡回する画面: はじめの画面 3 つ・ホーム（申し込む前・後・FEVER）・演出・共有のシート・やめる確認・メニューの下の全画面。推し 5 組（人物 4・10・12・14・15）
+// 巡回する画面: はじめの画面 3 つ・ホーム（申し込む前・後・FEVER。主のボタンと副のボタン）・演出（申し込み・投稿・届いた！・ゲージが伸びている最中・FEVER の瞬間・仲間に知らせる）・共有のシート・やめる確認・メニューの下の全画面。推し 5 組（人物 4・10・12・14・15）
 // 起動条件: 巡回した場面の数が、決めた数以上であること（0 件で通る空振りを防ぐ）。
 // 置き場: tests/guard/ に移すのは管理者（この PR では、決まりの文書と guard を変えないため、通常のテストとして置く）。
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -13,6 +13,7 @@ import {
   fireEvent,
   layer,
   mountFan,
+  openNextPage,
   screen,
   setupFanTest,
   tick,
@@ -92,27 +93,53 @@ describe('ファン向けの画面に、人数・達成率・目標の金額の�
       look('特典の絵', layer('gift') as HTMLElement);
       fireEvent.click(within(layer('gift') as HTMLElement).getByRole('button', { name: '閉じる' }));
     }
-    look('ホーム');
-    click(/^次のアクション/);
+    look('ホーム（主のボタンが見える）');
+    openNextPage(); // いまできること の一覧（ホームからは移らない。ストアの操作で開く）
     look('次のアクション');
+    click('‹ ホーム');
     if (canApply) {
-      // 共有のシートと、仲間を呼んだあとの演出・FEVER のホーム
-      fireEvent.click(screen.getByRole('button', { name: /^仲間を呼ぶ/ }));
+      // 副のボタン → 共有のシート → 投稿した直後の称賛 → 特典 2/3
+      click(/^SNSに投稿する（任意）/);
       look('共有のシート', layer('share') as HTMLElement);
-      fireEvent.click(
-        within(layer('share') as HTMLElement).getByRole('button', { name: '閉じる' }),
-      );
-      await tick(2000 + 700);
-      const reached = layer('fx');
-      if (reached) look('FEVER の演出', reached);
-      await tick(2500 + 2300);
+      fireEvent.click(btn('X'));
+      look('投稿の称賛の演出', layer('fx') as HTMLElement);
+      await tick(2600 + 2300);
       if (layer('gift'))
         fireEvent.click(
           within(layer('gift') as HTMLElement).getByRole('button', { name: '閉じる' }),
         );
-      look('次のアクション（FEVER のあと）');
+      fireEvent.click(
+        within(layer('share') as HTMLElement).getByRole('button', { name: '閉じる' }),
+      );
+      look('ホーム（投稿したあと）');
+      // 主のボタン「仲間を呼ぶ」→ 届いた！（ゲージが伸びている最中）→ FEVER の瞬間 → 特典 3/3
+      fireEvent.click(screen.getByRole('button', { name: /^仲間を呼ぶ/ }));
+      look('「届いた！」の演出', layer('fx') as HTMLElement);
+      look('ゲージが伸びている最中のホーム');
+      await tick(2600);
+      const reached = layer('fx');
+      if (reached) look('FEVER の瞬間の演出', reached);
+      await tick(3600 + 2300);
+      if (layer('gift'))
+        fireEvent.click(
+          within(layer('gift') as HTMLElement).getByRole('button', { name: '閉じる' }),
+        );
+      if (layer('thanks')) {
+        look('感謝のメッセージ', layer('thanks') as HTMLElement);
+        fireEvent.click(within(layer('thanks') as HTMLElement).getByRole('button'));
+      }
+      look('ホーム（FEVER のあと）');
+      // 主のボタン「仲間に知らせる」→ 短い称賛
+      fireEvent.click(screen.getByRole('button', { name: /^仲間に知らせる/ }));
+      look('仲間に知らせるの称賛の演出', layer('fx') as HTMLElement);
+      await tick(2600 + 10);
+    } else {
+      // 預金が足りない人物: 主のボタン「預金を積み増す」→ 口座と預金の画面
+      fireEvent.click(screen.getByRole('button', { name: /^預金を積み増す/ }));
+      await settle();
+      look('口座と預金（主のボタンから）');
+      click('‹ ホーム');
     }
-    click('‹ ホーム');
     look('ホーム（FEVER のあと、または申し込む前）');
     click('メニュー');
     await settle();
@@ -138,7 +165,7 @@ describe('ファン向けの画面に、人数・達成率・目標の金額の�
     }
 
     // 巡回した場面の数（空振りの防止）
-    expect(seen.length).toBeGreaterThanOrEqual(canApply ? 20 : 15);
+    expect(seen.length).toBeGreaterThanOrEqual(canApply ? 27 : 16);
     const violations = seen.flatMap(({ scene, text }) =>
       FORBIDDEN.filter(([, re]) => re.test(text)).map(
         ([name, re]) => `${scene}: 「${name}」 ${text.match(re)?.[0] ?? ''}`,

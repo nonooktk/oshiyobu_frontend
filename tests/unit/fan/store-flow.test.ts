@@ -41,7 +41,11 @@ describe('基準の流れ（人物 4・tech0・久留米市・Cボックス）',
     const top = h.state().layers[0];
     expect(top).toMatchObject({
       kind: 'fx',
-      fx: { title: 'FEVER 目前！', small: 'あなたの一歩で、', sub: 'FEVER 目前まで来ました' },
+      fx: {
+        title: 'FEVER 目前！',
+        small: '申し込みありがとう。あなたの一歩で、',
+        sub: 'FEVER 目前まで来ました',
+      },
     });
     // 特典の演出は重ねず、FEVER 目前の演出の下の枠で伝える
     expect(top && top.kind === 'fx' && top.fx.say).toContain('特典 1/3');
@@ -104,7 +108,7 @@ describe('共有（X・Instagram・Facebook は、外のサイトを開かず・
     ['ig', 'Instagramに投稿しました（デモ・未投稿）'],
     ['fb', 'Facebookに投稿しました（デモ・未投稿）'],
   ] as const)(
-    '%s を押すと、外を開かず・コピーもせず、投稿したことが出て、共有した印が付き、0.4 秒後に特典 2/3 が開く',
+    '%s を押すと、外を開かず・コピーもせず、投稿したことが出て、共有した印が付き、称賛のあとに特典 2/3 が開く',
     (ch, text) => {
       const open = vi.spyOn(window, 'open').mockReturnValue(null);
       const write = vi.fn().mockResolvedValue(undefined);
@@ -121,7 +125,7 @@ describe('共有（X・Instagram・Facebook は、外のサイトを開かず・
       // 読み上げにも、投稿したことが伝わる（トーストは読み上げの対象外）
       expect(h.state().live.replace('\u200b', '')).toBe(`${text}。`);
       expect(h.state().done.share).toBe(true);
-      vi.advanceTimersByTime(400);
+      vi.advanceTimersByTime(2600 + 10); // 短い称賛（2.6 秒）のあと
       expect(h.view().giftCount).toBe(2);
       expect(h.joins).toHaveLength(1); // API へ加算は送らない（決定 3）
     },
@@ -130,13 +134,13 @@ describe('共有（X・Instagram・Facebook は、外のサイトを開かず・
   it('続けて別のボタンを押しても、そのたびに投稿したことが出る。特典は 1 回しか開かない', () => {
     const h = toShareSheet();
     h.a.shareTo('ig');
-    vi.advanceTimersByTime(400);
+    vi.advanceTimersByTime(2600 + 10);
     expect(h.view().giftCount).toBe(2);
     h.a.shareTo('x');
     expect(h.state().toast?.text).toBe('Xに投稿しました（デモ・未投稿）');
     h.a.shareTo('fb');
     expect(h.state().toast?.text).toBe('Facebookに投稿しました（デモ・未投稿）');
-    vi.advanceTimersByTime(400 + 2300);
+    vi.advanceTimersByTime(2600 + 2300);
     expect(h.view().giftCount).toBe(2);
     expect(h.state().gifts).toEqual([true, true, false]);
   });
@@ -155,7 +159,7 @@ describe('共有（X・Instagram・Facebook は、外のサイトを開かず・
   });
 });
 
-describe('仲間と感謝（SNSで広める → 仲間が申し込む → 特典 3/3 → 感謝）', () => {
+describe('仲間と感謝（SNSに投稿する → 仲間を呼ぶ → 特典 3/3 → 感謝）', () => {
   function toHomeWithGift1() {
     const h = harness(4);
     passStart(h);
@@ -164,17 +168,15 @@ describe('仲間と感謝（SNSで広める → 仲間が申し込む → 特典
     return h;
   }
 
-  it('シートを閉じて 2 秒後に擬似の仲間が 1 人申し込み、76 人になり、0.7 秒後に特典 3/3 が開く', async () => {
+  it('仲間を呼ぶと、ゲージが伸びきったあと（共有メーターありは 1.2 秒）に擬似の仲間が 1 人申し込み、76 人になり、特典 3/3 が開く', async () => {
     const h = toHomeWithGift1();
-    h.a.openShare('friend');
-    h.a.closeShare();
-    vi.advanceTimersByTime(1999);
+    h.a.callFriends();
+    vi.advanceTimersByTime(1199);
     expect(h.view().status.supporters).toBe(75);
     vi.advanceTimersByTime(2);
     expect(h.view().status.supporters).toBe(76);
     expect(h.state()).toMatchObject({ friends: 1, called: 1 });
     expect(h.joins).toHaveLength(1);
-    vi.advanceTimersByTime(700);
     expect(h.view().giftCount).toBe(2); // 仲間の特典は 3 つ目だが、開いた数は 1 + 1
     expect(h.state().gifts).toEqual([true, false, true]);
   });
@@ -182,12 +184,11 @@ describe('仲間と感謝（SNSで広める → 仲間が申し込む → 特典
   it('3 つ目の特典の絵を閉じた直後に、感謝のメッセージが 1 回だけ出る（A-44・I-28）', async () => {
     const h = toHomeWithGift1();
     h.a.shareTo('x');
-    vi.advanceTimersByTime(400 + 2300);
+    vi.advanceTimersByTime(2600 + 2300);
     h.a.closeGift();
     expect(h.state().layers.map((l) => l.kind)).toEqual([]);
-    h.a.openShare('friend');
-    h.a.closeShare();
-    vi.advanceTimersByTime(2000 + 700 + 2300);
+    h.a.callFriends();
+    vi.advanceTimersByTime(1200 + 2300);
     expect(layerKinds(h)).toEqual(['gift']);
     expect(h.view().giftCount).toBe(3);
     h.a.closeGift();
@@ -207,9 +208,11 @@ describe('サーバーの件数と 80% の判定（I-123）', () => {
     passStart(h);
     vi.advanceTimersByTime(200);
     // 特典 1/3 の演出だけが出る（80% の演出ではない）
+    // 80% の演出（段階が上がる称賛）ではなく、申し込みの称賛（「ナイス！」）のあと、特典 1/3 の絵
     const top = h.state().layers[0];
-    expect(top && top.kind === 'fx' && top.fx.title).toBe('ごほうび');
-    vi.advanceTimersByTime(2300);
+    expect(top && top.kind === 'fx' && top.fx.kind).toBe('join');
+    expect(top && top.kind === 'fx' && top.fx.title).toBe('ナイス！');
+    vi.advanceTimersByTime(2500);
     expect(layerKinds(h)).toEqual(['gift']);
   });
 

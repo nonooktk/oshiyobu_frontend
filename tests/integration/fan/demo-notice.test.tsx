@@ -8,6 +8,7 @@ import {
   fireEvent,
   layer,
   mountFan,
+  openNextPage,
   passStart,
   screen,
   setupFanTest,
@@ -37,7 +38,7 @@ describe('ファン向けの全画面', () => {
     click('この内容で申し込む');
     expect(notices()).toBe(1);
     await closeGiftAfterFx();
-    click(/^次のアクション/);
+    openNextPage(); // ホームの主のボタンは行動そのものなので、いまできること の一覧は、ストアの操作で開く
     expect(notices()).toBe(1);
     click('‹ ホーム');
     click('メニュー');
@@ -72,13 +73,17 @@ describe('ファン向けの全画面', () => {
     // 感謝（3 つ目の特典の絵を閉じた直後）
     await tick(10);
     fireEvent.click(within(layer('gift') as HTMLElement).getByRole('button', { name: '閉じる' }));
-    click(/^次のアクション/);
-    click(/^SNSで広める/);
+    click(/^SNSに投稿する（任意）/);
     fireEvent.click(btn('X'));
-    await tick(400 + 2300);
+    // 投稿した直後の称賛の演出にも、札が並んで出る
+    expect(layer('fx')?.textContent).toContain(NOTICE);
+    expect(layer('fx')?.textContent).toContain(BADGE);
+    await tick(2600 + 2300);
     fireEvent.click(within(layer('gift') as HTMLElement).getByRole('button', { name: '閉じる' }));
     fireEvent.click(within(layer('share') as HTMLElement).getByRole('button', { name: '閉じる' }));
-    await tick(2000 + 700 + 2300);
+    click(/^仲間を呼ぶ/); // ホームの主のボタン（共有のシートは経由しない）
+    expect(layer('share')).toBeNull();
+    await tick(1200 + 2300);
     fireEvent.click(within(layer('gift') as HTMLElement).getByRole('button', { name: '閉じる' }));
     expect(layer('thanks')?.textContent).toContain(NOTICE);
     expect(layer('thanks')?.textContent).toContain(BADGE);
@@ -96,8 +101,7 @@ describe('ファン向けの全画面', () => {
         ) as HTMLElement,
     );
     click('このコースを目指して始める');
-    click(/^次のアクション/);
-    click(/^メイン口座にする/);
+    click(/^メイン口座にする/); // ホームの主のボタン
     expect(layer('ach')?.textContent).toContain(NOTICE);
     expect(layer('ach')?.textContent).toContain(BADGE);
   });
@@ -128,8 +132,7 @@ describe('ファン向けの全画面', () => {
     mountFan('?p=4');
     passStart();
     await closeGiftAfterFx();
-    click(/^次のアクション/);
-    click(/^仲間を呼ぶ/);
+    click(/^SNSに投稿する（任意）/);
     const share = layer('share') as HTMLElement;
     expect(within(share).getAllByText(NOTICE)).toHaveLength(1);
     expect(within(share).getAllByText(BADGE)).toHaveLength(1);

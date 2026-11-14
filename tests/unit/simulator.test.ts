@@ -31,6 +31,17 @@ describe('収支シミュレーター', () => {
     expect(outside).not.toContain('index.html#office');
   });
 
+  it('C-02 上位コースの構成が事務所向けと違うことの注記が、見出しの下に出る（F-12・SP-17・D-21）', () => {
+    // 冒頭のコメントではなく、画面に出る本文（body）の段落として置く
+    const body = outside.slice(outside.indexOf('<body>'));
+    const note = /<h1 class="part-h">[^<]*<\/h1>\s*<p class="hint course-note">([^<]*)<\/p>/.exec(
+      body,
+    );
+    expect(note?.[1] ?? '（注記の段落がありません）').toContain(
+      '上位コースの構成は、事務所向けと違います',
+    );
+  });
+
   it('外部の URL を読み込まない（script の外に http(s):// が無い）', () => {
     expect(outside).not.toMatch(/https?:\/\//);
   });

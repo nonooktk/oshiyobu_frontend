@@ -46,7 +46,8 @@ interface PidState {
 export interface MeterEngine {
   watch(pid: PerformanceId): void;
   subscribe(pid: PerformanceId): () => void;
-  requestFetch(reason: MeterFetchReason): void;
+  /** pid を渡すと、見ている公演ではなく、その公演を取る（はじめの画面で選び直して、まだ確定していない公演） */
+  requestFetch(reason: MeterFetchReason, pid?: PerformanceId): void;
   join(pid: PerformanceId): void;
   onReset(handler: () => void): () => void;
   isBusy(): boolean;
@@ -302,13 +303,14 @@ export function createMeterEngine(deps: EngineDeps): MeterEngine {
         if (pollTarget() === null && oneShot === null) clearTimer();
       };
     },
-    requestFetch(reason) {
+    requestFetch(reason, pid) {
       if (base === '') return;
-      if (watched === null) {
+      const target = pid ?? watched;
+      if (target === null) {
         pendingReason = reason;
         return;
       }
-      oneShot = watched;
+      oneShot = target;
       schedule(reason === 'open' ? random() * OPEN_DELAY_MAX_MS : 0);
     },
     join(pid) {

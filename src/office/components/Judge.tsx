@@ -310,9 +310,14 @@ export function Judge({ view }: { readonly view: OfficeView }) {
       <div className={styles.judgeFoot}>
         <Adjust view={view} />
         <div className={styles.footBtns}>
-          <a className={`${styles.btn} ${styles.secondary}`} href="/simulator.html">
-            {text.simulator}
-          </a>
+          {condition.venue.simulatorVenueId === undefined ? (
+            // シミュレーターに無い会場（RISE UP）は、入口を出さず注記だけ（押したあとに会場を探して迷わせない。D-21）
+            <p className={styles.simNone}>{text.simulatorNone}</p>
+          ) : (
+            <a className={`${styles.btn} ${styles.secondary}`} href="/simulator.html">
+              {text.simulator}
+            </a>
+          )}
           <button
             type="button"
             className={styles.btn}

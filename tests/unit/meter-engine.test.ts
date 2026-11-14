@@ -229,6 +229,30 @@ describe('共有メーターの仕組み', () => {
       expect(engine.getSnapshot(PID).joined).toBe(3);
     });
 
+    it('G2-04 公演を指定した依頼は、見ている公演ではなく、指定した公演を取る（はじめの画面で選び直した公演）', async () => {
+      const OTHER = 'krs48:cbox';
+      engine.watch(PID);
+      engine.requestFetch('course-select', OTHER);
+      await advance(10);
+      expect(api.gets().map((request) => request.url)).toEqual([
+        `${BASE}/api/v1/performances/${OTHER}/meter`,
+      ]);
+      api.joined = 7;
+      engine.requestFetch('course-select');
+      await advance(FLOOR_MS + 10);
+      expect(api.gets().at(-1)?.url).toBe(`${BASE}/api/v1/performances/${PID}/meter`); // 指定なしは、従来どおり見ている公演
+    });
+
+    it('G2-04 公演を指定した依頼は、見る公演がまだ分からなくても覚えずに取り、その公演の人数を持つ', async () => {
+      const OTHER = 'krs48:cbox';
+      api.joined = 7;
+      engine.requestFetch('course-select', OTHER);
+      await advance(10);
+      expect(api.gets()).toHaveLength(1);
+      expect(engine.getSnapshot(OTHER).joined).toBe(7);
+      expect(engine.getSnapshot(PID).joined).toBe(0);
+    });
+
     it('公演が分かる前の依頼は覚えておき、公演が分かったら取る', async () => {
       engine.requestFetch('course-select');
       await advance(5000);

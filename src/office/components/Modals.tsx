@@ -13,7 +13,9 @@ import { UpRows } from './Judge';
 
 /**
  * 重ねて出す枠。開いたら、閉じるボタンへ移り、Esc・外側の押下・閉じるで閉じる。閉じたら、押した場所へ戻す。
- * 暗幕の上の操作は、枠の中だけ（Tab は枠の中で回る）
+ * 暗幕の上の操作は、枠の中だけ（Tab は枠の中で回る）。
+ * 開いたときのフォーカス移動は、枠をスクロールさせない（preventScroll）。閉じるは枠の下端にあり、
+ * 既定のままだと枠が下へ送られて、見出し・札「デモ用の架空データ」が上へ隠れる（C-01）
  */
 function Modal({
   labelId,
@@ -27,7 +29,7 @@ function Modal({
   const panel = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    panel.current?.querySelector<HTMLElement>('[data-autofocus]')?.focus();
+    panel.current?.querySelector<HTMLElement>('[data-autofocus]')?.focus({ preventScroll: true });
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         onClose();

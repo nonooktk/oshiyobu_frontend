@@ -236,6 +236,72 @@ describe('事務所向け', () => {
     expect(within(dialog).getByText('デモ用の架空データ')).toBeTruthy();
   });
 
+  it('C-01 提案の 1 枚を開くとき、「閉じる」へ移るが、枠の中をスクロールさせない（見出し・札が上へ隠れない）', () => {
+    // jsdom にはスクロールが無いので、ブラウザの既定の動き（フォーカス先が見える位置まで枠を送る）を止める指定で確かめる。
+    // 実ブラウザでの隠れる量は、Playwright の台本で前後を測る（完了報告）
+    const focus = vi.spyOn(HTMLElement.prototype, 'focus');
+    try {
+      render(<App />);
+      pickBase();
+      fireEvent.click(screen.getByRole('button', { name: '提案を見る' }));
+      const close = within(screen.getByRole('dialog')).getByRole('button', { name: '閉じる' });
+      const at = focus.mock.contexts.indexOf(close);
+      expect(at).toBeGreaterThanOrEqual(0); // 開いたら「閉じる」へ移る（従来どおり）
+      expect(focus.mock.calls[at]?.[0]).toEqual({ preventScroll: true });
+      expect(within(screen.getByRole('dialog')).getByText('デモ用の架空データ')).toBeTruthy();
+    } finally {
+      focus.mockRestore();
+    }
+  });
+
+  describe('F-12 収支シミュレーターの入口（D-21）', () => {
+    const simulatorLink = () =>
+      within(screen.getByTestId('judge')).queryByRole('link', { name: '収支シミュレーター' });
+    const NOTE = 'この会場は、収支シミュレーターにありません';
+
+    it('シミュレーターにある会場（Cボックス）は、判定の下に入口が出て、注記は出ない', () => {
+      render(<App />);
+      pickBase();
+      expect(simulatorLink()?.getAttribute('href')).toBe('/simulator.html');
+      expect(screen.queryByText(NOTE)).toBeNull();
+    });
+
+    it('C-03 シミュレーターに無い会場（RISE UP）は、入口を出さず、1 行の注記を出す', () => {
+      render(<App />);
+      choose('久留米市');
+      pickVenue(/RISE UP/);
+      expect(simulatorLink()).toBeNull();
+      expect(within(screen.getByTestId('judge')).getByText(NOTE)).toBeTruthy();
+    });
+
+    it('RISE UP から Cボックスへ選び直すと、入口が戻り、注記が消える', () => {
+      render(<App />);
+      choose('久留米市');
+      pickVenue(/RISE UP/);
+      pickVenue(/久留米シティプラザ Cボックス/);
+      expect(simulatorLink()).not.toBeNull();
+      expect(screen.queryByText(NOTE)).toBeNull();
+    });
+
+    it('9 市すべての会場 12 件のうち、入口があるのは 11 件。注記が出るのは RISE UP の 1 件だけ', () => {
+      render(<App />);
+      let total = 0;
+      let withLink = 0;
+      let withNote = 0;
+      for (const dot of screen.getAllByRole('button', { name: /を選ぶ/ })) {
+        fireEvent.click(dot);
+        const heading = screen.getByRole('heading', { level: 3, name: /の会場$/ });
+        for (const venue of heading.parentElement?.querySelectorAll('li button') ?? []) {
+          fireEvent.click(venue);
+          total += 1;
+          if (simulatorLink() !== null) withLink += 1;
+          if (screen.queryByText(NOTE) !== null) withNote += 1;
+        }
+      }
+      expect([total, withLink, withNote]).toEqual([12, 11, 1]);
+    });
+  });
+
   it('提案の 1 枚は、Esc で閉じ、押した場所に戻る', () => {
     render(<App />);
     pickBase();
@@ -344,6 +410,53 @@ describe('事務所向け', () => {
     fireEvent.keyDown(screen.getByRole('button', { name: /^熊本市を選ぶ/ }), { key: 'Enter' });
     expect(screen.getByRole('heading', { name: '熊本市の会場' })).toBeTruthy();
     expect(document.querySelector('a[href*="presenter"]')).toBeNull();
+  });
+
+  describe('C-05 キーボードで市を選ぶと、会場の先頭にフォーカスが移る（SP-03）', () => {
+    const firstVenue = (city: string) =>
+      within(screen.getByRole('heading', { name: `${city}の会場` }).parentElement as HTMLElement)
+        .getAllByRole('button')
+        .at(0);
+
+    it.each([
+      ['Enter', 'Enter'],
+      ['Space', ' '],
+    ])('%s で選ぶと、その市の会場の先頭のボタンにフォーカスが移る', (_label, key) => {
+      render(<App />);
+      const dot = screen.getByRole('button', { name: /^福岡市を選ぶ/ });
+      dot.focus();
+      fireEvent.keyDown(dot, { key });
+      expect(document.activeElement).toBe(firstVenue('福岡市'));
+      expect(document.activeElement).not.toBe(dot);
+    });
+
+    it('すでに選んでいる市をもう一度キーボードで選んでも、会場の先頭へ移る', () => {
+      render(<App />);
+      const dot = screen.getByRole('button', { name: /^久留米市を選ぶ/ });
+      fireEvent.keyDown(dot, { key: 'Enter' });
+      dot.focus();
+      expect(document.activeElement).toBe(dot);
+      fireEvent.keyDown(dot, { key: 'Enter' });
+      expect(document.activeElement).toBe(firstVenue('久留米市'));
+    });
+
+    it('マウスで選んだときは、フォーカスを動かさない（会場の先頭に移らない）', () => {
+      render(<App />);
+      const dot = screen.getByRole('button', { name: /^佐賀市を選ぶ/ });
+      dot.focus();
+      fireEvent.click(dot);
+      expect(screen.getByRole('heading', { name: '佐賀市の会場' })).toBeTruthy();
+      expect(document.activeElement).toBe(dot);
+    });
+
+    it('「事務所向けだけ戻す」のあとに、キーボードで選び直しても、会場の先頭へ移る', () => {
+      render(<App />);
+      const dot = () => screen.getByRole('button', { name: /^熊本市を選ぶ/ });
+      fireEvent.keyDown(dot(), { key: 'Enter' });
+      fireEvent.click(screen.getByRole('button', { name: '事務所向けだけ戻す' }));
+      fireEvent.keyDown(dot(), { key: 'Enter' });
+      expect(document.activeElement).toBe(firstVenue('熊本市'));
+    });
   });
 
   describe('同じ端末の連動（I-110・I-113 の事務所側）', () => {

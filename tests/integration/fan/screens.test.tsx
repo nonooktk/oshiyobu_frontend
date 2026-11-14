@@ -182,6 +182,31 @@ describe('すべての画面に札「デモ用の架空データ」が出る（A
     await tick(2600);
     expect(layer('gift')?.textContent).toContain('デモ用の架空データ');
   });
+
+  it('C-06 下から出るシート（引き継ぎ・申し込みをやめる確認）の中にも札が出る。後ろの画面が下へスクロールされていても見える', async () => {
+    mountFan('?p=4');
+    passStart();
+    await closeGiftAfterFx();
+    click('メニュー');
+    await settle();
+    click('申し込みをやめる');
+    await settle();
+    const cancel = layer('sheet') as HTMLElement;
+    expect(within(cancel).getByRole('heading', { name: '申し込みをやめますか？' })).toBeTruthy();
+    expect(within(cancel).getAllByText('デモ用の架空データ')).toHaveLength(1);
+    click('やめない（戻る）');
+    await settle();
+
+    click(/^推し・条件の変更/);
+    await settle();
+    click('KRS48');
+    click('この条件に変える（デモ用）');
+    await settle();
+    const carry = layer('sheet') as HTMLElement;
+    expect(within(carry).getByRole('heading', { name: '引き継いだもの' })).toBeTruthy();
+    expect(within(carry).getAllByText('デモ用の架空データ')).toHaveLength(1); // 「デモ用の操作」の札とは別
+    expect(within(carry).getByText('デモ用の操作')).toBeTruthy();
+  });
 });
 
 describe('共有（A-29〜A-32・I-29）', () => {

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { conditionOf, demandOf, venuesOf } from '../../core';
 import { HOME_CITY } from '../../core';
 import styles from '../office.module.css';
@@ -9,6 +10,12 @@ export function SidePanel() {
   const city = useOffice((s) => s.city);
   const venueId = useOffice((s) => s.venueId);
   const pickVenue = useOffice((s) => s.pickVenue);
+  // キーボードで市を選んだとき（合図が増えたとき）、会場の先頭のボタンへフォーカスを移す（SP-03）
+  const venueFocus = useOffice((s) => s.venueFocus);
+  const venueList = useRef<HTMLUListElement>(null);
+  useEffect(() => {
+    if (venueFocus > 0) venueList.current?.querySelector('button')?.focus();
+  }, [venueFocus]);
   if (city === null) {
     return (
       <div className={styles.sideCol}>
@@ -35,7 +42,7 @@ export function SidePanel() {
   return (
     <div className={styles.sideCol}>
       <h3 className={styles.sideH}>{city}の会場</h3>
-      <ul className={styles.venues}>
+      <ul className={styles.venues} ref={venueList}>
         {list.map((venue) => (
           <li key={venue.id}>
             <button

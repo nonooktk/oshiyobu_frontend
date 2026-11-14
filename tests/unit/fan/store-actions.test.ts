@@ -1,5 +1,6 @@
 // 口座と預金の 3 つの行動・成立の表示・やめる・条件の変更・リセットの確かめ（上層: A-07・A-26・A-27・A-39・A-61・A-64〜A-66・I-18・I-22・I-25・I-26）。
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { performanceIdOf } from '../../../src/core';
 import { nextViewOf } from '../../../src/fan/domain/view';
 import { harness, passStart } from './helpers';
 
@@ -349,6 +350,27 @@ describe('共有メーターの取得の依頼（取得の契機。I-122）', ()
     expect(h.fetches).toEqual(['course-select']);
     h.a.startNext(); // 申し込む（公演は krs48:cbox に変わる）
     expect(h.fetches).toEqual(['course-select', 'performance-changed']);
+  });
+
+  it('G2-04 コースを選ぶ画面（3 / 3）に入ったときの取得は、選び直した（まだ確定していない）公演を指す', () => {
+    const h = harness(4);
+    h.a.startNext(); // 2 / 3
+    h.a.startPick('oshi', 'krs48');
+    h.a.startPick('city', '福岡市');
+    h.a.startNext(); // 3 / 3
+    const pending = h.fetchPids[0];
+    expect(pending).toBeDefined();
+    expect(pending).not.toBe('tech0:cbox'); // 確定前の state.oshiId・venueId（古い公演）ではない
+    h.a.startNext(); // 確定
+    expect(h.state().oshiId).toBe('krs48');
+    expect(pending).toBe(performanceIdOf(h.state().oshiId, h.state().venueId));
+  });
+
+  it('G2-04 選び直していなければ、3 / 3 の取得は、いまの公演（tech0:cbox）を指す', () => {
+    const h = harness(4);
+    h.a.startNext();
+    h.a.startNext();
+    expect(h.fetchPids).toEqual(['tech0:cbox']);
   });
 });
 

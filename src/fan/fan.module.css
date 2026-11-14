@@ -1402,6 +1402,18 @@ button.rcard:hover {
   font-size: 16px;
   font-weight: 700;
 }
+/* シートの見出しの行（右に札「デモ用の架空データ」。C-06） */
+.sheetHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s1) var(--s2);
+  margin: 0 0 var(--s2);
+}
+.sheetHead h2 {
+  margin: 0;
+}
 .shareFrame {
   position: relative;
   overflow: hidden;

@@ -1,12 +1,13 @@
-// G-08 の歯止め（docs/守ること.md「予定」→ 有効にするための検査）。ファン向けの画面の文と読み上げ用の文に、
+// G-08 の歯止め（docs/守ること.md）。ファン向けの画面の文と読み上げ用の文に、
 // 人数・割合・最低人数・達成率・到達ライン・目標の金額が出ない。出してよい数字は、自分が払うコースの金額・預金・席数・日付・特典の n/3・ステップの 1 / 3 だけ。
 // 巡回する画面: はじめの画面 3 つ・ホーム（申し込む前・後・FEVER。主のボタンと副のボタン）・演出（申し込み・投稿・届いた！・ゲージが伸びている最中・FEVER の瞬間・仲間に知らせる）・共有のシート・やめる確認・メニューの下の全画面。推し 5 組（人物 4・10・12・14・15）
 // 起動条件: 巡回した場面の数が、決めた数以上であること（0 件で通る空振りを防ぐ）。
-// 置き場: tests/guard/ に移すのは管理者（この PR では、決まりの文書と guard を変えないため、通常のテストとして置く）。
+// 置き場: tests/guard/（2026-11-14 に tests/integration/fan/ から移した。管理者の側だけが変える。ソースの語を見る検査は heat.test.ts）。
+// 画面の部品は tests/integration/fan/ の helpers を使う（共有の部品は本物・サーバーだけ偽物）。
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getAppStore } from '../../../src/fan/store/FanProvider';
-import { setMeterEngineForTest } from '../../../src/shared/meter';
-import { createMeterEngine } from '../../../src/shared/meter/engine';
+import { getAppStore } from '../../src/fan/store/FanProvider';
+import { setMeterEngineForTest } from '../../src/shared/meter';
+import { createMeterEngine } from '../../src/shared/meter/engine';
 import {
   act,
   btn,
@@ -19,9 +20,13 @@ import {
   setupFanTest,
   tick,
   within,
-} from './helpers';
+} from '../integration/fan/helpers';
 
 setupFanTest();
+
+/** 落ちたときの文（tests/guard/helpers.ts の guardMessage と同じ形。この検査は画面を描くので、jsdom で動き、その部品を読み込めない） */
+const guardMessage = (id: string, what: string): string =>
+  `【${id} に反しています】${what}。直さずに、管理者（統括）へ相談してください（docs/守ること.md の ${id}）。`;
 
 /** 画面に出してはいけない言い方（G-08）。「円」を伴う金額・席数・日付・n/3・1 / 3 は対象外 */
 const FORBIDDEN: [string, RegExp][] = [
@@ -187,7 +192,10 @@ describe('ファン向けの画面に、人数・達成率・目標の金額の�
     );
     expect(
       violations,
-      'G-08 に反しています（ファン向けに、人数・達成率・目標の金額を出さない）',
+      guardMessage(
+        'G-08',
+        'ファン向けの画面に、人数・最低人数・残りの人数・達成率・目標の金額の数字が出ています',
+      ),
     ).toEqual([]);
   });
 
@@ -280,7 +288,10 @@ describe('行動のたびに段階が上がる進み方の各段階にも、数�
     );
     expect(
       violations,
-      'G-08 に反しています（ファン向けに、人数・達成率・目標の金額を出さない）',
+      guardMessage(
+        'G-08',
+        'ファン向けの画面に、人数・最低人数・残りの人数・達成率・目標の金額の数字が出ています',
+      ),
     ).toEqual([]);
   });
 });

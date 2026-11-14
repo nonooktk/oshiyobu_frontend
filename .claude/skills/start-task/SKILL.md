@@ -19,10 +19,13 @@ git branch --show-current
 - 変更が残っているときは、**ここで止まる**。残っている変更をどうするか（続きの作業か、別の作業か）を担当者に聞く。変更を捨てる操作（`git reset --hard`・`git checkout -f`・`git clean`）は使わない。
 - 変更が無ければ、次へ進む。
 
-### 2. 最新の main を取る
+### 2. 最新の dev を取る
+
+作業ブランチは、`dev` から切ります（PR の宛先も `dev`）。
 
 ```
-git switch main
+git fetch origin
+git switch dev
 git pull --ff-only
 ```
 
@@ -35,7 +38,7 @@ git switch -c <種類>/<短い英語の名前>
 ```
 
 - 種類は `feature`（機能の追加）・`fix`（不具合の修正）・`docs`（文書だけの変更）のどれか。例: `feature/add-banner`、`fix/map-label`。
-- **main の上では、commit も push もしない。** 必ずブランチを切ってから作業する。
+- **main・dev の上では、commit も push もしない。** 必ずブランチを切ってから作業する。
 
 ### 4. やることを日本語で書き出して、承認を待つ
 
@@ -75,4 +78,4 @@ git diff --cached --stat
 
 ### 8. 終わったら
 
-作業が終わったら、`/pre-deploy-check` を呼んで、PR を出す前の確認を行う。PR の出し方と、そのあとの流れは `docs/デプロイ手順.md`。
+作業が終わったら、`/pre-deploy-check` を呼んで、PR を出す前の確認を行う。PR は `dev` 向けに出す（`gh pr create --base dev --web`）。出すと、統括にレビューの依頼が届く。PR の出し方と、そのあとの流れは `docs/デプロイ手順.md`。

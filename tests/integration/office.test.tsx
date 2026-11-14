@@ -254,6 +254,65 @@ describe('事務所向け', () => {
     }
   });
 
+  describe('F-12 収支シミュレーターの入口（D-21）', () => {
+    const simulatorLink = () =>
+      within(screen.getByTestId('judge')).queryByRole('link', { name: '収支シミュレーター' });
+    const NOTE = 'この会場は、収支シミュレーターにありません';
+
+    it('シミュレーターにある会場（Cボックス）は、判定の下に入口が出て、注記は出ない', () => {
+      render(<App />);
+      pickBase();
+      expect(simulatorLink()?.getAttribute('href')).toBe('/simulator.html');
+      expect(screen.queryByText(NOTE)).toBeNull();
+    });
+
+    it('C-03 シミュレーターに無い会場（RISE UP）は、入口を出さず、1 行の注記を出す', () => {
+      render(<App />);
+      choose('久留米市');
+      pickVenue(/RISE UP/);
+      expect(simulatorLink()).toBeNull();
+      expect(within(screen.getByTestId('judge')).getByText(NOTE)).toBeTruthy();
+    });
+
+    it('RISE UP から Cボックスへ選び直すと、入口が戻り、注記が消える', () => {
+      render(<App />);
+      choose('久留米市');
+      pickVenue(/RISE UP/);
+      pickVenue(/久留米シティプラザ Cボックス/);
+      expect(simulatorLink()).not.toBeNull();
+      expect(screen.queryByText(NOTE)).toBeNull();
+    });
+
+    it('11 会場すべて（RISE UP 以外）に入口がある', () => {
+      const cities = [
+        ['福岡市', 3],
+        ['北九州市', 1],
+        ['久留米市', 2],
+        ['佐賀市', 1],
+        ['長崎市', 1],
+        ['熊本市', 1],
+        ['大分市', 1],
+        ['宮崎市', 1],
+        ['鹿児島市', 1],
+      ] as const;
+      render(<App />);
+      let withLink = 0;
+      let withNote = 0;
+      for (const [city, count] of cities) {
+        choose(city);
+        for (let i = 0; i < count; i++) {
+          const buttons = screen
+            .getByRole('heading', { name: `${city}の会場` })
+            .parentElement?.querySelectorAll<HTMLButtonElement>('ul button');
+          fireEvent.click(buttons?.[i] as HTMLButtonElement);
+          if (simulatorLink() !== null) withLink += 1;
+          if (screen.queryByText(NOTE) !== null) withNote += 1;
+        }
+      }
+      expect([withLink, withNote]).toEqual([11, 1]);
+    });
+  });
+
   it('提案の 1 枚は、Esc で閉じ、押した場所に戻る', () => {
     render(<App />);
     pickBase();

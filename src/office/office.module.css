@@ -809,6 +809,11 @@
   font-weight: 700;
   color: var(--error-ink);
 }
+.simNone {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
 
 /* 提案の 1 枚・情報の扱い */
 .overlay {

@@ -27,6 +27,7 @@ export const text = {
   emptyHead: '市を選ぶ',
   emptyBody: '地図の丸を押す',
   simulator: '収支シミュレーター',
+  simulatorNone: 'この会場は、収支シミュレーターにありません',
   privacy: '情報の扱い',
   resetAll: 'デモを最初に戻す',
   resetOffice: '事務所向けだけ戻す',

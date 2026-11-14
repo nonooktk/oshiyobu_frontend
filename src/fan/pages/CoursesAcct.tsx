@@ -1,7 +1,7 @@
 // 応援コース（SP-43）と、口座と預金（SP-44）。メニュー配下の画面（あとから読む側）。
 import { useEffect } from 'react';
 import type { CSSProperties } from 'react';
-import { TEIKI, achievementPct, canApply, nextDepositTarget } from '../../core';
+import { TEIKI, achievementPct, canApply } from '../../core';
 import { artistView } from '../art/registry';
 import { CourseFace } from '../components/CourseFace';
 import type { AcctId } from '../domain/state';
@@ -10,6 +10,7 @@ import { manYen, yen } from '../text/format';
 import { MyState, PayNote } from '../text/pay';
 import fan from '../fan.module.css';
 import { useFan } from '../store/FanProvider';
+import { DepositCard } from './DepositCard';
 import styles from './pages.module.css';
 
 /** 応援コース。4 枚のカードが、金額・手に入るもの・枠・条件・自分の状態つきで並ぶ。 */
@@ -176,15 +177,14 @@ export function AcctPage() {
   const { deposit: d, pay: p } = state.acct;
   const open = cond.courses.filter((k) => canApply(k, d, p));
   const nx = nextLocked(cond, d, p);
-  const to = nextDepositTarget(d);
   const fresh = state.fresh;
   const delay = { '--ck-delay': `${state.ckDelay}s` } as CSSProperties;
 
-  // 押したカードの見出しにフォーカスを置く（画面は動かない）
+  // 押したカードの見出しにフォーカスを置く（画面は動かない）。預金は、入力欄に残す（続けて入れられる）
   const nonce = fresh?.from === 'acct' ? fresh.nonce : null;
   const freshAct = fresh?.act ?? null;
   useEffect(() => {
-    if (nonce === null || freshAct === null) return;
+    if (nonce === null || freshAct === null || freshAct === 'deposit') return;
     document.getElementById(`fan-ac-${freshAct}-h`)?.focus({ preventScroll: true });
   }, [nonce, freshAct]);
 
@@ -211,13 +211,6 @@ export function AcctPage() {
         ['メイン口座', 'いいえ → はい'],
         ['開くコース', opensText(cond, d, d, p, true)],
       ];
-    if (id === 'deposit') {
-      const t = to ?? d;
-      return [
-        ['預金', `${yen(d)} → ${yen(t)}`],
-        ['開くコース', opensText(cond, d, t, p, p)],
-      ];
-    }
     return [
       [
         '毎月の積立',
@@ -273,20 +266,18 @@ export function AcctPage() {
       <div className={styles.stack}>
         {(['main', 'deposit', 'teiki'] as const).map((id) => {
           const def = ACCT_DEF[id];
+          // 預金は、決まった額でなく、利用者が入れた額を足す（入力欄・足すボタン・よく使う額のボタン）
+          if (id === 'deposit')
+            return (
+              <DepositCard key={id} title={def.btn} desc={def.desc} primary={primary === id} />
+            );
           const done = acctDone(id);
-          const once = id === 'deposit' && !!state.done.deposit && !done;
-          const title =
-            id === 'deposit'
-              ? to
-                ? `預金を積み増す（+${yen(to - d)}）`
-                : '預金を積み増す'
-              : (def.title ?? '');
           const got = fresh?.act === id;
           return (
             <div key={id} className={fan.card} id={`ac-${id}`}>
               {def.tag ? <span className={styles.actTag}>{def.tag}</span> : null}
               <h3 className={styles.actH} id={`fan-ac-${id}-h`} tabIndex={-1}>
-                {title}
+                {def.title ?? ''}
               </h3>
               <p className={styles.actD}>
                 {def.desc}
@@ -294,9 +285,6 @@ export function AcctPage() {
                   ? 'このデモの登場人物は、すでに口座を持っています。入口の流れだけ、擬似的に体験できます。'
                   : ''}
               </p>
-              {id === 'deposit' && state.acct.times > 0 && !done ? (
-                <p className={styles.actDone}>✓ {state.acct.times}回積み増しました</p>
-              ) : null}
               {done ? null : (
                 <>
                   <p className={styles.before}>押すと、こうなります</p>
@@ -316,7 +304,7 @@ export function AcctPage() {
                   className={got ? `${styles.actDone} ${styles.got}` : styles.actDone}
                   style={delay}
                 >
-                  ✓ {id === 'deposit' ? 'デモでは、これ以上積み増せません' : '達成しました'}
+                  ✓ 達成しました
                 </p>
               ) : (
                 <button
@@ -328,7 +316,7 @@ export function AcctPage() {
                   }
                   onClick={() => actions.runAcct(id, 'acct')}
                 >
-                  {once ? 'さらに積み増す' : def.btn}
+                  {def.btn}
                 </button>
               )}
             </div>

@@ -423,6 +423,53 @@ describe('事務所向け', () => {
     expect(document.querySelector('a[href*="presenter"]')).toBeNull();
   });
 
+  describe('C-05 キーボードで市を選ぶと、会場の先頭にフォーカスが移る（SP-03）', () => {
+    const firstVenue = (city: string) =>
+      within(screen.getByRole('heading', { name: `${city}の会場` }).parentElement as HTMLElement)
+        .getAllByRole('button')
+        .at(0);
+
+    it.each([
+      ['Enter', 'Enter'],
+      ['Space', ' '],
+    ])('%s で選ぶと、その市の会場の先頭のボタンにフォーカスが移る', (_label, key) => {
+      render(<App />);
+      const dot = screen.getByRole('button', { name: /^福岡市を選ぶ/ });
+      dot.focus();
+      fireEvent.keyDown(dot, { key });
+      expect(document.activeElement).toBe(firstVenue('福岡市'));
+      expect(document.activeElement).not.toBe(dot);
+    });
+
+    it('すでに選んでいる市をもう一度キーボードで選んでも、会場の先頭へ移る', () => {
+      render(<App />);
+      const dot = screen.getByRole('button', { name: /^久留米市を選ぶ/ });
+      fireEvent.keyDown(dot, { key: 'Enter' });
+      dot.focus();
+      expect(document.activeElement).toBe(dot);
+      fireEvent.keyDown(dot, { key: 'Enter' });
+      expect(document.activeElement).toBe(firstVenue('久留米市'));
+    });
+
+    it('マウスで選んだときは、フォーカスを動かさない（会場の先頭に移らない）', () => {
+      render(<App />);
+      const dot = screen.getByRole('button', { name: /^佐賀市を選ぶ/ });
+      dot.focus();
+      fireEvent.click(dot);
+      expect(screen.getByRole('heading', { name: '佐賀市の会場' })).toBeTruthy();
+      expect(document.activeElement).toBe(dot);
+    });
+
+    it('「事務所向けだけ戻す」のあとに、キーボードで選び直しても、会場の先頭へ移る', () => {
+      render(<App />);
+      const dot = () => screen.getByRole('button', { name: /^熊本市を選ぶ/ });
+      fireEvent.keyDown(dot(), { key: 'Enter' });
+      fireEvent.click(screen.getByRole('button', { name: '事務所向けだけ戻す' }));
+      fireEvent.keyDown(dot(), { key: 'Enter' });
+      expect(document.activeElement).toBe(firstVenue('熊本市'));
+    });
+  });
+
   describe('同じ端末の連動（I-110・I-113 の事務所側）', () => {
     const open = () => {
       const fan = createLink(asBroadcastChannel);

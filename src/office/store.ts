@@ -34,6 +34,8 @@ export interface OfficeState {
   live: string;
   /** 上の帯の「最初に戻しました」 */
   band: string;
+  /** 会場の先頭へフォーカスを移す合図。キーボードで市を選ぶたびに増える（仕様 SP-03）。0 は、まだ移していない */
+  venueFocus: number;
 }
 
 const EMPTY_COSTS: CostValues = { venue: 0, prod: 0, fee: 0, travel: 0, profit: 0 };
@@ -53,12 +55,15 @@ export const initialOfficeState = (): OfficeState => ({
   modal: null,
   live: '',
   band: '',
+  venueFocus: 0,
 });
 
 interface OfficeActions {
   setArtist(id: ArtistId): void;
   setMetric(metric: Metric): void;
   pickCity(city: CityName): void;
+  /** キーボードで市を選んだあと、会場の先頭へフォーカスを移すよう頼む（すでに選んでいる市でも移す） */
+  focusVenues(): void;
   pickVenue(id: VenueId): void;
   setAdjustOpen(open: boolean): void;
   setCostInput(id: CostItemId, raw: string): void;
@@ -125,6 +130,10 @@ export const officeStore = createStore<OfficeState & OfficeActions>()((set, get)
         adjustOpen: false,
         live: `${city}を選びました。会場の候補は${venuesOf(city).length}件です。`,
       });
+    },
+
+    focusVenues() {
+      set({ venueFocus: get().venueFocus + 1 });
     },
 
     pickVenue(id) {

@@ -41,6 +41,7 @@ export function MapPanel() {
   const city = useOffice((s) => s.city);
   const setMetric = useOffice((s) => s.setMetric);
   const pickCity = useOffice((s) => s.pickCity);
+  const focusVenues = useOffice((s) => s.focusVenues);
   const regs = metricValues(artistId, 'reg');
   const hots = metricValues(artistId, 'hot');
   const values = metric === 'reg' ? regs : hots;
@@ -125,6 +126,7 @@ export function MapPanel() {
                     if (event.key === 'Enter' || event.key === ' ') {
                       event.preventDefault();
                       choose();
+                      focusVenues(); // キーボードで選んだときは、会場の先頭へフォーカスを移す（SP-03）
                     }
                   }}
                 >

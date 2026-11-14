@@ -7,6 +7,7 @@ import { Home } from './components/Home';
 import { DetailPage, LiveRegion, SheetShell, Toast } from './components/Frame';
 import { AchLayer, FxLayer, GiftLayer, ShareSheet, ThanksLayer } from './components/Layers';
 import { NextAction } from './components/NextAction';
+import { SoundToggle } from './components/SoundToggle';
 import { Start } from './components/Start';
 import type { LayersModule, PagesModule } from './prefetch';
 import { setupFanPrefetch } from './prefetch';
@@ -160,6 +161,8 @@ function Screen() {
             );
         }
       })}
+      {/* 層が出ているあいだも、音のボタンだけは押せる（帯の音のボタンは、層の下で押せなくなるため） */}
+      {layers.length > 0 ? <SoundToggle floating /> : null}
       {ach ? <AchLayer key={ach.id} ach={ach} /> : null}
       <Toast />
       <LiveRegion />

@@ -1,14 +1,16 @@
 // 称賛の音のオン・オフのボタン（統括の決定）。全画面の上の帯に、常に置く。既定はオン。押せる大きさ（44px 以上）。読み上げの名前つき。
+// 演出・シートなどの層が出ているあいだは、下の画面（帯を含む）が押せなくなる。そのため、層の上に、同じ場所へ重ねて、もう 1 つ出す（floating）。
+// 驚いた人が、演出の最中でも音を止められる（QA G2-13）。
 import styles from '../fan.module.css';
 import { useFan } from '../store/FanProvider';
 
-export function SoundToggle() {
+export function SoundToggle({ floating = false }: { floating?: boolean }) {
   const { state, actions } = useFan();
   const on = state.soundOn;
   return (
     <button
       type="button"
-      className={styles.soundBtn}
+      className={floating ? `${styles.soundBtn} ${styles.soundFloat}` : styles.soundBtn}
       aria-label="称賛の音"
       aria-pressed={on}
       onClick={actions.toggleSound}

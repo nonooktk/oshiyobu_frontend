@@ -62,6 +62,15 @@
 .soundBtn[aria-pressed='false'] {
   color: var(--ink-soft);
 }
+/* 層（演出・シート・特典）が出ているあいだ、層の上に重ねる音のボタン。帯の音のボタンと同じ場所・同じ大きさ。暗幕の上でも見えるよう、白い丸の地を付ける */
+.soundFloat {
+  position: absolute;
+  top: 0;
+  left: var(--s2);
+  z-index: 70;
+  margin-left: 0;
+  background: var(--surface);
+}
 .chip {
   display: inline-block;
   padding: 0 var(--s2);
@@ -2169,6 +2178,10 @@ button.rcard:hover {
   }
   .achCard {
     animation: none;
+  }
+  /* 小さい通知（トースト）も、下から上がる動きを止めて、すっと現れるだけにする（QA H-06） */
+  .toast {
+    animation: fadeIn 0.3s both;
   }
   .ck li.got,
   .ck li.got .ckB,

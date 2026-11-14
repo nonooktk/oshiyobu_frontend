@@ -23,7 +23,8 @@
     "fonts:build": "node scripts/fonts-build.mjs",
     "check:budget": "node scripts/check-budget.mjs",
     "check:csp": "node scripts/check-csp.mjs",
-    "e2e": "node scripts/run-e2e.mjs"
+    "e2e": "node scripts/run-e2e.mjs",
+    "e2e:solo": "node scripts/run-e2e-solo.mjs"
   },
   "dependencies": {
     "react": "19.2.9",

@@ -22,7 +22,9 @@
     "src",
     "tests",
     "e2e",
+    "e2e-solo",
     "playwright.config.ts",
+    "playwright.solo.config.ts",
     "scripts/core-lib.d.mts",
     "scripts/budget-lib.d.mts",
     "scripts/csp-lib.d.mts"

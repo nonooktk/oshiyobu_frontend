@@ -27,7 +27,15 @@ import type {
   Pend,
   ShareMode,
 } from '../domain/state';
-import { canApplyOf, condItems, courseOf, opensList, restText, viewOf } from '../domain/view';
+import {
+  canApplyOf,
+  condItems,
+  courseOf,
+  friendsToClinch,
+  opensList,
+  restText,
+  viewOf,
+} from '../domain/view';
 import type { FanView, MeterIn } from '../domain/view';
 import { buildPostText, shareUrlFacebook, shareUrlX } from '../domain/share';
 import { yen } from '../text/format';
@@ -48,9 +56,16 @@ export type Deps = {
   /** 文面のコピー。成功したら true。 */
   copyText: (text: string) => Promise<boolean>;
   random: () => number;
+  /**
+   * ひとり体験（共有メーターなし。人数は端末の中だけで数える）か。省略は false（共有メーターあり）。
+   * true のとき、仲間を呼ぶと、成立に届く所まで一度に増え、成立の演出が出る。
+   */
+  solo?: () => boolean;
 };
 
-export const defaultDeps = (partial: Pick<Deps, 'join' | 'fetch'>): Deps => ({
+export const defaultDeps = (
+  partial: Pick<Deps, 'join' | 'fetch'> & Partial<Pick<Deps, 'solo'>>,
+): Deps => ({
   ...partial,
   reduceMotion: () =>
     typeof window !== 'undefined' &&
@@ -112,11 +127,11 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
   const condNow = (): Condition =>
     env && env.cond.venueId === state.venueId ? env.cond : conditionOf(state.venueId);
   const pidNow = (): PerformanceId => performanceIdOf(state.oshiId, state.venueId);
-  const view = (): FanView => {
-    const pid = pidNow();
-    const meter = env && env.pid === pid ? env.meter : { serverJoined: 0, counted: false };
-    return viewOf(state, condNow(), meter);
-  };
+  const solo = (): boolean => deps.solo?.() ?? false;
+  /** いまの公演のメーター（Provider が渡した値が、いまの公演のものでなければ、取れていない扱い） */
+  const meterNow = (): MeterIn =>
+    env && env.pid === pidNow() ? env.meter : { serverJoined: 0, counted: false };
+  const view = (): FanView => viewOf(state, condNow(), meterNow(), solo());
 
   /* ---------- 小さな部品 ---------- */
   // 同じ文が続くときは、末尾の見えない印（ZWSP）を付け替えて、読み上げの領域の中身を変える（2 回目も伝わる）
@@ -304,6 +319,10 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       return;
     }
     set({ milestoneShown: true });
+    showReached(cb, withGift);
+  };
+  /** 達成率の演出の中身（80% 突破・人数が集まった・成立）。80% の演出と、仲間を呼んで成立したときの演出が使う。 */
+  const showReached = (cb: () => void, withGift: boolean): void => {
     const v = view();
     const { pct, left, established, gathered } = v.status;
     const t = established
@@ -534,9 +553,12 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
   };
   const friendJoins = (): void => {
     if (state.course === null || state.done.friend) return;
+    const wasEstablished = view().status.established;
+    // ひとり体験は、成立に届く所まで一度に増やす（少なくとも 1 人。届かない公演は 1 人）。共有メーターありは、1 人ずつ
+    const add = solo() ? Math.max(1, friendsToClinch(state, condNow(), meterNow()) ?? 1) : 1;
     set({
-      friends: state.friends + 1,
-      called: state.called + 1,
+      friends: state.friends + add,
+      called: state.called + add,
       done: { ...state.done, friend: true },
     });
     if (state.page !== 'next') go('home');
@@ -550,7 +572,11 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
             ? '人数は集まりました。あと少しの支援で、開催が決まります。'
             : `ライブ開催まで あと${s.left}人です。`),
     );
-    later(reduce() ? 0 : 700, () => unlockGift(2));
+    // 仲間を呼んで成立したときは、成立の演出を出してから、特典 3/3 に進む
+    later(reduce() ? 0 : 700, () => {
+      if (!wasEstablished && view().status.established) showReached(() => unlockGift(2), false);
+      else unlockGift(2);
+    });
   };
   /** 共有ボタン。Instagram は、コピーできたか（できなければ、画面が投稿文の欄を選択状態にする。SP-90）を返す。 */
   const shareTo = async (ch: 'x' | 'fb' | 'ig'): Promise<boolean> => {

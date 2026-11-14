@@ -14,7 +14,12 @@ import type { ReactNode } from 'react';
 import { performanceIdOf } from '../../core';
 import { useEffectiveCondition } from '../../shared/condition';
 import { onResetAll, useLinkedOffice } from '../../shared/link';
-import { joinPerformance, requestMeterFetch, useSharedMeter } from '../../shared/meter';
+import {
+  isSoloMeter,
+  joinPerformance,
+  requestMeterFetch,
+  useSharedMeter,
+} from '../../shared/meter';
 import { getPersona } from '../../shared/persona';
 import type { FanState } from '../domain/state';
 import { viewOf } from '../domain/view';
@@ -31,7 +36,7 @@ let appStore: FanStore | null = null;
 export function getAppStore(): FanStore {
   appStore ??= createFanStore({
     personaNo: getPersona().no,
-    deps: defaultDeps({ join: joinPerformance, fetch: requestMeterFetch }),
+    deps: defaultDeps({ join: joinPerformance, fetch: requestMeterFetch, solo: isSoloMeter }),
   });
   return appStore;
 }
@@ -76,9 +81,10 @@ export function FanProvider({ store, children }: Props) {
     store.actions.applyOffice(officeVenue);
   }, [store, officeVenue]);
 
+  const solo = isSoloMeter();
   const view = useMemo(
-    () => viewOf(state, cond, { serverJoined, counted }),
-    [state, cond, serverJoined, counted],
+    () => viewOf(state, cond, { serverJoined, counted }, solo),
+    [state, cond, serverJoined, counted, solo],
   );
   const value = useMemo(() => ({ state, view, actions: store.actions }), [state, view, store]);
   return <FanContext.Provider value={value}>{children}</FanContext.Provider>;

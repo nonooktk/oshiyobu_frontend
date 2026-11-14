@@ -26,6 +26,8 @@ export type FanView = {
   doneCount: number;
   /** 達成率が 80% 以上か（コメントの区切り）。 */
   soon: boolean;
+  /** ひとり体験で、仲間を呼べば成立に届くか（次のアクションの予告に使う。共有メーターありは false）。 */
+  friendsClinch: boolean;
 };
 
 export const courseOf = (cond: Condition, id: CourseId): CourseOffer => {
@@ -34,18 +36,36 @@ export const courseOf = (cond: Condition, id: CourseId): CourseOffer => {
   return found;
 };
 
-export function viewOf(fan: Fan, cond: Condition, meter: MeterIn): FanView {
+/** 成立の判定（core の supportStatus）に、この端末の状態を渡す。 */
+const statusOf = (fan: Fan, cond: Condition, meter: MeterIn): SupportStatus =>
+  supportStatus(cond, {
+    serverJoined: meter.serverJoined,
+    counted: meter.counted,
+    joined: fan.course !== null,
+    pseudoFriends: fan.friends,
+    myCoursePrice: fan.course !== null ? courseOf(cond, fan.course).price : 0,
+  });
+
+/**
+ * ひとり体験で、仲間を呼んだときに足す人数。いまの状態から、擬似の仲間を 1 人ずつ増やして、
+ * core の成立の判定（人数と金額の両方。仲間は通常の席の価格で数える）が真になる、最小の人数を返す。
+ * 会場の席数を超えても届かないときは null（嘘の人数にしない）。
+ */
+export function friendsToClinch(fan: Fan, cond: Condition, meter: MeterIn): number | null {
+  for (let n = 0; ; n += 1) {
+    const status = statusOf({ ...fan, friends: fan.friends + n }, cond, meter);
+    if (status.established) return n;
+    if (status.supporters > cond.venue.cap) return null;
+  }
+}
+
+/** solo は、ひとり体験（共有メーターなし）か。仲間を呼ぶと成立に届く所まで増える（次のアクションの予告に使う）。 */
+export function viewOf(fan: Fan, cond: Condition, meter: MeterIn, solo = false): FanView {
   const joined = fan.course !== null;
   const my = fan.course !== null ? courseOf(cond, fan.course) : null;
   const targetId = joined ? null : (fan.aim ?? fan.seat);
   const target = targetId !== null ? courseOf(cond, targetId) : null;
-  const status = supportStatus(cond, {
-    serverJoined: meter.serverJoined,
-    counted: meter.counted,
-    joined,
-    pseudoFriends: fan.friends,
-    myCoursePrice: my?.price ?? 0,
-  });
+  const status = statusOf(fan, cond, meter);
   return {
     cond,
     fan,
@@ -57,6 +77,7 @@ export function viewOf(fan: Fan, cond: Condition, meter: MeterIn): FanView {
     giftCount: fan.gifts.filter(Boolean).length,
     doneCount: ACT_IDS.filter((id) => fan.done[id]).length,
     soon: status.pct >= 80,
+    friendsClinch: solo && joined && friendsToClinch(fan, cond, meter) !== null,
   };
 }
 
@@ -235,17 +256,20 @@ export function nextViewOf(v: FanView): NextView {
       hint: '仲間に知らせましょう',
     });
   } else {
-    const ft =
-      L >= 2
+    // 仲間を呼ぶと成立する（ひとり体験は、必ず成立に届く所まで増える）
+    const clinch = {
+      why: '仲間が申し込むと、ライブの開催が決まります',
+      hint: '仲間を呼ぶと、ライブの開催が決まります',
+    };
+    const ft = v.friendsClinch
+      ? clinch
+      : L >= 2
         ? {
             why: `仲間が申し込むと、あと${L}人が${L - 1}人になります`,
             hint: `仲間を呼ぶと、あと${L}人が${L - 1}人に`,
           }
         : status.friendClinches
-          ? {
-              why: '仲間が申し込むと、ライブの開催が決まります',
-              hint: '仲間を呼ぶと、ライブの開催が決まります',
-            }
+          ? clinch
           : L === 1
             ? { why: '仲間が申し込むと、人数が集まります', hint: '仲間を呼ぶと、人数が集まります' }
             : { why: '仲間が申し込むと、支援が増えます', hint: '仲間を呼ぶと、支援が増えます' };

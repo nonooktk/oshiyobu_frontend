@@ -12,7 +12,7 @@ export type Harness = ReturnType<typeof harness>;
  */
 export function harness(
   personaNo = 4,
-  opts: { reduceMotion?: boolean; server?: number; minPeople?: number } = {},
+  opts: { reduceMotion?: boolean; server?: number; minPeople?: number; solo?: boolean } = {},
 ) {
   const joins: PerformanceId[] = [];
   const opened: string[] = [];
@@ -25,7 +25,8 @@ export function harness(
   const deps: Deps = {
     join: (pid) => {
       joins.push(pid);
-      if (!counted) {
+      // ひとり体験は、サーバーに数えられない（人数は端末の中だけ）
+      if (!counted && !opts.solo) {
         counted = true;
         server += 1;
         sync();
@@ -42,6 +43,7 @@ export function harness(
       return true;
     },
     random: () => 0.5,
+    solo: () => opts.solo ?? false,
   };
   const store = createFanStore({ personaNo, deps });
   function sync() {

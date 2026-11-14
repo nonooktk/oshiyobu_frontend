@@ -1,6 +1,7 @@
 # PR と、main・dev への push で回す検査（設計 D-26）。必須のチェックは verify だけ。
-# 今は lint・型・テスト・ビルド・core:check（src/core/ が lock のとおりか。CI では commit が local の lock を拒否する）。
-# check-budget（最初に読む量・絵の大きさ）と check-csp（配信の設定の CSP）も、ビルドのあとに回す。
+# 検査の中身は npm run verify（scripts/accept-lib.mjs の VERIFY_STEPS）。手元で担当者が回す検査と同じで、ここと手元がずれない。
+# lint・型・整形の確認・テスト・ビルド・check:budget（--strict-images。deploy.yml と同じ）・check:csp・core:check
+# （src/core/ が lock のとおりか。CI では commit が local の lock を拒否する）。
 name: ci
 
 on:
@@ -22,10 +23,4 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm test
-      - run: npm run build
-      - run: npm run check:budget
-      - run: npm run check:csp
-      - run: npm run core:check
+      - run: npm run verify

@@ -116,7 +116,7 @@ describe('色の決まり（G-14）', () => {
     ).toEqual([]);
   });
 
-  it('この検査は、色の直書きを見つけられる（見張りが効いている）', () => {
+  it('この検査は、色の直書きを見つけられる（見張りが働いている）', () => {
     const sample = '.a { color: #123456; background: rgba(0, 0, 0, 0.5); border-color: #FFF; }';
     const found = [...sample.matchAll(CSS_LITERAL)]
       .map((match) => match[0])

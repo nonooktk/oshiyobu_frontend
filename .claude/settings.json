@@ -108,6 +108,13 @@
       "Read(~/.ssh/**)",
       "Read(~/.azure/**)",
       "Read(~/.config/gh/**)"
+    ],
+    "ask": [
+      "Edit(/tests/unit/**)",
+      "Edit(/tests/integration/**)",
+      "Edit(/tests/helpers/**)",
+      "Edit(/e2e/**)",
+      "Edit(/e2e-solo/**)"
     ]
   },
   "hooks": {

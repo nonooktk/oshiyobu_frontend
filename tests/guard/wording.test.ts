@@ -134,7 +134,7 @@ describe('ファン向けの、ことば・絵・動き（G-04・G-05）', () =>
     expect(hits, guardMessage('G-05', '点滅・脈動のアニメーションが入っています')).toEqual([]);
   });
 
-  it('この検査は、語を見つけられる（見張りが効いている）', () => {
+  it('この検査は、語を見つけられる（見張りが働いている）', () => {
     // 検査の関数が空振りしていないことの確認。実際の画面には入れず、検査の側で作った文に当てる
     const sample = [{ path: 'sample.ts', text: '大当たり！ いますぐ 🪙' }];
     const found = (words: readonly string[]): string[] =>

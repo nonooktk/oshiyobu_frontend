@@ -56,11 +56,11 @@ function main() {
     out.push('【守ること】作業の前に読む（正本: docs/守ること.md）', ...brief);
   }
 
-  // 拒否の設定（.claude/settings.json）は、リポジトリの一番上で起動したときに効く。違う場所なら、警告する
+  // 拒否の設定（.claude/settings.json）は、リポジトリの一番上で起動したときに有効になる。違う場所なら、警告する
   const started = process.env.CLAUDE_PROJECT_DIR || process.cwd();
   if (normalize(started) !== normalize(root)) {
     out.push(
-      `注意: Claude Code を ${started} で起動しています。リポジトリの一番上（${root}）で起動し直してください。そうしないと、書き込みを止める設定が効かないことがあります。`,
+      `注意: Claude Code を ${started} で起動しています。リポジトリの一番上（${root}）で起動し直してください。そうしないと、書き込みを止める設定が有効にならないことがあります。`,
     );
   }
 

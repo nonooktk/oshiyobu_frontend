@@ -14,7 +14,7 @@ interface HookEntry {
 }
 interface Settings {
   disableAllHooks?: boolean;
-  permissions?: { deny?: string[]; allow?: string[]; defaultMode?: string };
+  permissions?: { deny?: string[]; ask?: string[]; allow?: string[]; defaultMode?: string };
   hooks?: { SessionStart?: { matcher?: string; hooks?: HookEntry[] }[] };
 }
 
@@ -108,6 +108,27 @@ describe('Claude Code の設定（.claude/settings.json）', () => {
       guardMessage('G-24', '.claude/settings.json の SessionStart から、台本の登録が消えています'),
     ).toBe(true);
     expect(exists('scripts/claude-brief.mjs')).toBe(true);
+  });
+
+  it('G-24: 既存のテスト・実ブラウザの試験の編集（Edit）が、確認の対象（ask）に入っている', () => {
+    const ask = settings.permissions?.ask ?? [];
+    const wanted = [
+      'Edit(/tests/unit/**)',
+      'Edit(/tests/integration/**)',
+      'Edit(/tests/helpers/**)',
+      'Edit(/e2e/**)',
+      'Edit(/e2e-solo/**)',
+    ];
+    const missing = wanted.filter((rule) => !ask.includes(rule));
+    expect(
+      missing,
+      guardMessage(
+        'G-24',
+        `.claude/settings.json の確認（permissions.ask）から、${missing.join('・')} が消えています（既存のテストの編集に、確認が出なくなります）`,
+      ),
+    ).toEqual([]);
+    for (const rule of wanted)
+      expect(deny, `${rule} は、拒否でなく確認にしています`).not.toContain(rule);
   });
 
   it('hooks 全体を止める設定（disableAllHooks）や、確認を飛ばす既定のモードが、共有の設定に入っていない', () => {

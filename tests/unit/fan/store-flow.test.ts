@@ -87,6 +87,54 @@ describe('基準の流れ（人物 4・tech0・久留米市・Cボックス）',
   });
 });
 
+describe('共有（X・Facebook は、外のサイトを開かず、アプリの中で「投稿した」ことになる）', () => {
+  /** 申し込み → 特典 1/3 を閉じる → 共有のシートを開いた状態 */
+  function toShareSheet() {
+    const h = harness(4);
+    passStart(h);
+    vi.advanceTimersByTime(700 + 2510);
+    h.a.closeGift();
+    h.a.openShare('share');
+    return h;
+  }
+
+  it.each([
+    ['x', 'Xに投稿しました（デモのため、実際には投稿されません）'],
+    ['fb', 'Facebookに投稿しました（デモのため、実際には投稿されません）'],
+  ] as const)(
+    '%s を押すと、外を開かず・コピーもせず、投稿したことが出て、共有した印が付き、0.4 秒後に特典 2/3 が開く',
+    async (ch, text) => {
+      const open = vi.spyOn(window, 'open').mockReturnValue(null);
+      const h = toShareSheet();
+      expect(h.state().done.share).toBeUndefined(); // まだ共有していない
+      await h.a.shareTo(ch);
+      expect(open).not.toHaveBeenCalled();
+      expect(h.copied).toEqual([]);
+      expect(h.state().toast?.text).toBe(text);
+      // 読み上げにも、投稿したことが伝わる（トーストは読み上げの対象外）
+      expect(h.state().live.replace('\u200b', '')).toBe(`${text}。`);
+      expect(h.state().done.share).toBe(true);
+      vi.advanceTimersByTime(400);
+      expect(h.view().giftCount).toBe(2);
+      expect(h.joins).toHaveLength(1); // API へ加算は送らない（決定 3）
+    },
+  );
+
+  it('続けて別のボタンを押しても、そのたびに投稿したことが出る。特典は 1 回しか開かない', async () => {
+    const h = toShareSheet();
+    await h.a.shareTo('x');
+    vi.advanceTimersByTime(400);
+    expect(h.view().giftCount).toBe(2);
+    await h.a.shareTo('fb');
+    expect(h.state().toast?.text).toBe(
+      'Facebookに投稿しました（デモのため、実際には投稿されません）',
+    );
+    vi.advanceTimersByTime(400 + 2300);
+    expect(h.view().giftCount).toBe(2);
+    expect(h.state().gifts).toEqual([true, true, false]);
+  });
+});
+
 describe('仲間と感謝（SNSで広める → 仲間が申し込む → 特典 3/3 → 感謝）', () => {
   function toHomeWithGift1() {
     const h = harness(4);
@@ -114,7 +162,9 @@ describe('仲間と感謝（SNSで広める → 仲間が申し込む → 特典
     await h.a.shareTo('ig');
     const text = h.copied[0] ?? '';
     expect(text).not.toMatch(/p=\d|90,?000|預金|口座/);
-    expect(text.endsWith('/fan/')).toBe(true);
+    // 仮の URL を、班のメンバーに見せない。URL は文に入れず、ハッシュタグで終わる
+    expect(text).not.toMatch(/https?:|example\.test|\/fan\//);
+    expect(text.endsWith('#OSHIYOBU')).toBe(true);
   });
 
   it('シートを閉じて 2 秒後に擬似の仲間が 1 人申し込み、76 人になり、0.7 秒後に特典 3/3 が開く', async () => {

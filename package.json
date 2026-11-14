@@ -25,7 +25,8 @@
     "check:csp": "node scripts/check-csp.mjs",
     "e2e": "node scripts/run-e2e.mjs",
     "verify": "node scripts/verify.mjs",
-    "check:api": "node scripts/check-api.mjs"
+    "check:api": "node scripts/check-api.mjs",
+    "check:live": "node scripts/check-live.mjs"
   },
   "dependencies": {
     "react": "19.2.9",

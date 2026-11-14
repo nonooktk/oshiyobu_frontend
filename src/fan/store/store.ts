@@ -96,7 +96,7 @@ const CONFETTI_COLORS = [
   'var(--primary)',
 ] as const;
 
-/** 条件を変えるときの、事務所向けとの連動の値を受ける口（region 3 で使う）。 */
+/** ストアを作るときに渡すもの（人物の番号と、通信・動きの設定などの部品）。 */
 export type StoreOptions = { personaNo: number; deps: Deps };
 
 export function createFanStore({ personaNo, deps }: StoreOptions) {

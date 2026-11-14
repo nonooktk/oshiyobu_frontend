@@ -22,8 +22,10 @@ const REQUIRED = {
 /**
  * 設定ファイル（dist/staticwebapp.config.json の中身）と、ファン向けの HTML を検査する。
  * apiOrigin は、環境の VITE_API_BASE から決めた origin（未設定なら空）。
+ * sharedMeter は、環境の VITE_SHARED_METER が on か（既定は true。省略したときは、共有メーターありとして検査する）。
+ * ひとり体験（false）では、ファン向けは API を呼ばないので、preconnect を入れない（connect-src は、発表者用の画面のために残る）。
  */
-export function checkCsp({ config, fanHtml, apiOrigin }) {
+export function checkCsp({ config, fanHtml, apiOrigin, sharedMeter = true }) {
   const errors = [];
   const global = config.globalHeaders?.['content-security-policy'];
   if (typeof global !== 'string') {
@@ -55,8 +57,10 @@ export function checkCsp({ config, fanHtml, apiOrigin }) {
   const pre = /<link rel="preconnect" href="([^"]+)"/.exec(fanHtml)?.[1];
   if (apiOrigin === '' && pre)
     errors.push('接続先が未設定なのに、ファン向けに preconnect があります');
-  if (apiOrigin !== '' && pre !== apiOrigin)
+  if (apiOrigin !== '' && sharedMeter && pre !== apiOrigin)
     errors.push('ファン向けの preconnect が、接続先と一致しません');
+  if (apiOrigin !== '' && !sharedMeter && pre)
+    errors.push('ひとり体験（共有メーターなし）なのに、ファン向けに preconnect があります');
   // シミュレーターは、script と style が埋め込みのため、別の CSP を付ける
   const simulator = config.routes?.find((route) => route.route === '/simulator.html')?.headers?.[
     'content-security-policy'

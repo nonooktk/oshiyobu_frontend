@@ -10,13 +10,15 @@ const page = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 
 // ファン向けの HTML に、API への接続を先に張る指示（preconnect）を入れる（設計 D-16 の K-03・K-17）。
 // 最初の取得・申し込みが、新しい接続の約 3 往復を待たないため。接続先が未設定なら入れない。
+// 共有メーターを使うとき（VITE_SHARED_METER=on）だけ入れる。既定のひとり体験は、ファン向けが API を呼ばないので入れない。
 // 接続先は、ビルド時の環境変数 VITE_API_BASE（秘密ではない。.env は読まず、環境の値だけを使う）
 function preconnectApi(): Plugin {
   const origin = normalizeApiBase(process.env.VITE_API_BASE);
+  const shared = process.env.VITE_SHARED_METER === 'on';
   return {
     name: 'oshiyobu-preconnect-api',
     transformIndexHtml(_html, context) {
-      if (origin === '' || !context.path.startsWith('/fan/')) {
+      if (origin === '' || !shared || !context.path.startsWith('/fan/')) {
         return [];
       }
       return [

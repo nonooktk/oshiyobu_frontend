@@ -32,7 +32,11 @@ export default defineConfig({
       // 共有メーターの試験用の画面（配らない）。接続先は、偽の API
       command: 'npx vite --port 4392 --strictPort --host 127.0.0.1',
       url: 'http://127.0.0.1:4392/e2e/harness/index.html',
-      env: { VITE_API_BASE: process.env.E2E_BACKEND_URL ?? 'http://127.0.0.1:4391' },
+      // 共有メーターの試験なので、共有メーターありでつなぐ（既定は、ファン向けが API を呼ばない「ひとり体験」）
+      env: {
+        VITE_API_BASE: process.env.E2E_BACKEND_URL ?? 'http://127.0.0.1:4391',
+        VITE_SHARED_METER: 'on',
+      },
       reuseExistingServer: false,
     },
   ],

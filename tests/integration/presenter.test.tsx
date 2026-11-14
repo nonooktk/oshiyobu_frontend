@@ -62,6 +62,32 @@ describe('発表者用', () => {
     expect(meter.resetSharedMeter).toHaveBeenCalledWith('dummy-passphrase');
   });
 
+  it('合言葉に、HTTP ヘッダーに載せられない文字（印字できる ASCII 以外）が入っていたら、送らずに「半角の英数字と記号」と出す。半角に直せば送れる（G2-03）', async () => {
+    meter.resetSharedMeter.mockResolvedValue({ kind: 'ok', resetAt: '2026-11-18T01:02:03.000Z' });
+    render(<App />);
+    armAndConfirm('あいうえおかきくけこさし');
+    for (const bad of [
+      'あいうえおかきくけこさし', // 全角（日本語）
+      'ＰＡＳＳＷＯＲＤ１２３４', // 全角の英数字
+      'café-passphrase', // ASCII の外の文字
+      'pass\tword-1234', // タブ（印字できない）
+    ]) {
+      fireEvent.change(screen.getByLabelText('合言葉'), { target: { value: bad } });
+      fireEvent.click(screen.getByRole('button', { name: '実行する' }));
+      expect(screen.getByRole('status').textContent).toBe(
+        '合言葉は半角の英数字と記号で入力してください',
+      );
+    }
+    expect(meter.resetSharedMeter).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText('合言葉'), {
+      target: { value: 'Half-width_Pass 12!~' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '実行する' }));
+    await waitFor(() =>
+      expect(meter.resetSharedMeter).toHaveBeenCalledWith('Half-width_Pass 12!~'),
+    );
+  });
+
   it('成功したら、「リセットしました」と初期化の時刻を出し、合言葉の欄を空にする。合言葉はどこにも保存しない', async () => {
     meter.resetSharedMeter.mockResolvedValue({ kind: 'ok', resetAt: '2026-11-18T01:02:03.000Z' });
     render(<App />);

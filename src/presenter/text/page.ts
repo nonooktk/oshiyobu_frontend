@@ -21,6 +21,7 @@ export const pageText = {
     '検収や試験の前に、この画面でリセットし、ほかの端末を止めます。',
   ],
   resultOk: (resetAt: string) => `リセットしました（初期化の時刻: ${resetAt}）`,
+  resultInvalidPassphrase: '合言葉は半角の英数字と記号で入力してください',
   resultUnauthorized: '合言葉が違います',
   resultNotConfigured: 'サーバーに合言葉が設定されていません（12 文字以上が要る）',
   resultTimeout: '応答がありません。結果は不明です。もう一度実行できます',

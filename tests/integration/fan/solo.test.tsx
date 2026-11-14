@@ -156,7 +156,7 @@ describe('ひとり体験（既定）', () => {
 describe('人物（アカウント）に入るたびに、その人物の初めの状態から始まる', () => {
   beforeEach(solo);
 
-  it('人物 4 で申し込んだあと、人物 10（krs48・福岡市）を開いても、前の人物の申し込み・特典・人数を持ち越さない', async () => {
+  it('人物 4 で申し込んだあと、人物 10 を開いても、前の人物の申し込み・特典・人数を持ち越さない（初めの状態は全人物で同じ）', async () => {
     mountFan('?p=4');
     passStart();
     await closeGiftAfterFx();
@@ -164,7 +164,8 @@ describe('人物（アカウント）に入るたびに、その人物の初め�
     reopen('?p=10');
     const s = getAppStore().getState();
     expect(shell()).toBe('start');
-    expect(s).toMatchObject({ oshiId: 'krs48', city: '福岡市', course: null, aim: null });
+    expect(s).toMatchObject({ oshiId: 'tech0', city: '久留米市', course: null, aim: null });
+    expect(s.acct).toEqual({ pay: false, deposit: 0, times: 0 });
     expect(s.gifts).toEqual([false, false, false]);
     expect(s.done).toEqual({});
     expect(s.friends).toBe(0);

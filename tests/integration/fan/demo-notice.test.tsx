@@ -9,6 +9,7 @@ import {
   layer,
   mountFan,
   openNextPage,
+  fundAndApply,
   passStart,
   screen,
   setupFanTest,
@@ -28,14 +29,13 @@ const settle = async (): Promise<void> => {
 const notices = () => screen.getAllByText(NOTICE).length;
 
 describe('ファン向けの全画面', () => {
-  it('はじめの画面 3 つ・ホーム・次のアクション・メニューと詳細の画面に、1 つずつ出る。札は、これまでどおり 1 つ', async () => {
+  it('はじめの画面 2 つ・ホーム・次のアクション・メニューと詳細の画面に、1 つずつ出る。札は、これまでどおり 1 つ', async () => {
     mountFan('?p=4');
     expect(notices()).toBe(1);
     click('次へ');
     expect(notices()).toBe(1);
-    click('次へ');
-    expect(notices()).toBe(1);
-    click('この内容で申し込む');
+    click('このコースを目指して始める');
+    fundAndApply();
     expect(notices()).toBe(1);
     await closeGiftAfterFx();
     openNextPage(); // ホームの主のボタンは行動そのものなので、いまできること の一覧は、ストアの操作で開く
@@ -89,9 +89,8 @@ describe('ファン向けの全画面', () => {
     expect(layer('thanks')?.textContent).toContain(BADGE);
   });
 
-  it('条件の達成のエフェクトにも出る', async () => {
+  it('短い称賛の札の最中も、札が出ている', async () => {
     mountFan('?p=4');
-    click('次へ');
     click('次へ');
     fireEvent.click(
       screen
@@ -101,9 +100,12 @@ describe('ファン向けの全画面', () => {
         ) as HTMLElement,
     );
     click('このコースを目指して始める');
-    click(/^メイン口座にする/); // ホームの主のボタン
-    expect(layer('ach')?.textContent).toContain(NOTICE);
-    expect(layer('ach')?.textContent).toContain(BADGE);
+    click(/^推し活定期をはじめる/); // ホームの主のボタン
+    click(/^メイン口座にする/);
+    // 短い称賛の札の最中も、ページの札 2 枚が出ている（札は、全画面を覆わないので、隠れない）
+    expect(layer('ach')).not.toBeNull();
+    expect(notices()).toBe(1);
+    expect(screen.getAllByText(BADGE)).toHaveLength(1);
   });
 
   it('下から出るシート（引き継ぎ・申し込みをやめる確認）の中にも、札と並んで出る', async () => {

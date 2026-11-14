@@ -1,5 +1,5 @@
 // ファン向けの状態の型と、初めの値（端末の中だけ。再読み込みで初めに戻る。設計 D-10）。
-import { defaultVenueIdOf, personaByNo, personaVenueId } from '../../core';
+import { defaultVenueIdOf } from '../../core';
 import type { ArtistId, CityName, CourseId, VenueId } from '../../core';
 
 /** 達成した行動 6 つ（SP-45）。 */
@@ -24,6 +24,10 @@ export type Page =
   | 'opt'
   | 'priv';
 
+/** 呼ぶ市は、どの推しでも久留米市（統括の決定）。会場は、久留米の既定の会場（久留米シティプラザ Cボックス）。 */
+export const FAN_CITY: CityName = '久留米市';
+export const FAN_VENUE_ID: VenueId = defaultVenueIdOf(FAN_CITY);
+
 export type ShareMode = 'friend' | 'share';
 
 /** 端末の中の、ファン向けの進み（SP「端末の中の状態」）。 */
@@ -33,8 +37,6 @@ export type Fan = {
   seat: CourseId;
   city: CityName;
   venueId: VenueId;
-  /** ファンの選択を優先中か（事務所向けより優先）。 */
-  custom: boolean;
   /** 申し込んだコース。null ＝ まだ申し込んでいない。 */
   course: CourseId | null;
   /** 目指すコース（まだ申し込んでいないときに、上位コースを目指して登録したもの）。 */
@@ -58,20 +60,17 @@ export type Fan = {
   thanksShown: boolean;
 };
 
-/** はじめの画面の、選んでいる最中の値。 */
+/** はじめの画面（推し → コースの 2 つ）の、選んでいる最中の値。市は選ばない（久留米市に固定）。 */
 export type StartSel = {
-  step: 0 | 1 | 2;
+  step: 0 | 1;
   oshiId: ArtistId;
-  city: CityName;
   seat: CourseId;
-  /** 初めの市（これと違う市を選ぶと、ファンの選択を優先する）。 */
-  baseCity: CityName;
-  /** 利用者が、推し・市・コースのどれかを選び直したか（事務所向けとの連動で、初めの値を取り替えてよいかの判断）。 */
+  /** 利用者が、推し・コースのどれかを選び直したか（5 分操作が無いとき、戻すものがあるかの判断）。 */
   touched: boolean;
 };
 
 /** 「推し・条件の変更」の、選んでいる最中の値。 */
-export type Pend = { oshiId: ArtistId; city: CityName; seat: CourseId };
+export type Pend = { oshiId: ArtistId; seat: CourseId };
 
 /**
  * 演出の種類。称賛の演出（行動の直後）は、申し込み（join・stage）・投稿（share）・仲間に知らせる（notify）・仲間を呼ぶ（friend）・
@@ -104,17 +103,14 @@ export type FxSpec = {
 /** 紙吹雪の 1 粒。 */
 export type Confetto = { left: number; color: string; dur: number; delay: number };
 
-/** 条件の達成のエフェクト（操作を止めない・押すと消える）。 */
+/** 行動の直後の短い称賛（推し活定期をはじめた・預金を積み増した・メイン口座にした）。控えめな札で、操作は止めない。 */
 export type AchSpec = {
   id: number;
-  kind: 'one' | 'all';
+  /** 1 行目（あなたがしたこと）。 */
   title: string;
-  title2?: string;
-  small?: string;
+  /** 2 行目（それで何が進んだか）。 */
   sub: string;
   ms: number;
-  flash: boolean;
-  confetti: readonly Confetto[];
 };
 
 /** 仲間を呼んだあとの、ゲージの伸び（伸びる前の長さ → 満タンまで。終わりに近いほど速く伸びる）。 */
@@ -125,6 +121,7 @@ export type Layer =
   | { kind: 'gift'; replay: boolean }
   | { kind: 'thanks' }
   | { kind: 'share'; mode: ShareMode }
+  | { kind: 'deposit' }
   | { kind: 'cancel' }
   | { kind: 'carry' };
 
@@ -174,15 +171,17 @@ export type CarrySnap = {
   venueName: string;
 };
 
-/** 人物（番号）の初めの値でファン向けを作る。 */
-export function initialFan(personaNo: number): Fan {
-  const persona = personaByNo(personaNo);
+/**
+ * ファン向けの初めの値。人物（`?p=1`〜`15`）の番号は、入口として残すが、初めの状態は全員同じ（統括の決定）:
+ * 推し ＝ tech0・市 ＝ 久留米市・口座なし（推し活定期をはじめていない）・預金 0円・メイン口座ではない。
+ * core の人物のデータ（`src/core/data/personas.ts`。事務所向け・発表者用が使う）は変えず、ファン向けの側で、ここで上書きする。
+ */
+export function initialFan(_personaNo: number): Fan {
   return {
-    oshiId: persona.artistId,
+    oshiId: 'tech0',
     seat: 'normal',
-    city: persona.city,
-    venueId: personaVenueId(persona),
-    custom: false,
+    city: FAN_CITY,
+    venueId: FAN_VENUE_ID,
     course: null,
     aim: null,
     friends: 0,
@@ -192,7 +191,7 @@ export function initialFan(personaNo: number): Fan {
     called: 0,
     lastGift: 'join',
     homeIdx: -1,
-    acct: { pay: persona.mainAccount, deposit: persona.depositYen, times: 0 },
+    acct: { pay: false, deposit: 0, times: 0 },
     thanksShown: false,
   };
 }
@@ -217,21 +216,7 @@ export function initialState(personaNo: number): FanState {
   };
 }
 
-/** はじめの画面の初めの選び（推し・市は人物の値、コースは通常の席）。 */
+/** はじめの画面の初めの選び（推しは tech0、コースは通常の席）。 */
 export function startSelOf(fan: Fan): StartSel {
-  return {
-    step: 0,
-    oshiId: fan.oshiId,
-    city: fan.city,
-    seat: 'normal',
-    baseCity: fan.city,
-    touched: false,
-  };
+  return { step: 0, oshiId: fan.oshiId, seat: 'normal', touched: false };
 }
-
-/** 市を選び直したときの会場（久留米市は Cボックス、ほかは tech0 の見込みにキャパが最も近い 1 件。SP-49）。 */
-export const venueOfCity = (city: CityName): VenueId => defaultVenueIdOf(city);
-
-/** いま出している市を選んだままなら、いまの会場のまま（事務所向けと連動した会場を、勝手に替えない）。市が替わったら、その市の会場。 */
-export const venueForCity = (fan: Pick<Fan, 'city' | 'venueId'>, city: CityName): VenueId =>
-  city === fan.city ? fan.venueId : venueOfCity(city);

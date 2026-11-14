@@ -76,9 +76,28 @@ export function harness(
   };
 }
 
-/** はじめの画面の「次へ」を 3 回押して、ホームへ（初めから選んである値のまま）。 */
+/** はじめの画面（推し → コースの 2 つ）を、初めから選んである値のまま進めて、ホームへ。まだ申し込めない（口座なし・預金 0円）。 */
+export function passStartOnly(h: Harness): void {
+  h.a.startNext();
+  h.a.startNext();
+}
+
+/**
+ * ホームから、目指すコースに申し込める所まで進めて、申し込む（主のボタンの流れ）。
+ * 推し活定期をはじめる → （メイン口座が条件なら）メイン口座にする → 預金を、条件にちょうど届く額だけ積み増す → 申し込む。
+ */
+export function fundAndApply(h: Harness): void {
+  h.a.runAcct('teiki', 'home');
+  const t = h.view().target;
+  if (!t) return;
+  if (t.mainAccount) h.a.runAcct('main', 'home');
+  const gap = Math.max(0, t.deposit - h.state().acct.deposit);
+  if (gap > 0) h.a.runAcct('deposit', 'home', gap);
+  h.a.homePrimary();
+}
+
+/** はじめの画面を進めて、ホームで、目指すコースに申し込むところまで（人物ごとの違いは無い）。 */
 export function passStart(h: Harness): void {
-  h.a.startNext();
-  h.a.startNext();
-  h.a.startNext();
+  passStartOnly(h);
+  fundAndApply(h);
 }

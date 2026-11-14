@@ -2,7 +2,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { setMeterEngineForTest } from '../../../src/shared/meter';
 import { createMeterEngine } from '../../../src/shared/meter/engine';
-import { click, fireEvent, mountFan, passStart, screen, setupFanTest, tick } from './helpers';
+import {
+  click,
+  fireEvent,
+  fundAndApply,
+  mountFan,
+  passStart,
+  screen,
+  setupFanTest,
+  tick,
+} from './helpers';
 
 setupFanTest();
 
@@ -69,8 +78,8 @@ describe('鳴る・鳴らない条件', () => {
   it('利用者の操作（pointerdown）の前は、鳴らない。操作のあと、申し込むと鳴る', async () => {
     mountFan('?p=4');
     click('次へ');
-    click('次へ');
-    click('この内容で申し込む'); // click だけ（pointerdown が無い = 操作の前）
+    click('このコースを目指して始める');
+    fundAndApply(); // click だけ（pointerdown が無い = 操作の前）
     expect(oscillators).toBe(0);
     await tick(10_000);
     expect(oscillators).toBe(0);
@@ -80,8 +89,8 @@ describe('鳴る・鳴らない条件', () => {
     mountFan('?p=4');
     fireEvent.pointerDown(document.body);
     click('次へ');
-    click('次へ');
-    click('この内容で申し込む');
+    click('このコースを目指して始める');
+    fundAndApply();
     expect(oscillators).toBeGreaterThan(0);
     await tick(700);
     const afterStage = oscillators;
@@ -94,8 +103,8 @@ describe('鳴る・鳴らない条件', () => {
     fireEvent.pointerDown(document.body);
     fireEvent.click(toggle());
     click('次へ');
-    click('次へ');
-    click('この内容で申し込む');
+    click('このコースを目指して始める');
+    fundAndApply();
     expect(oscillators).toBe(0);
   });
 

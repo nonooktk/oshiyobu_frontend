@@ -17,7 +17,9 @@ import {
   layer,
   mountFan,
   openNextPage,
+  fundAndApply,
   passStart,
+  passStartOnly,
   ReadyImage,
   screen,
   tick,
@@ -34,39 +36,23 @@ const settle = async (): Promise<void> => {
 };
 const bubbleText = (): string => document.querySelector('[class*="_bubble_"]')?.textContent ?? '';
 
-// 人物 15 通り（仕様 SP-64 の表。推しの名前・地元の市・預金額・メイン口座）
-const PERSONA_TABLE: [number, string, string, string, string][] = [
-  [1, 'Tech0サステナアイドル', '久留米市', '15,000円', 'いいえ'],
-  [2, 'Tech0サステナアイドル', '久留米市', '28,000円', 'いいえ'],
-  [3, 'Tech0サステナアイドル', '久留米市', '62,000円', 'いいえ'],
-  [4, 'Tech0サステナアイドル', '久留米市', '90,000円', 'いいえ'],
-  [5, 'Tech0サステナアイドル', '久留米市', '95,000円', 'はい'],
-  [6, 'Tech0サステナアイドル', '久留米市', '120,000円', 'はい'],
-  [7, 'Tech0サステナアイドル', '久留米市', '180,000円', 'いいえ'],
-  [8, 'Tech0サステナアイドル', '久留米市', '320,000円', 'はい'],
-  [9, 'Tech0サステナアイドル', '久留米市', '1,050,000円', 'はい'],
-  [10, 'KRS48', '福岡市', '48,000円', 'いいえ'],
-  [11, 'KRS48', '熊本市', '240,000円', 'はい'],
-  [12, 'りじちょーといっしょだよ。', '久留米市', '90,000円', 'はい'],
-  [13, 'りじちょーといっしょだよ。', '佐賀市', '320,000円', 'いいえ'],
-  [14, 'てらお少年', '長崎市', '9,000円', 'いいえ'],
-  [15, '平成の俺', '宮崎市', '400,000円', 'はい'],
-];
-
-describe('人物 15 通り（I-67・A-56・A-57）', () => {
-  it.each(PERSONA_TABLE)(
-    '?p=%i は、%s・%s・預金 %s・メイン口座 %s で始まる',
-    (no, oshi, city, deposit, pay) => {
+// 人物 15 通り（`?p=1`〜`15`）の入口は残すが、ファン向けの初めの状態は全員同じ（統括の決定）:
+// 推し ＝ Tech0サステナアイドル・市 ＝ 久留米市・口座なし・預金 0円・メイン口座は いいえ。
+// core の人物のデータ（人物ごとの推し・市・預金）は、事務所向け・発表者用が使うので変えない（tests/unit/fan/persona-experience.test.ts）。
+describe('人物 15 通り: どれで開いても、同じ初めの状態（I-67・A-56・A-57）', () => {
+  it.each(Array.from({ length: 15 }, (_, i) => i + 1))(
+    '?p=%i は、Tech0サステナアイドル・預金 0円・メイン口座 いいえ で始まる。市の選択は無い',
+    (no) => {
       mountFan(`?p=${no}`);
-      expect(btn(oshi).getAttribute('aria-pressed')).toBe('true');
+      expect(btn('Tech0サステナアイドル').getAttribute('aria-pressed')).toBe('true');
       click('次へ');
-      expect(btn(city).getAttribute('aria-pressed')).toBe('true');
-      click('次へ');
+      expect(screen.queryByRole('heading', { name: '呼びたい市を選ぶ' })).toBeNull();
+      expect(screen.getByText(/会場: 久留米シティプラザ Cボックス（144席）/)).toBeTruthy();
       const note = screen.getByText(
         (_, el) => el?.tagName === 'P' && (el.textContent ?? '').startsWith('いまの預金（仮）'),
       );
-      expect(note.textContent).toContain(deposit);
-      expect(note.textContent).toContain(`メイン口座 ${pay}`);
+      expect(note.textContent).toContain('0円');
+      expect(note.textContent).toContain('メイン口座 いいえ');
     },
   );
 
@@ -94,36 +80,36 @@ describe('人物 15 通り（I-67・A-56・A-57）', () => {
     expect(second).toEqual(first);
   });
 
-  it('はじめの画面の初めの市は、人物の地元の市（?p=11 は熊本市。I-71）', () => {
+  it('呼ぶ市は、どの人物・どの推しでも久留米市（?p=11 でも熊本市にならない。I-71）', () => {
     mountFan('?p=11');
     click('次へ');
-    expect(btn('熊本市').getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByText(/会場: Restaurant Bar CIB（100名）/)).toBeTruthy();
+    expect(screen.queryByText(/熊本市/)).toBeNull();
+    expect(screen.getByText(/会場: 久留米シティプラザ Cボックス/)).toBeTruthy();
   });
 });
 
 describe('推しの口調（A-42）', () => {
-  const MARK: [number, string, RegExp][] = [
-    [4, 'tech0', /カマヤーン[\s\S]*申し込みありがとう/],
-    [10, 'krs48', /えへへ/],
-    [12, 'riji', /あれっす！ありがとうっす！/],
-    [14, 'terao', /胸が高鳴ります/],
-    [15, 'heisei', /サンキュー/],
+  const MARK: [string, string, RegExp][] = [
+    ['tech0', 'Tech0サステナアイドル', /カマヤーン[\s\S]*申し込みありがとう/],
+    ['krs48', 'KRS48', /えへへ/],
+    ['riji', 'りじちょーといっしょだよ。', /あれっす！ありがとうっす！/],
+    ['terao', 'てらお少年', /申し込みありがとう/],
+    ['heisei', '平成の俺', /サンキュー/],
   ];
-  it.each(MARK)('?p=%i（%s）は、組ごとの口調でホームのコメントを出す', (no, _id, re) => {
-    mountFan(`?p=${no}`);
-    click('次へ');
-    click('次へ');
-    const go =
-      screen.queryByRole('button', { name: 'この内容で申し込む' }) ??
-      btn('このコースを目指して始める');
-    fireEvent.click(go);
-    expect(bubbleText()).toMatch(re);
-  });
+  it.each(MARK)(
+    '%s は、組ごとの口調でホームのコメントを出す（どの人物でも同じ。推しは、はじめの画面で選ぶ）',
+    (_id, name, re) => {
+      mountFan('?p=4');
+      click(name);
+      click('次へ');
+      click('このコースを目指して始める');
+      fundAndApply();
+      expect(bubbleText()).toMatch(re);
+    },
+  );
 
   it('状況に合わせてコメントが変わる（申し込む前 → 申し込んだあと。A-43）', () => {
     mountFan('?p=4');
-    click('次へ');
     click('次へ');
     const seat = screen
       .getAllByRole('button')
@@ -133,24 +119,27 @@ describe('推しの口調（A-42）', () => {
     const before = bubbleText();
     expect(before).toContain('だいぶ熱くなってきたね。'); // 申し込む前（熱量はヒートアップ）。人数は言わない
     expect(before).not.toMatch(/\d+人/);
-    openNextPage();
-    for (const label of [/^メイン口座にする/, /^預金を積み増す/])
-      fireEvent.click(screen.getByRole('button', { name: label }));
-    fireEvent.click(screen.getByRole('button', { name: /^前方の席に申し込む/ }));
+    act(() => {
+      const { actions } = getAppStore();
+      actions.runAcct('teiki', 'home');
+      actions.runAcct('main', 'home');
+      actions.runAcct('deposit', 'home', 100_000);
+      actions.clearAch();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /^申し込む/ }));
     expect(bubbleText()).not.toBe(before);
   });
 });
 
 describe('すべての画面に札「デモ用の架空データ」が出る（A-54・I-101）', () => {
-  it('はじめの画面 3 つ・ホーム・次のアクション・メニューと詳細の 7 画面', async () => {
+  it('はじめの画面 2 つ・ホーム・次のアクション・メニューと詳細の 7 画面', async () => {
     mountFan('?p=4');
     const badge = () => screen.getAllByText('デモ用の架空データ').length;
     expect(badge()).toBe(1);
     click('次へ');
     expect(badge()).toBe(1);
-    click('次へ');
-    expect(badge()).toBe(1);
-    click('この内容で申し込む');
+    click('このコースを目指して始める');
+    fundAndApply();
     expect(badge()).toBe(1);
     await closeGiftAfterFx();
     openNextPage(); // ホームの主のボタンは行動そのもの。いまできること の一覧は、ストアの操作で開く
@@ -300,10 +289,11 @@ describe('特典の絵と感謝（I-28・I-117・I-118）', () => {
   });
 
   it('代わりの表示の順: 本来の絵（幅 1152）が届くまでは、読み済みの幅 768 の絵を切り抜きの段のまま出す（D-40）', async () => {
-    mountFan('?p=10'); // krs48（1 枚の絵を切り抜いて広げる組）
+    mountFan('?p=4');
+    click('KRS48'); // krs48（1 枚の絵を切り抜いて広げる組）。推しは、はじめの画面で選ぶ
     click('次へ');
-    click('次へ');
-    click('この内容で申し込む');
+    click('このコースを目指して始める');
+    fundAndApply();
     // 最初の画面・ホームで出した絵が、読み終えた（load）
     for (const img of Array.from(document.querySelectorAll('img[alt$="の絵"]')))
       fireEvent.load(img);
@@ -353,8 +343,10 @@ describe('特典の絵と感謝（I-28・I-117・I-118）', () => {
   });
 
   it('りじちょーの感謝のメッセージには、いまの市の名前が入る（久留米市で会えたら…）', async () => {
-    mountFan('?p=12');
-    passStart();
+    mountFan('?p=4');
+    click('りじちょーといっしょだよ。'); // 推しは、はじめの画面で選ぶ
+    passStartOnly();
+    fundAndApply();
     await closeGiftAfterFx();
     click(/^SNSに投稿する（任意）/);
     vi.spyOn(window, 'open').mockReturnValue(null);

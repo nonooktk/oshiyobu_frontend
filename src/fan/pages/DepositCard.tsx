@@ -11,7 +11,7 @@ import {
   depositErrorText,
   parseDepositInput,
 } from '../domain/deposit';
-import { opensText } from '../domain/view';
+import { depositGapOf, opensText, restText } from '../domain/view';
 import { yen } from '../text/format';
 import fan from '../fan.module.css';
 import { useFan } from '../store/FanProvider';
@@ -33,7 +33,10 @@ export function DepositCard({ title, desc, primary }: Props) {
   const inputId = `${base}-amount`;
   const hintId = `${base}-hint`;
   const errId = `${base}-error`;
-  const [value, setValue] = useState('');
+  // 目指すコースの預金の条件に、ちょうど届く額を、初めから入れておく（そのまま足しても、額を変えてもよい）
+  const target = view.joined ? null : view.target;
+  const gap = target ? depositGapOf(target, d) : 0;
+  const [value, setValue] = useState(gap > 0 ? String(gap) : '');
   // 理由の文。同じ入力をもう一度送っても読み上げ直されるよう、送るたびに nonce を変えて、要素を作り直す
   const [error, setError] = useState<{ text: string; nonce: number } | null>(null);
 
@@ -65,6 +68,13 @@ export function DepositCard({ title, desc, primary }: Props) {
         {title}
       </h3>
       <p className={styles.actD}>{desc}</p>
+      {target && !view.joined ? (
+        <p className={styles.actD}>
+          {gap > 0
+            ? `${target.name}まで、預金はあと ${yen(gap)}${restText(target, d, p).includes('メイン口座') ? '（このほかにメイン口座が要ります）' : ''}`
+            : `${target.name}の預金の条件は、そろっています`}
+        </p>
+      ) : null}
       {state.acct.times > 0 ? (
         <p className={styles.actDone}>✓ {state.acct.times}回積み増しました</p>
       ) : null}

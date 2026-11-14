@@ -37,8 +37,8 @@ export function NextAction() {
 
   const run = (row: NextRow): void => {
     if (row.id === 'apply' && view.target) actions.applyCourse(view.target.id);
-    else if (row.id === 'main' || row.id === 'deposit' || row.id === 'teiki')
-      actions.runAcct(row.id, 'next');
+    else if (row.id === 'main' || row.id === 'teiki') actions.runAcct(row.id, 'next');
+    else if (row.id === 'deposit') actions.openDeposit();
     else if (row.id === 'friend') actions.callFriends();
     else if (row.id === 'notice') actions.notifyFriends();
     else actions.openShare(row.id === 'share' ? 'share' : 'friend');

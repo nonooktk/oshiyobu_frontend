@@ -1,7 +1,7 @@
 // 称賛の音を鳴らす場面（統括の決定）: 利用者が行動した直後の称賛と、段階が上がった瞬間・FEVER の瞬間だけ。待っている間は鳴らさない。
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SoundCue } from '../../../src/fan/sound';
-import { harness, passStart } from './helpers';
+import { fundAndApply, harness, passStart, passStartOnly } from './helpers';
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -15,12 +15,14 @@ describe('鳴る時点の一覧', () => {
     const sounds: SoundCue[] = [];
     const h = harness(4, { solo: true, sounds });
     expect(sounds).toEqual([]); // 開いただけでは鳴らない
-    passStart(h);
-    expect(sounds).toEqual(['join']);
+    passStartOnly(h);
+    expect(sounds).toEqual([]); // はじめの画面を進めただけでは鳴らない
+    fundAndApply(h); // 推し活定期（share）→ 積み増し（share）→ 申し込み（join）
+    expect(sounds).toEqual(['share', 'share', 'join']);
     vi.advanceTimersByTime(700);
-    expect(sounds).toEqual(['join', 'stage']);
+    expect(sounds).toEqual(['share', 'share', 'join', 'stage']);
     vi.advanceTimersByTime(60_000); // 待っている間
-    expect(sounds).toEqual(['join', 'stage']);
+    expect(sounds).toEqual(['share', 'share', 'join', 'stage']);
   });
 
   it('投稿した直後に share', async () => {

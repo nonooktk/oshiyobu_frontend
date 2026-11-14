@@ -1,7 +1,7 @@
 // ファン向けの主な流れ（申し込み → 80% の演出 → 特典 → 仲間 → 感謝）の順番と数字（上層: A-15〜A-18・A-40・A-41・A-44・I-20〜I-24・I-27・I-28・I-123）。
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildPostText } from '../../../src/fan/domain/share';
-import { harness, passStart } from './helpers';
+import { harness, passStart, passStartOnly } from './helpers';
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -13,16 +13,30 @@ afterEach(() => {
 const layerKinds = (h: ReturnType<typeof harness>) => h.state().layers.map((l) => l.kind);
 
 describe('基準の流れ（人物 4・tech0・久留米市・Cボックス）', () => {
-  it('はじめは、人物 4 の値で、はじめの画面 1 / 3 に出る（初めから選んである）', () => {
-    const h = harness(4);
-    const s = h.state();
-    expect(s.page).toBe('start');
-    expect(s.start).toMatchObject({ step: 0, oshiId: 'tech0', city: '久留米市', seat: 'normal' });
-    expect(s.acct).toMatchObject({ deposit: 90000, pay: false });
-    expect(h.view().status).toMatchObject({ supporters: 74, pct: 79, left: 19 });
+  it('はじめは、どの人物（?p=1〜15）で開いても同じ状態: はじめの画面 1 / 2・口座なし・預金 0円・久留米市（初めから選んである）', () => {
+    for (let no = 1; no <= 15; no += 1) {
+      const h = harness(no);
+      const s = h.state();
+      expect(s.page, `人物 ${no}`).toBe('start');
+      expect(s.start, `人物 ${no}`).toMatchObject({ step: 0, oshiId: 'tech0', seat: 'normal' });
+      expect(s.city, `人物 ${no}`).toBe('久留米市');
+      expect(s.venueId, `人物 ${no}`).toBe('cbox');
+      expect(s.acct, `人物 ${no}`).toEqual({ pay: false, deposit: 0, times: 0 });
+      expect(s.done, `人物 ${no}`).toEqual({});
+      expect(h.view().status, `人物 ${no}`).toMatchObject({ supporters: 74, pct: 79, left: 19 });
+    }
   });
 
-  it('「次へ」を 3 回押すとホームに着き、申し込みが確定して 75 人・80% になる', () => {
+  it('はじめの画面を進めても、まだ申し込めない（口座なし・預金 0円）。目指すコースだけ登録されて、ホームに着く', () => {
+    const h = harness(4);
+    passStartOnly(h);
+    expect(h.state().page).toBe('home');
+    expect(h.state().course).toBeNull();
+    expect(h.state().aim).toBe('normal');
+    expect(h.joins).toEqual([]);
+  });
+
+  it('はじめる → 積み増す → 申し込むで、申し込みが確定して 75 人・80% になる', () => {
     const h = harness(4);
     passStart(h);
     expect(h.state().page).toBe('home');

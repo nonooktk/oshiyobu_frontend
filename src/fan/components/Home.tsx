@@ -4,7 +4,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { artistView } from '../art/registry';
 import logoMark from '../../assets/img/logo-mark.webp';
-import { homeActionOf, homeKeyOf } from '../domain/view';
+import { depositGapOf, homeActionOf, homeKeyOf } from '../domain/view';
+import { yen } from '../text/format';
 import { VOICES } from '../text/voices';
 import styles from '../fan.module.css';
 import { useFan } from '../store/FanProvider';
@@ -39,9 +40,11 @@ export function Home() {
   const note = !view.joined
     ? act.id === 'apply'
       ? '押すと、その場で完了します。擬似の動きで、実際の手続きは始まりません。'
-      : act.id === 'deposit'
-        ? '積み増す額は、次の画面で決めます。仮の預金で、実際の入金は始まりません。'
-        : '押すと、その場で完了します。擬似の動きで、実際の入出金は始まりません。'
+      : act.id === 'teiki'
+        ? '押すと、その場で口座が使える状態になります。デモ用の操作で、実際の手続きは行われません。'
+        : act.id === 'deposit' && view.target
+          ? `${view.target.name}まで、預金はあと ${yen(depositGapOf(view.target, view.fan.acct.deposit))}。額は入力で決めます（仮の預金）。`
+          : '押すと、その場で完了します。擬似の動きで、実際の入出金は始まりません。'
     : view.status.established
       ? '開催が決まったことを、仲間にも伝えられます。'
       : '投稿してくれてありがとう。';

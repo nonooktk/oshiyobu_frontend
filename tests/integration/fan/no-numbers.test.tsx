@@ -56,6 +56,13 @@ const settle = async (): Promise<void> => {
   });
 };
 
+const OSHI_NAME: Record<string, string> = {
+  tech0: 'Tech0サステナアイドル',
+  krs48: 'KRS48',
+  riji: 'りじちょーといっしょだよ。',
+  terao: 'てらお少年',
+  heisei: '平成の俺',
+};
 const PERSONAS: [number, string][] = [
   [4, 'tech0'],
   [10, 'krs48'],
@@ -69,22 +76,34 @@ describe('ファン向けの画面に、人数・達成率・目標の金額の�
     setMeterEngineForTest(createMeterEngine({ apiBase: '', random: () => 0.5 }));
   });
 
-  it.each(PERSONAS)('人物 %i（%s）の通し', async (no) => {
+  it.each(PERSONAS)('人物 %i（%s）の通し', async (no, oshiId) => {
     const seen: { scene: string; text: string }[] = [];
     const look = (scene: string, root?: ParentNode) => seen.push({ scene, text: collect(root) });
 
     mountFan(`?p=${no}`);
-    look('はじめの画面 1/3');
+    click(OSHI_NAME[oshiId] as string); // 推しは、はじめの画面で選ぶ（人物の番号では決まらない）
+    look('はじめの画面 1/2');
     click('次へ');
-    look('はじめの画面 2/3');
-    click('次へ');
-    look('はじめの画面 3/3');
-    const go =
-      screen.queryByRole('button', { name: 'この内容で申し込む' }) ??
-      btn('このコースを目指して始める');
-    const canApply = go.textContent === 'この内容で申し込む';
-    fireEvent.click(go);
-    look('ホーム（申し込む前または直後）');
+    look('はじめの画面 2/2（コースと会場）');
+    click('このコースを目指して始める');
+    look('ホーム（申し込む前・推し活定期をはじめる）');
+    // 推し活定期をはじめる → 短い称賛の札 → 預金を積み増す（額の入力のシート）→ 条件に届く → 申し込む
+    fireEvent.click(screen.getByRole('button', { name: /^推し活定期をはじめる/ }));
+    look('推し活定期をはじめた直後（短い称賛の札）');
+    fireEvent.pointerDown(document.body);
+    look('ホーム（預金を積み増す）');
+    fireEvent.click(screen.getByRole('button', { name: /^預金を積み増す/ }));
+    await settle();
+    look(
+      '預金を積み増す額の入力（初めから条件にちょうど届く額が入っている）',
+      layer('sheet') as HTMLElement,
+    );
+    fireEvent.click(screen.getByRole('button', { name: '積み増す' }));
+    look('積み増して条件に届いた直後（短い称賛の札）');
+    fireEvent.pointerDown(document.body);
+    look('ホーム（申し込む）');
+    fireEvent.click(screen.getByRole('button', { name: /^申し込む/ }));
+    look('ホーム（申し込んだ直後）');
     await tick(700);
     const fx = layer('fx');
     if (fx) look('演出', fx);
@@ -97,7 +116,7 @@ describe('ファン向けの画面に、人数・達成率・目標の金額の�
     openNextPage(); // いまできること の一覧（ホームからは移らない。ストアの操作で開く）
     look('次のアクション');
     click('‹ ホーム');
-    if (canApply) {
+    {
       // 副のボタン → 共有のシート → 投稿した直後の称賛 → 特典 2/3
       click(/^SNSに投稿する（任意）/);
       look('共有のシート', layer('share') as HTMLElement);
@@ -133,14 +152,8 @@ describe('ファン向けの画面に、人数・達成率・目標の金額の�
       fireEvent.click(screen.getByRole('button', { name: /^仲間に知らせる/ }));
       look('仲間に知らせるの称賛の演出', layer('fx') as HTMLElement);
       await tick(2600 + 10);
-    } else {
-      // 預金が足りない人物: 主のボタン「預金を積み増す」→ 口座と預金の画面
-      fireEvent.click(screen.getByRole('button', { name: /^預金を積み増す/ }));
-      await settle();
-      look('口座と預金（主のボタンから）');
-      click('‹ ホーム');
     }
-    look('ホーム（FEVER のあと、または申し込む前）');
+    look('ホーム（FEVER のあと）');
     click('メニュー');
     await settle();
     look('メニュー');
@@ -158,14 +171,14 @@ describe('ファン向けの画面に、人数・達成率・目標の金額の�
       look(`メニュー › ${title}`);
       click('‹ メニュー');
     }
-    if (canApply) {
+    {
       click('申し込みをやめる');
       await settle();
       look('やめる確認のシート', layer('sheet') as HTMLElement);
     }
 
     // 巡回した場面の数（空振りの防止）
-    expect(seen.length).toBeGreaterThanOrEqual(canApply ? 27 : 16);
+    expect(seen.length).toBeGreaterThanOrEqual(32);
     const violations = seen.flatMap(({ scene, text }) =>
       FORBIDDEN.filter(([, re]) => re.test(text)).map(
         ([name, re]) => `${scene}: 「${name}」 ${text.match(re)?.[0] ?? ''}`,

@@ -1,9 +1,9 @@
-// はじめの画面（推し → 市 → コースの 3 ステップ。SP-40）。初めから選んであるので、「次へ」を 3 回押せばホームへ進む。
+// はじめの画面（推し → コースの 2 ステップ。SP-40）。初めから選んであるので、「次へ」と「このコースを目指して始める」で、ホームへ進む。
+// 呼ぶ市は、どの推しでも久留米市に固定（市を選ぶ画面は無い）。会場の説明は、コースを選ぶ画面に置く。
 import { useEffect, useRef } from 'react';
-import { CITY_NAMES, ARTIST_IDS, canApply, conditionOf, courseOffersOf } from '../../core';
+import { ARTIST_IDS, canApply, courseOffersOf } from '../../core';
 import { ARTISTS_VIEW, artistView } from '../art/registry';
 import logoMark from '../../assets/img/logo-mark.webp';
-import { venueForCity } from '../domain/state';
 import { courseOf } from '../domain/view';
 import { yen } from '../text/format';
 import styles from '../fan.module.css';
@@ -11,11 +11,10 @@ import { MyState, PayNote } from '../text/pay';
 import { useFan } from '../store/FanProvider';
 import { Av, WholeArt } from './Art';
 import { CourseFace } from './CourseFace';
-import { CITY_DOT, KyushuShape } from './KyushuMap';
 import { Strip } from './Frame';
 import { Wbr } from './text';
 
-const TITLES = ['推しを選ぶ', '呼びたい市を選ぶ', '目指すコースを選ぶ'] as const;
+const TITLES = ['推しを選ぶ', '目指すコースを選ぶ'] as const;
 
 export function Start() {
   const { state, view, actions } = useFan();
@@ -29,13 +28,11 @@ export function Start() {
   if (!s) return null;
 
   const o = artistView(s.oshiId);
-  const venueId = venueForCity(state, s.city);
-  // 条件は、いま出している会場と同じなら、事務所向けと連動した条件をそのまま使う
-  const c = view.cond.venueId === venueId ? view.cond : conditionOf(venueId);
+  const c = view.cond; // 会場は、久留米の既定の会場に固定
   const { deposit, pay } = state.acct;
 
   return (
-    <div className={`${styles.page} ${step === 2 ? styles.step3 : ''}`}>
+    <div className={`${styles.page} ${step === 1 ? styles.step3 : ''}`}>
       <Strip />
       <div className={styles.stBar}>
         {step === 0 ? <img src={logoMark} alt="OSHIYOBU" width={32} height={32} /> : null}
@@ -45,15 +42,15 @@ export function Start() {
           </button>
         ) : null}
         <span className={`${styles.stCount} ${styles.num}`} aria-hidden="true">
-          {step + 1} / 3
+          {step + 1} / 2
         </span>
-        <div className={styles.stDots} role="img" aria-label={`3 つのうち ${step + 1} つ目`}>
-          {[0, 1, 2].map((i) => (
+        <div className={styles.stDots} role="img" aria-label={`2 つのうち ${step + 1} つ目`}>
+          {[0, 1].map((i) => (
             <i key={i} className={i <= step ? styles.on : undefined} />
           ))}
         </div>
       </div>
-      <div className={step === 2 ? `${styles.stMain} ${styles.stMainScroll}` : styles.stMain}>
+      <div className={step === 1 ? `${styles.stMain} ${styles.stMainScroll}` : styles.stMain}>
         <h2 className={styles.stH} ref={heading} tabIndex={-1}>
           {TITLES[step]}
         </h2>
@@ -92,36 +89,11 @@ export function Start() {
         ) : null}
         {step === 1 ? (
           <>
-            <KyushuShape id="fan-ky-shape" />
-            <div className={styles.stCities} role="group" aria-label="呼びたい市">
-              {CITY_NAMES.map((name) => {
-                const [x, y] = CITY_DOT[name];
-                return (
-                  <button
-                    key={name}
-                    type="button"
-                    className={styles.stCity}
-                    aria-pressed={name === s.city}
-                    onClick={() => actions.startPick('city', name)}
-                  >
-                    <svg viewBox="0 0 460 590" aria-hidden="true">
-                      <use className={styles.kyUse} href="#fan-ky-shape" />
-                      <circle className={styles.kyDot} cx={x} cy={y} r={46} />
-                    </svg>
-                    {name}
-                  </button>
-                );
-              })}
-            </div>
             <p className={styles.stVenue}>
               会場: {c.venue.name}（{c.venue.cap}
               {c.venue.unit}）<br />
               熱量が満ちると、開催が決まります
             </p>
-          </>
-        ) : null}
-        {step === 2 ? (
-          <>
             <p className={styles.rcNote}>
               <MyState deposit={deposit} pay={pay} />
             </p>
@@ -129,7 +101,7 @@ export function Start() {
               <PayNote />
             </p>
             <div className={styles.rcList} role="group" aria-label="目指すコース">
-              {courseOffersOf(venueId).map((k) => {
+              {courseOffersOf(c.venueId).map((k) => {
                 const sel = k.id === s.seat;
                 return (
                   <button
@@ -156,7 +128,7 @@ export function Start() {
         ) : null}
       </div>
       <div className={styles.stFoot}>
-        {step === 2 ? (
+        {step === 1 ? (
           <SelLine seat={courseOf(c, s.seat)} ok={canApply(courseOf(c, s.seat), deposit, pay)} />
         ) : null}
         <button
@@ -164,7 +136,7 @@ export function Start() {
           className={`${styles.btn} ${styles.btnFull}`}
           onClick={actions.startNext}
         >
-          {step < 2
+          {step < 1
             ? '次へ'
             : canApply(courseOf(c, s.seat), deposit, pay)
               ? 'この内容で申し込む'

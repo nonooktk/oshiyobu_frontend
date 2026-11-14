@@ -7,7 +7,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SoundCue } from '../../../src/fan/sound';
 import { homeActionOf } from '../../../src/fan/domain/view';
-import { harness, passStart } from './helpers';
+import { harness, passStart, passStartOnly } from './helpers';
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -34,20 +34,41 @@ function applied(h: H) {
 describe('主のボタン（場面ごとの文）', () => {
   it('申し込む前（条件がそろっている）は「申し込む → FEVER 目前へ」', () => {
     const h = harness(1, { solo: true });
-    passStart(h); // 預金が足りないので、目指すコースの登録まで
-    h.a.runAcct('deposit', 'home', 5000); // 15,000 + 5,000 = 20,000（通常の席の条件）
+    passStartOnly(h);
+    h.a.runAcct('teiki', 'home');
+    h.a.runAcct('deposit', 'home', 20_000); // 通常の席の条件
     expect(h.state().course).toBeNull();
     expect(action(h)).toMatchObject({ id: 'apply', label: '申し込む', sub: '→ FEVER 目前へ' });
   });
 
-  it('申し込む前（預金が足りない。人物 1・14）は「預金を積み増す」', () => {
-    for (const no of [1, 14]) {
+  it('申し込む前は、全人物で同じ順に 1 つずつ変わる: 推し活定期をはじめる → 預金を積み増す → 申し込む', () => {
+    for (const no of [1, 4, 14]) {
       const h = harness(no, { solo: true });
-      passStart(h);
+      passStartOnly(h);
       expect(h.state().page).toBe('home');
       expect(h.state().course).toBeNull();
-      expect(action(h)).toMatchObject({ id: 'deposit', label: '預金を積み増す' });
+      expect(action(h)).toMatchObject({
+        id: 'teiki',
+        label: '推し活定期をはじめる',
+        sub: '→ 預金を積み増せるようになります',
+      });
+      h.a.homePrimary();
+      expect(action(h)).toMatchObject({
+        id: 'deposit',
+        label: '預金を積み増す',
+        sub: '→ 申し込めるようになります',
+      });
     }
+  });
+
+  it('メイン口座が条件のコース（前方の席）を目指すときは、推し活定期のあとに「メイン口座にする」が入る', () => {
+    const h = harness(4, { solo: true });
+    h.a.startPick('seat', 'front');
+    passStartOnly(h);
+    h.a.homePrimary(); // 推し活定期
+    expect(action(h)).toMatchObject({ id: 'main', label: 'メイン口座にする' });
+    h.a.homePrimary();
+    expect(action(h)).toMatchObject({ id: 'deposit' });
   });
 
   it('申し込んだあと（成立前）は「仲間を呼ぶ → FEVER（開催決定）へ」', () => {
@@ -75,18 +96,48 @@ describe('主のボタン（場面ごとの文）', () => {
 });
 
 describe('主のボタンを押したときの動き', () => {
-  it('「預金を積み増す」を押すと、「口座と預金」の画面へ進む', () => {
-    const h = harness(1, { solo: true });
-    passStart(h);
+  it('「推し活定期をはじめる」を押すと、その場で口座が使える状態になり、短い称賛と音が出る（預金は 0円のまま）', () => {
+    const sounds: SoundCue[] = [];
+    const h = harness(1, { solo: true, sounds });
+    passStartOnly(h);
     h.a.homePrimary();
-    expect(h.state().page).toBe('acct');
+    expect(h.state().done.teiki).toBe(true);
+    expect(h.state().acct).toEqual({ pay: false, deposit: 0, times: 0 });
+    expect(h.state().page).toBe('home');
+    expect(h.state().ach).toMatchObject({ title: 'はじめてくれてありがとう。' });
+    expect(sounds).toEqual(['share']);
+  });
+
+  it('「預金を積み増す」を押すと、ホームの上に、額の入力のシートが開く（口座と預金の画面へは移らない）', () => {
+    const h = harness(1, { solo: true });
+    passStartOnly(h);
+    h.a.homePrimary();
+    h.a.homePrimary();
+    expect(h.state().page).toBe('home');
+    expect(layerKinds(h)).toEqual(['deposit']);
+    h.a.closeDeposit();
+    expect(layerKinds(h)).toEqual([]);
+  });
+
+  it('額の入力は、条件にちょうど届いたら、シートが閉じて、主のボタンが「申し込む」に変わる', () => {
+    const h = harness(1, { solo: true });
+    passStartOnly(h);
+    h.a.homePrimary();
+    h.a.homePrimary();
+    h.a.runAcct('deposit', 'home', 5_000); // 届かない額: シートは開いたまま
+    expect(layerKinds(h)).toEqual(['deposit']);
+    h.a.runAcct('deposit', 'home', 15_000); // 20,000円に届く
+    expect(layerKinds(h)).toEqual([]);
+    expect(action(h)).toMatchObject({ id: 'apply' });
+    expect(h.state().ach).toMatchObject({ sub: '申し込めるようになりました' });
   });
 
   it('「申し込む」を押すと、その場で申し込みが進み、称賛の音が鳴る', () => {
     const sounds: SoundCue[] = [];
     const h = harness(1, { solo: true, sounds });
-    passStart(h);
-    h.a.runAcct('deposit', 'home', 5000);
+    passStartOnly(h);
+    h.a.runAcct('teiki', 'home');
+    h.a.runAcct('deposit', 'home', 20_000);
     vi.advanceTimersByTime(5000);
     h.a.clearAch();
     sounds.length = 0;

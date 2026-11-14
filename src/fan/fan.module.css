@@ -2025,31 +2025,3 @@ button.rcard:hover {
 .pageHost {
   display: contents;
 }
-
-/*
-  推し・応援の熱が出る所だけに当てる書体（--font-display。tokens.css・docs/フォント.md）。
-  統括の意図: 推しにかかわる文字で、推しを応援する雰囲気を出す（演出もそう）。手続き・お金・説明の画面には当てない。
-  この規則の一覧が、当てる場所のすべて。足し引きは 1 行ずつ（tests/unit/fonts.test.ts と docs/フォント.md の一覧も同じに直す）。
-  当てない所（MOBO のまま）: 推しのセリフの本文・感謝のメッセージの本文・ボタン・手順の見出し・コースの金額・支払いの説明・札・注記
-  ・.heroWho: 推しの名前の帯（はじめの画面・ホームの「◯◯を△△市に呼ぶ」）
-  ・.who: セリフの話し手の名前
-  ・.oshiTitle: 見出し「推しを選ぶ」（はじめの画面の 1 ステップ目だけ）
-  ・.ttl・.fxSub: 80%・成立の演出の文字
-  ・.achC: 条件がそろったときの演出の文字
-  ・.gStep: 「特典 n/3 が開きました」
-  ・.gLeft b・.gPct: メーターの「あと N 人」と「達成率 N%」
-  ・.shareFrame・.shareTitle: 共有の画像の中の文と、共有の画面の見出し
-*/
-.heroWho,
-.who,
-.oshiTitle,
-.ttl,
-.fxSub,
-.achC,
-.gStep,
-.gLeft b,
-.gPct,
-.shareFrame,
-.shareTitle {
-  font-family: var(--font-display);
-}

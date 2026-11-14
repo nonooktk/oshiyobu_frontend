@@ -34,21 +34,6 @@ import {
 } from '../../scripts/fonts-lib.mjs';
 
 const FONT_DIR = join(ROOT, 'public', 'fonts');
-// 見出し書体（--font-display）を当てる場所（ファン向けの fan.module.css の 1 つの規則）。
-// 統括の意図: 推し・応援の熱が出る所だけ。範囲を足し引きするときは、その規則の一覧・この一覧・docs/フォント.md を直す
-const DISPLAY_SELECTORS = [
-  '.heroWho', // 推しの名前の帯（はじめの画面・ホームの「◯◯を△△市に呼ぶ」）
-  '.who', // セリフの話し手の名前
-  '.oshiTitle', // 見出し「推しを選ぶ」（はじめの画面の 1 ステップ目だけ）
-  '.ttl', // 80%・成立の演出
-  '.fxSub',
-  '.achC', // 条件がそろったときの演出
-  '.gStep', // 「特典 n/3 が開きました」
-  '.gLeft b', // メーターの「あと N 人」
-  '.gPct', // 「達成率 N%」
-  '.shareFrame', // 共有の画像の中の文
-  '.shareTitle', // 共有の画面の見出し
-];
 const chars = (set: Set<string>): string => [...set].sort().join('');
 
 describe('画面の字の集め方（collectChars）', () => {
@@ -427,38 +412,43 @@ describe('書体の指定（CSS・HTML）', () => {
     expect(css).not.toMatch(/https?:\/\//);
   });
 
-  it('--font-display の先頭が見出し書体。うしろは --font（MOBO・今までの並び）。シミュレーターには入れない', () => {
+  it('--font-fan は、先頭が Corporate Logo Rounded。MOBO を並べない（ファン向けが MOBO を読み込まないため）', () => {
     const tokens = read('src/styles/tokens.css');
-    expect(tokens).toMatch(
-      new RegExp(`--font-display:\\s*'${DISPLAY_FAMILY}',\\s*var\\(--font\\)`),
+    const stack = /--font-fan:\s*([^;]+);/.exec(tokens)?.[1] ?? '';
+    expect(stack.trim().startsWith(`'${DISPLAY_FAMILY}'`)).toBe(true);
+    expect(stack).not.toContain('MOBO');
+    expect(stack).toContain("'Noto Sans JP'"); // この書体に無い字（✓）は、端末の書体で出す
+    expect(read(SIMULATOR_FILE)).not.toContain('--font-fan');
+  });
+
+  it('ファン向けの書体は、根の要素（html）の data-page="fan" のときだけ --font を差し替える 1 か所。fan の main.tsx が付ける', () => {
+    const tokens = read('src/styles/tokens.css').replace(/\/\*[\s\S]*?\*\//g, '');
+    const rule = /:root\[data-page='fan'\]\s*\{([^}]*)\}/.exec(tokens)?.[1] ?? '';
+    expect(rule).toMatch(/--font:\s*var\(--font-fan\)/);
+    expect(tokens.match(/--font:\s*var\(--font-fan\)/g)).toHaveLength(1);
+    expect(read('src/fan/main.tsx')).toContain("document.documentElement.dataset.page = 'fan'");
+    // 事務所向け・発表者用は、data-page を付けない（MOBO のまま）
+    expect(read('src/office/main.tsx')).not.toContain('dataset.page');
+    expect(read('src/presenter/main.tsx')).not.toContain('dataset.page');
+    // ファン向けの CSS は、差し替えを持たない（根の要素の --font を、そのまま使う）
+    expect(read('src/fan/fan.module.css').replace(/\/\*[\s\S]*?\*\//g, '')).not.toContain(
+      '--font-fan',
     );
-    expect(read(SIMULATOR_FILE)).not.toContain('--font-display');
   });
 
-  it('見出し書体を当てるのは、ファン向け（fan.module.css）の 1 つの規則だけ。範囲は、その規則の一覧と docs の一覧が同じ', () => {
-    const fan = read('src/fan/fan.module.css');
-    const rules = [...fan.matchAll(/([^{}]+)\{[^{}]*font-family:\s*var\(--font-display\)/g)];
-    expect(rules).toHaveLength(1);
-    const selectors = (rules[0]?.[1] ?? '')
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      .split(',')
-      .map((selector) => selector.trim())
-      .filter((selector) => selector !== '');
-    expect(selectors.sort()).toEqual([...DISPLAY_SELECTORS].sort());
-    // 説明（docs/フォント.md）に、当てている場所の一覧がある（増減したら、docs も直す）
-    const docs = read('docs/フォント.md');
-    for (const selector of DISPLAY_SELECTORS) expect(docs).toContain(`\`${selector}\``);
-  });
-
-  it('見出し書体は、事務所向け・発表者用・シミュレーター・ほかの CSS（部品の共通の土台を含む）には当てない', () => {
+  it('ファン向けの書体は、事務所向け・発表者用・シミュレーター・部品の共通の土台には効かせない', () => {
     const others = [
-      'src/fan/pages/pages.module.css',
       'src/office/office.module.css',
       'src/presenter/App.module.css',
       'src/shared/components/DemoBadge.module.css',
       'src/styles/base.css',
     ];
-    for (const path of others) expect(read(path), path).not.toContain('--font-display');
+    for (const path of others) {
+      expect(read(path), path).not.toContain('--font-fan');
+      expect(read(path), path).not.toContain('Corporate Logo');
+    }
+    // 全ページの --font は、MOBO のまま（ファン向けだけが、.shell で差し替える）
+    expect(read('src/styles/tokens.css')).toMatch(/--font:\s*'MOBO'/);
   });
 
   it('tokens.css が fonts.css を取り込む（3 ページは、tokens.css を読む）', () => {

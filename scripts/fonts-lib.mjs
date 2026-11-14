@@ -15,8 +15,8 @@ export const FONT_FILES = ['MOBO-Regular.woff2', 'MOBO-Bold.woff2'];
 /** 追加の WOFF2（400 と 700）。シミュレーターだけが使う字（会場の名前の漢字など）。その字が出たときだけ読み込まれる */
 export const EXTRA_FILES = ['MOBO-Regular-sim.woff2', 'MOBO-Bold-sim.woff2'];
 /**
- * 推し・応援の熱が出る所（ファン向けの一部）だけに当てる書体 Corporate Logo Rounded Bold ver3（LOGOTYPE.JP）の WOFF2。
- * 太さは 700 の 1 本だけ。当てる範囲が変わっても漏れが出ないよう、字は核（本文と同じ字の集合）に絞る
+ * ファン向け（/fan/）の全部に当てる書体 Corporate Logo Rounded Bold ver3（LOGOTYPE.JP）の WOFF2。
+ * 太さは 700 の 1 本だけ。字は核（本文と同じ字の集合。事務所向け・発表者用の字を含む）に絞る
  */
 export const DISPLAY_FILE = 'Corporate-Logo-Rounded-Bold-ver3.woff2';
 /** 見出し書体の CSS の family 名（書体の正式な名前のまま。別の名前に変えない） */
@@ -303,8 +303,8 @@ export function findMissingGlyphs(screen, listed) {
 
 /**
  * 見出し書体の一覧（[見出し]・[見出しなし]）に無い字を返す。字 → 見つけたファイル。
- * 見出し書体を当てる場所だけの字は機械では集められず、当てる範囲も変わりうるので、シミュレーター以外のソースの字すべてを対象にする
- * （シミュレーターには、見出し書体を当てない）。
+ * ファン向けだけの字を機械では切り出せないので、シミュレーター以外のソースの字すべてを対象にする（ファン向けの字は、これに含まれる）。
+ * シミュレーターには、この書体を当てない。
  */
 export function findMissingDisplayGlyphs(byFile, listed) {
   const missing = new Map();

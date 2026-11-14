@@ -54,11 +54,7 @@ export function Start() {
         </div>
       </div>
       <div className={step === 2 ? `${styles.stMain} ${styles.stMainScroll}` : styles.stMain}>
-        <h2
-          className={step === 0 ? `${styles.stH} ${styles.oshiTitle}` : styles.stH}
-          ref={heading}
-          tabIndex={-1}
-        >
+        <h2 className={styles.stH} ref={heading} tabIndex={-1}>
           {TITLES[step]}
         </h2>
         {step === 0 ? (

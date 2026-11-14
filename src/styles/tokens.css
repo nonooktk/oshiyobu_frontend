@@ -56,9 +56,19 @@
   --font:
     'MOBO', 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
   /*
-    推し・応援の熱が出る所だけに当てる書体（Corporate Logo Rounded）。うしろは --font と同じ並び。
-    当てる場所は、src/fan/fan.module.css の 1 つの規則（一覧は docs/フォント.md）。
-    やめるときは、その規則を消す（または、ここの先頭の書体を消す）。
+    ファン向け（/fan/）の書体は、Corporate Logo Rounded Bold ver3（太さ 700 の 1 本だけ。fonts.css）。
+    ファン向けの根の要素（html）に付く data-page="fan"（src/fan/main.tsx が付ける）のときだけ、下の規則で --font をこれに差し替える。
+    事務所向け・発表者用・シミュレーターは MOBO のまま。
+    MOBO は並べない（ファン向けが MOBO を読み込まないため。body も同じ書体にするので、html に付ける）。
+    この書体に無い字（今は ✓ だけ）は、うしろの端末の書体で出す。
+    やめるときは、下の :root[data-page='fan'] の規則を消す。
   */
-  --font-display: 'Corporate Logo Rounded Bold ver3', var(--font);
+  --font-fan:
+    'Corporate Logo Rounded Bold ver3', 'Noto Sans JP', 'Hiragino Sans',
+    'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+}
+
+/* ファン向けだけ、書体を差し替える（--font-fan の説明は上）。事務所向け・発表者用には data-page が付かないので、効かない */
+:root[data-page='fan'] {
+  --font: var(--font-fan);
 }

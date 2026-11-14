@@ -1,11 +1,11 @@
 /*
   書体のフォント面の宣言（外部の配信は使わない。同じサイトの /fonts/ から配る。N-07）。
   ・MOBO（400 と 700）: 本文の書体。FLOP DESIGN（SIL Open Font License 1.1。元は源ノ角ゴシック）
-  ・Corporate Logo Rounded Bold ver3（700 の 1 面）: 推し・応援の熱が出る所だけに当てる書体。
+  ・Corporate Logo Rounded Bold ver3（700 の 1 面）: ファン向け（/fan/）の書体。
     LOGOTYPE.JP（SIL Open Font License 1.1。元は源ノ角ゴシック）
   どちらも、画面で使う字だけに絞った WOFF2。font-display: swap で、読み込み中は、うしろの書体（tokens.css の --font）で出す。
   絞った字・ライセンス・当てている場所・絞り直しの手順は docs/フォント.md。
-  どの面も、その書体を使う指定（--font・--font-display）が画面に出たときだけ読み込まれる。
+  どの面も、その書体を使う指定（--font・--font-fan）が画面に出たときだけ読み込まれる。
 */
 @font-face {
   font-family: 'MOBO';

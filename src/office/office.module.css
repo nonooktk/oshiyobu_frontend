@@ -712,6 +712,77 @@
 .qNum small {
   font-size: 12px;
 }
+.qLineT {
+  font-size: 12px;
+  font-weight: 700;
+  fill: var(--ink);
+}
+.qEstimate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+  margin: var(--s2) 0 0;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.qEstimateChip {
+  padding: 2px var(--s2);
+  border: 1px solid var(--ink-soft);
+  border-radius: var(--r);
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--surface);
+}
+.qLines {
+  display: grid;
+  gap: var(--s2);
+  margin: var(--s3) 0 0;
+  padding: var(--s2) var(--s3) var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+.qLines > button {
+  justify-self: end;
+}
+.qLines > button:disabled {
+  cursor: default;
+}
+.qLineField label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.qLineRow {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+.qLineRow input[type='range'] {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--tap);
+  accent-color: var(--heat-4);
+}
+.qLineNum {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  font-size: 13px;
+  color: var(--ink);
+}
+.qLineNum input {
+  width: 5.5em;
+  min-height: var(--tap);
+  padding: 0 var(--s2);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  font: inherit;
+  font-size: 16px;
+  color: var(--ink);
+  background: var(--surface);
+}
 .qUnit {
   margin: var(--s1) 0 0;
   font-size: 12px;

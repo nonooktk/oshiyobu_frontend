@@ -1,11 +1,23 @@
 import { COST_ITEM_IDS, demandOf } from '../../core';
 import styles from '../office.module.css';
-import { quadDots, QUAD_BOX, QUAD_MID } from '../scatter';
+import {
+  quadDots,
+  quadOfDot,
+  quadPeopleAt,
+  QUAD_BOX,
+  QUAD_MID,
+  xOfDeposit,
+  yOfHeat,
+} from '../scatter';
 import { useOffice } from '../store';
 import { ARTIST_TEXT } from '../text/artists';
 import {
   capChip,
   COST_LABELS,
+  depositText,
+  heatText,
+  quadLineText,
+  quadLineValues,
   expectedText,
   minHelp,
   minResetLabel,
@@ -20,6 +32,7 @@ import {
   yen,
 } from '../text/labels';
 import type { OfficeView } from '../view';
+import { QuadControls } from './QuadControls';
 
 export function UpRows({ view }: { readonly view: OfficeView }) {
   const { condition, uplift } = view;
@@ -45,12 +58,20 @@ export function UpRows({ view }: { readonly view: OfficeView }) {
 function Scatter({ view }: { readonly view: OfficeView }) {
   const artistId = useOffice((s) => s.artistId);
   const city = useOffice((s) => s.city);
+  const line = useOffice((s) => s.quadLine);
   if (city === null) return null;
   const demand = demandOf(artistId, city);
   const dots = quadDots(artistId, city);
+  const { people, estimate } = quadPeopleAt(artistId, city, line);
   const { x0, x1, y0, y1 } = QUAD_BOX;
   const { x: xm, y: ym } = QUAD_MID;
-  const label = `${ARTIST_TEXT[artistId].name}の、${city}のファンの散布図。横軸が預金額、縦軸が熱量。1点は約${demand.perDot}人。熱量が高く資金もあるファンは${view.expected}人、熱量は高いが資金が少ないのは${demand.people.hotPoor}人、熱量は低いが資金があるのは${demand.people.coolRich}人、熱量が低く資金も少ないのは${demand.people.coolPoor}人。`;
+  const lx = xOfDeposit(line.deposit);
+  const ly = yOfHeat(line.heat);
+  const about = estimate ? '約' : '';
+  const label =
+    `${ARTIST_TEXT[artistId].name}の、${city}のファンの散布図。横軸が預金額、縦軸が熱量。1点は約${demand.perDot}人。` +
+    (estimate ? `${quadLineValues(line.deposit, line.heat)}（${quadLineText.estimate}）。` : '') +
+    `熱量が高く資金もあるファンは${about}${estimate ? people.hotRich : view.expected}人、熱量は高いが資金が少ないのは${about}${people.hotPoor}人、熱量は低いが資金があるのは${about}${people.coolRich}人、熱量が低く資金も少ないのは${about}${people.coolPoor}人。`;
   return (
     <section className={`${styles.jcard} ${styles.quad}`} aria-labelledby="j3">
       <div className={styles.quadHead}>
@@ -69,15 +90,22 @@ function Scatter({ view }: { readonly view: OfficeView }) {
         </div>
       </div>
       <svg viewBox={`0 0 520 ${y1 + 44}`} role="img" aria-label={label}>
-        <rect className={styles.qHot} x={xm} y={y0} width={x1 - xm} height={ym - y0} rx={8} />
-        <line className={styles.qMid} x1={xm} y1={y0} x2={xm} y2={y1} />
-        <line className={styles.qMid} x1={x0} y1={ym} x2={x1} y2={ym} />
+        <rect
+          className={styles.qHot}
+          x={lx}
+          y={y0}
+          width={Math.max(0, x1 - lx)}
+          height={Math.max(0, ly - y0)}
+          rx={8}
+        />
+        <line className={styles.qMid} x1={lx} y1={y0} x2={lx} y2={y1} />
+        <line className={styles.qMid} x1={x0} y1={ly} x2={x1} y2={ly} />
         <line className={styles.qAxis} x1={x0} y1={y1} x2={x1} y2={y1} />
         <line className={styles.qAxis} x1={x0} y1={y0} x2={x0} y2={y1} />
         {dots.map((dot, i) => (
           <circle
             key={i}
-            className={`${styles.qDot} ${dot.hot ? styles.hot : ''}`}
+            className={`${styles.qDot} ${quadOfDot(dot, line) === 'hotRich' ? styles.hot : ''}`}
             cx={dot.x.toFixed(1)}
             cy={dot.y.toFixed(1)}
             r={4.2}
@@ -113,18 +141,40 @@ function Scatter({ view }: { readonly view: OfficeView }) {
         >
           熱量 →
         </text>
+        {estimate && (
+          <>
+            <text
+              className={styles.qLineT}
+              x={Math.min(lx + 4, x1 - 4)}
+              y={y1 - 6}
+              textAnchor={lx + 60 > x1 ? 'end' : 'start'}
+            >
+              {depositText(line.deposit)}
+            </text>
+            <text className={styles.qLineT} x={x0 + 4} y={ly > y0 + 16 ? ly - 5 : ly + 14}>
+              {heatText(line.heat)}
+            </text>
+          </>
+        )}
       </svg>
+      {estimate && (
+        <p className={styles.qEstimate} data-testid="quad-estimate">
+          <span className={styles.qEstimateChip}>{quadLineText.estimate}</span>
+        </p>
+      )}
       <ul className={styles.qNames} aria-hidden="true">
         {QUAD_ORDER.map((key) => (
           <li key={key} className={key === 'hotRich' ? styles.hot : undefined}>
             <span className={styles.qName}>{QUAD_NAMES[key]}</span>
             <span className={styles.qNum} data-testid={`quad-${key}`}>
-              {key === 'hotRich' ? view.expected : demand.people[key]}
+              {about}
+              {key === 'hotRich' && !estimate ? view.expected : people[key]}
               <small>人</small>
             </span>
           </li>
         ))}
       </ul>
+      <QuadControls />
       <p className={styles.qUnit}>● 1点 ≒ {demand.perDot}人</p>
     </section>
   );

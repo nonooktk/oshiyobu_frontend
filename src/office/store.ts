@@ -4,7 +4,17 @@ import { ARTIST_IDS, costsOfTier, parseCost, parseMinPeople, venueById, venuesOf
 import type { ArtistId, CityName, CostItemId, CostValues, VenueId } from '../core';
 import { broadcastResetAll } from '../shared/link';
 import { ARTIST_TEXT } from './text/artists';
-import { COST_LABELS, costErrorText, minErrorText, text, verdictText } from './text/labels';
+import { INITIAL_QUAD_LINE, QUAD_LINE_RANGE, quadPeopleAt } from './scatter';
+import type { QuadLine } from './scatter';
+import {
+  COST_LABELS,
+  costErrorText,
+  minErrorText,
+  quadLineLive,
+  quadLineResetLive,
+  text,
+  verdictText,
+} from './text/labels';
 import { viewOf } from './view';
 
 // 事務所向けの状態（メモリだけ。再読み込みで初めに戻る。設計 D-10）。
@@ -36,6 +46,8 @@ export interface OfficeState {
   band: string;
   /** 会場の先頭へフォーカスを移す合図。キーボードで市を選ぶたびに増える（仕様 SP-03）。0 は、まだ移していない */
   venueFocus: number;
+  /** 4 象限の区切り（要件 R-12）。推し・市を切り替えても残す。「最初に戻す」で初めの位置に戻る */
+  quadLine: QuadLine;
 }
 
 const EMPTY_COSTS: CostValues = { venue: 0, prod: 0, fee: 0, travel: 0, profit: 0 };
@@ -56,6 +68,7 @@ export const initialOfficeState = (): OfficeState => ({
   live: '',
   band: '',
   venueFocus: 0,
+  quadLine: INITIAL_QUAD_LINE,
 });
 
 interface OfficeActions {
@@ -71,6 +84,9 @@ interface OfficeActions {
   setMinInput(raw: string): void;
   blurMin(): void;
   resetMin(): void;
+  /** 区切りを動かす。範囲の外・刻みに合わない値は、範囲に収めて刻みに丸める */
+  setQuadLine(what: keyof QuadLine, value: number): void;
+  resetQuadLine(): void;
   openModal(name: Exclude<ModalName, null>): void;
   closeModal(): void;
   resetOffice(): void;
@@ -222,6 +238,24 @@ export const officeStore = createStore<OfficeState & OfficeActions>()((set, get)
       if (view !== null) {
         set({ live: `最低人数を計算の値の ${view.condition.min}人に戻しました。` });
       }
+    },
+
+    setQuadLine(what, value) {
+      if (!Number.isFinite(value)) return;
+      const { min, max, step } = QUAD_LINE_RANGE[what];
+      const snapped = Math.min(max, Math.max(min, Math.round((value - min) / step) * step + min));
+      if (snapped === get().quadLine[what]) return;
+      const quadLine = { ...get().quadLine, [what]: snapped };
+      set({ quadLine });
+      const { artistId, city } = get();
+      if (city !== null) {
+        const hotRich = quadPeopleAt(artistId, city, quadLine).people.hotRich;
+        set({ live: quadLineLive(what, snapped, hotRich) });
+      }
+    },
+
+    resetQuadLine() {
+      set({ quadLine: INITIAL_QUAD_LINE, live: quadLineResetLive });
     },
 
     openModal(name) {

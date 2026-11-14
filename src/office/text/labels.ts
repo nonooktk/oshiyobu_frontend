@@ -79,6 +79,30 @@ export const QUAD_NAMES: Readonly<Record<(typeof QUAD_ORDER)[number], string>> =
   coolPoor: 'どちらも低い',
 };
 
+/**
+ * 4 象限の線を動かす操作（要件 R-12）。画面には、すでに使っている語だけを出す（軸の名前・「初めの位置に戻す」・「目安（デモ）」）。
+ * 3 ページの書体に無い字（境・区・線・象・判・札など）を使わない（G-11・確認 5）。
+ */
+export const quadLineText = {
+  deposit: '預金額',
+  heat: '熱量',
+  reset: '初めの位置に戻す',
+  estimate: '目安（デモ）',
+} as const;
+
+export const depositText = (man: number): string => `${man}万円`;
+export const heatText = (heat: number): string => String(heat);
+const lineValueText = (what: 'deposit' | 'heat', value: number): string =>
+  what === 'deposit' ? depositText(value) : heatText(value);
+export const quadLineLive = (what: 'deposit' | 'heat', value: number, hotRich: number): string =>
+  `${quadLineText[what]}を ${lineValueText(what, value)}にしました。${QUAD_NAMES.hotRich}: 約 ${hotRich}人（${quadLineText.estimate}）。`;
+export const quadLineResetLive = '初めの位置に戻しました。';
+/** 図や情報の扱いに出す、いまの線の位置（例: 預金額 25万円・熱量 3.5） */
+export const quadLineValues = (deposit: number, heat: number): string =>
+  `${quadLineText.deposit} ${depositText(deposit)}・${quadLineText.heat} ${heatText(heat)}`;
+export const privQuadLine = (deposit: number, heat: number): string =>
+  `${text.judge3}: ${quadLineValues(deposit, heat)}`;
+
 export const capChip = (need: number, cap: number, unit: string): string =>
   need <= cap ? `キャパ ${cap}${unit}に収まる` : `キャパ ${cap}${unit}を超える`;
 

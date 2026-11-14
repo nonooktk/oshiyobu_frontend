@@ -4,7 +4,7 @@
 //   G-22: 配備先の URL・トークンの形の文字列が、コード・文書・設定に書かれていない
 //   G-23: CI が npm run verify を呼ぶ形のまま（手元と CI の検査がずれない）
 //   G-24: テストを skip にしていない。lint・型の抑制を足していない
-//   G-26: 配備（deploy.yml）が、手で起動する形のまま
+//   G-26: 配備（deploy.yml）が、手で起動する形のまま。承認つきの環境 production で動く形のまま
 // 限界: G-24 の「期待値の書き換え」は、機械では見つけられない（PR のレビューで見る）。
 //   G-22 は、書かれた形が決まっているものだけ（URL の形・トークンの形）。合言葉そのものは見つけられない。
 import { describe, expect, it } from 'vitest';
@@ -164,5 +164,16 @@ describe('G-26: 配備は、手で起動する形のまま', () => {
       ),
     ).toEqual(['workflow_dispatch']);
     expect(exists('.github/workflows/deploy.yml')).toBe(true);
+  });
+
+  it('deploy.yml の配備の job が、承認つきの環境 production で動く（統括が承認するまで始まらない）', () => {
+    const deploy = read('.github/workflows/deploy.yml');
+    expect(
+      /^\s+environment:\s*production\s*$/m.test(deploy),
+      guardMessage(
+        'G-26',
+        'deploy.yml から、承認つきの環境（environment: production）が消えています。承認なしで配備が始まります',
+      ),
+    ).toBe(true);
   });
 });

@@ -2,8 +2,9 @@
 // ファン向けの、ことば・絵・動きの検査。
 //   G-04: 演出とことばが褒めるのは、利用者の行動だけ。運・勝ち負け・得を褒めない（銀行に出す企画のため）
 //   G-05: 急がせる促し（点滅・残り時間・「いますぐ」）を入れない
+//   G-04（音）: 称賛の音に、スロット・硬貨・くじを連想させる語・音声ファイル・素材の再生を入れない。音のボタンを消さない
 // 検査の範囲は、ファン向け（src/fan/ と fan/index.html）の、コード・CSS・文言と、絵のファイル名。
-// 限界: 語の一覧に無い言い換えと、動きそのもの（点滅の見た目）は、見つけられない。PR のレビューで見る。
+// 限界: 語の一覧に無い言い換えと、動きそのもの（点滅の見た目）・音の聞こえ方は、見つけられない。PR のレビューで見る。
 // 起動条件: 検査の対象が見つかり、中身を読めていること（0 件で通る空振りの防止）。
 import { describe, expect, it } from 'vitest';
 import { guardMessage, read, stripComments, walk, withExt } from './helpers';
@@ -144,5 +145,84 @@ describe('ファン向けの、ことば・絵・動き（G-04・G-05）', () =>
     expect(found(LUCK_EMOJI)).toEqual(['🪙']);
     expect(LUCK_FILE_NAME.test('coin-fall.webp')).toBe(true);
     expect(BLINK_KEYFRAMES.test('@keyframes blinkNow { 0% {} }')).toBe(true);
+  });
+});
+
+/** 音のことば（G-04）。スロット・硬貨・くじを連想させる音を表す語。一覧の外の言い換えと、音の聞こえ方は見つけられない */
+const SOUND_WORDS = [
+  'チャリン',
+  'ジャラジャラ',
+  'ルーレット',
+  'ドラムロール',
+  'スロットの音',
+  'コインの音',
+  'くじの音',
+  '金属音',
+  '硬貨',
+];
+/** 音声ファイルの拡張子（G-04）。称賛の音は Web Audio の合成だけで、素材を置かない */
+const AUDIO_EXTS = ['.mp3', '.wav', '.ogg', '.oga', '.m4a', '.aac', '.flac', '.opus', '.weba'];
+/** 素材を読んで鳴らす書き方（G-04）。合成（createOscillator）だけにする */
+const AUDIO_SAMPLE_PLAYBACK = [
+  /new\s+Audio\s*\(/,
+  /<audio\b/i,
+  /decodeAudioData/,
+  /createMediaElementSource/,
+  /createBufferSource/,
+];
+
+describe('称賛の音（G-04）', () => {
+  it('音を連想させる語（スロット・硬貨・くじなど）が、ファン向けに 0 件', () => {
+    expect(
+      hitsOf(SOUND_WORDS),
+      guardMessage('G-04', 'スロット・硬貨・くじを連想させる音を表す語が入っています'),
+    ).toEqual([]);
+  });
+
+  it('音声ファイル（mp3・wav・ogg など）が、リポジトリに 0 件', () => {
+    const hits = [...walk('src'), ...walk('public'), ...walk('assets-src')].filter((path) =>
+      AUDIO_EXTS.some((ext) => path.toLowerCase().endsWith(ext)),
+    );
+    expect(
+      hits,
+      guardMessage('G-04', '音声ファイルを置いています（称賛の音は、合成だけで鳴らす）'),
+    ).toEqual([]);
+  });
+
+  it('音は合成だけ。素材を読んで鳴らす書き方が、ファン向けのコードに 0 件。合成の部品（createOscillator）を使っている', () => {
+    const code = sources
+      .filter(({ path }) => path.endsWith('.ts') || path.endsWith('.tsx'))
+      .map(({ path, text }) => ({ path, text: stripComments(text) }));
+    const hits = code.flatMap(({ path, text }) =>
+      AUDIO_SAMPLE_PLAYBACK.filter((re) => re.test(text)).map((re) => `${path}: ${re.source}`),
+    );
+    expect(
+      hits,
+      guardMessage('G-04', '素材を読んで鳴らす書き方があります（称賛の音は、合成だけ）'),
+    ).toEqual([]);
+    expect(code.find(({ path }) => path === 'src/fan/sound.ts')?.text).toContain(
+      'createOscillator',
+    );
+  });
+
+  it('音のオン・オフのボタンが、ある（SoundToggle を作り、画面の枠が使っている）', () => {
+    const message = guardMessage('G-04', '音のオン・オフのボタンが消えています');
+    const toggle = sources.find(({ path }) => path === 'src/fan/components/SoundToggle.tsx');
+    expect(toggle, message).toBeDefined();
+    expect(toggle?.text, message).toContain('aria-label="称賛の音"');
+    const users = sources.filter(
+      ({ path, text }) =>
+        path !== 'src/fan/components/SoundToggle.tsx' && /<SoundToggle\s*\/>/.test(text),
+    );
+    expect(users.length, message).toBeGreaterThan(0);
+  });
+
+  it('この検査は、音の語・素材の書き方を見つけられる（見張りが働いている）', () => {
+    expect(SOUND_WORDS.filter((word) => 'チャリン！ ジャラジャラ'.includes(word))).toEqual([
+      'チャリン',
+      'ジャラジャラ',
+    ]);
+    expect(AUDIO_SAMPLE_PLAYBACK.some((re) => re.test('const a = new Audio("x.mp3");'))).toBe(true);
+    expect(AUDIO_EXTS.some((ext) => 'coin.MP3'.toLowerCase().endsWith(ext))).toBe(true);
   });
 });

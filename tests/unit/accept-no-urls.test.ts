@@ -12,6 +12,7 @@ describe('台本と文書に、公開の URL を書かない', () => {
     'scripts/api-check-lib.mjs',
     'scripts/check-api.mjs',
     'scripts/check-live.mjs',
+    'scripts/check-solo.mjs',
     'scripts/local-api.mjs',
     'scripts/verify.mjs',
     'CLAUDE.md',

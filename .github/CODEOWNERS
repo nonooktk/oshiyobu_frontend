@@ -1,1 +1,16 @@
+# 管理者（統括）の確認が要る場所。決まりの中身は docs/守ること.md。
+# 既定: すべて管理者が確認する
 * @nonooktk
+
+# 守る場所（体験の流れと、backend との通信。見た目の担当者の PR で触れていたら、理由を確かめる）
+# 今後、見た目の担当者を既定の持ち主に加える場合も、次の場所は管理者だけに残す
+/src/core/ @nonooktk
+/core.lock.json @nonooktk
+/src/shared/meter/ @nonooktk
+/.github/ @nonooktk
+/.claude/ @nonooktk
+/CLAUDE.md @nonooktk
+/docs/守ること.md @nonooktk
+/tests/guard/ @nonooktk
+/public/staticwebapp.config.json @nonooktk
+/scripts/ @nonooktk

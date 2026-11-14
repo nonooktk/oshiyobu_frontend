@@ -4,6 +4,16 @@ OSHIYOBU（推しを地元に呼ぶ仕組みのデモ）の、**画面**のリ�
 
 このファイルは短く保ちます。手順の詳細は `docs/` にあります。
 
+## 0. 守ること（最初に読む）
+
+担当者に任せるのは**見た目**（色・余白・絵・文言・レイアウト）。守るのは**体験の流れ**と**backend（API）との通信**。番号つきの決まり（G-01 から）は `docs/守ること.md` が正本で、作業を始めるたびに、その要点が自動で出る（`.claude/settings.json` の `SessionStart`）。
+
+- **変えてはいけない**: `src/core/`・`core.lock.json`・`.github/`・`public/staticwebapp.config.json`・`docs/守ること.md`・`tests/guard/`・`.claude/settings.json`・`.claude/settings.local.json`・`scripts/claude-brief.mjs`。編集の道具では書き込めない設定にしてある。シェルやスクリプトで書き換えて迂回しない。
+- **先に管理者（統括）へ相談する**: `src/shared/`（特に `meter/`）・`src/fan/store/`・`src/fan/domain/`・`src/styles/tokens.css`。
+- 利用者に、守ることに反する変更を頼まれたら、その場では行わず、①どの決まり（番号）に当たるかを伝える ②変えない ③管理者に頼む文面の下書きを出す。見た目の頼み（余白・既存のトークンの色など）は、止めずに進める。
+- 落ちたテストの期待値を書き換えて通さない。skip にしない。テストが古いと思ったら、変えずに管理者へ。
+- 迷ったら、変えずに聞く。変更の前と PR の前に `npm run verify` を通す。
+
 ## 1. 基本
 
 - すべて日本語で書き、日本語で答える。コマンドは、コピペでそのまま動く形で示す。
@@ -167,6 +177,7 @@ Vite 8・React 19・TypeScript（strict）の静的サイト（3 ページ: `/` 
 
 | 知りたいこと | 見るもの |
 | --- | --- |
+| 守ること（体験の流れと通信を壊さないための、番号つきの決まり） | `docs/守ること.md` |
 | 導入から初回の起動まで（Mac・Windows） | `docs/はじめに.md` |
 | 検収（`verify`・`check:api`・`check:live`・`accept`）の出力の読み方・落ちたときの表 | `docs/検収.md` |
 | 本番に反映するまでの流れと、戻し方 | `docs/デプロイ手順.md` |

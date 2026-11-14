@@ -199,10 +199,20 @@ export const GUIDES = Object.freeze({
     fail: 'Chrome を起動できません。Google Chrome を入れる。別の Chromium を使うなら、先に `npx playwright install chromium` をして ACCEPT_CHANNEL=chromium を渡す',
   },
   'live.page': {
-    fail: 'コンソールのエラー → 文言を見る（CSP の違反なら外部の読み込み、CORS なら接続元〈管理者へ〉）。失敗した通信 → 404 は存在しないファイルの読み込み。札が無い → DemoBadge を消していないか（全画面に出す決まり）',
+    fail: 'コンソールのエラー → 文言を見る（CSP の違反なら外部の読み込み、CORS なら接続元〈管理者へ〉）。失敗した通信 → 404 は存在しないファイルの読み込み。札が無い → DemoBadge を消していないか（「動作確認用のデモ画面です」と「デモ用の架空データ」の 2 枚。全画面に出す決まり）',
+  },
+  'live.fan.solo': {
+    fail: 'ひとり体験（既定）のはずが、ファン向けが API を呼んでいます。ビルドに VITE_SHARED_METER=on が入っていないか（環境変数・GitHub の Variable）、src/shared/meter/config.ts の METER_BASE を変えていないかを見る。共有メーターで動かす意図なら、`--shared` を付けて確かめる',
+  },
+  'live.presenter.health': {
+    fail: '発表者用の「接続を確認する」で、/healthz が 200 で返らない・CORS で許されない・画面に応答の時間が出ない。VITE_API_BASE がビルドに入っていない／API が止まっている／接続元が API の許可と違う（管理者へ）。画面の文言（src/presenter/text/page.ts）を変えたなら、scripts/check-live.mjs の読み取りも合わせる',
   },
   'live.meter': {
-    fail: '/fan/ からメーターの取得が出ない・200 でない・CORS で許されていない。VITE_API_BASE がビルドに入っていない／check:csp が落ちている（connect-src に API が無い）／API が止まっている／接続元が API の許可と違う（管理者へ）',
+    fail: '共有メーター（--shared）で、/fan/ からメーターの取得が出ない・200 でない・CORS で許されていない。VITE_API_BASE がビルドに入っていない／VITE_SHARED_METER=on が入っていない／check:csp が落ちている（connect-src に API が無い）／API が止まっている／接続元が API の許可と違う（管理者へ）',
+  },
+  'live.solo': {
+    fail: 'ひとり体験の通し（はじめの画面 → 申し込む → 80% → 仲間を呼ぶ → 成立）が落ちています。出力の末尾の、落ちた手順と画面写真（test-results/solo）を見る。ファン向けの画面・文言を変えたなら、その変更が原因のことが多い（e2e-solo/solo.spec.ts の期待値は、勝手に変えない）',
+    skip: 'e2e:solo が使うポート（5297・8798）が使用中です。ほかのプロセスが使っていないか見て（自分が起動したものだけを止める）、もう一度実行する',
   },
 });
 

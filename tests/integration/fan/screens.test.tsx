@@ -117,7 +117,7 @@ describe('推しの口調（A-42）', () => {
     fireEvent.click(seat as HTMLElement);
     click('このコースを目指して始める');
     const before = bubbleText();
-    expect(before).toContain('だいぶ熱くなってきたね。'); // 申し込む前（熱量はヒートアップ）。人数は言わない
+    expect(before).toContain('だいぶ盛り上がってきたね。'); // 申し込む前（熱量はヒートアップ）。人数は言わない。段階の名前は言わない
     expect(before).not.toMatch(/\d+人/);
     act(() => {
       const { actions } = getAppStore();

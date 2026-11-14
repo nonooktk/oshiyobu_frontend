@@ -97,7 +97,7 @@ describe('① 表の番号と、落ちる検査', () => {
     '%s: tests/guard/ のテストを挙げているなら、そのファイルの中に、この番号がある',
     (id, cell) => {
       const guardFiles = backticks(cell).filter((token) =>
-        /^tests\/guard\/.+\.test\.ts$/.test(token),
+        /^tests\/guard\/.+\.test\.tsx?$/.test(token),
       );
       for (const file of guardFiles) {
         if (!exists(file)) continue; // 実在しないことは、上の検査が言う
@@ -241,12 +241,13 @@ describe('G-08: 有効になっていて、歯止めが、ファン向けの画�
     ).not.toContain('予定（G-08）');
   });
 
-  it('「落ちる検査」に、巡回の検査（no-numbers）とソースの検査（tests/guard/heat.test.ts）が書かれ、巡回の検査の中に番号がある', () => {
+  it('「落ちる検査」に、巡回の検査（tests/guard/no-numbers.test.tsx）とソースの検査（tests/guard/heat.test.ts）が書かれ、どちらの中にも番号がある', () => {
     const cell = row?.cells[3] ?? '';
     const message = guardMessage('G-08', '落ちる検査の書き方が、実際の検査とずれています');
     expect(cell, message).not.toContain('歯止めなし');
-    expect(backticks(cell), message).toContain('tests/integration/fan/no-numbers.test.tsx');
+    expect(backticks(cell), message).toContain('tests/guard/no-numbers.test.tsx');
     expect(backticks(cell), message).toContain('tests/guard/heat.test.ts');
-    expect(read('tests/integration/fan/no-numbers.test.tsx'), message).toContain('G-08');
+    expect(read('tests/guard/no-numbers.test.tsx'), message).toContain('G-08');
+    expect(read('tests/guard/heat.test.ts'), message).toContain('G-08');
   });
 });

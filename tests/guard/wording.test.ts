@@ -53,11 +53,10 @@ const HURRY_WORDS = [
 const BLINK_KEYFRAMES = /@keyframes\s+[\w-]*(blink|flicker|strobe|twinkle|pulse)/i;
 
 /**
- * 「増える」は、預金の条件の説明（下の 1 文）でだけ使っている。利用者を褒める語ではないので許す。
- * ほかの使い方（「ポイントが増える」など、得を褒める言い方）は見つけて止める。
+ * 「増える」は、得を褒める言い方（「ポイントが増える」など）に読めるので、画面の文に使わない（コードのコメントは対象外）。
+ * 以前は、預金の条件の説明の 1 文だけを許していたが、画面からその文が無くなったので、許しを外した（2026-11-14）。
  */
 const GROW_WORD = '増える';
-const GROW_ALLOWED = ['預金が増えると、各コースの預金の条件がそろいます。'];
 
 const hitsOf = (words: readonly string[]): string[] =>
   words.flatMap((word) =>
@@ -104,21 +103,15 @@ describe('ファン向けの、ことば・絵・動き（G-04・G-05）', () =>
     ).toEqual([]);
   });
 
-  it('G-04: 「増える」は、預金の条件の説明（1 文）だけ。ほかの使い方は 0 件', () => {
+  it('G-04: 「増える」が、ファン向けのコードの文に 0 件', () => {
     const hits: string[] = [];
     for (const { path, text } of sources) {
       if (!path.endsWith('.ts') && !path.endsWith('.tsx')) continue;
-      const code = stripComments(text);
-      let rest = code;
-      for (const allowed of GROW_ALLOWED) rest = rest.split(allowed).join('');
-      if (rest.includes(GROW_WORD)) hits.push(path);
+      if (stripComments(text).includes(GROW_WORD)) hits.push(path);
     }
     expect(
       hits,
-      guardMessage(
-        'G-04',
-        `「${GROW_WORD}」を、預金の条件の説明以外で使っています（得を褒める言い方に読めるため）`,
-      ),
+      guardMessage('G-04', `「${GROW_WORD}」を使っています（得を褒める言い方に読めるため）`),
     ).toEqual([]);
   });
 

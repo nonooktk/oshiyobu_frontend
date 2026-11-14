@@ -134,6 +134,18 @@ function Screen() {
                 }
               </ChunkBoundary>
             );
+          case 'deposit':
+            return (
+              <ChunkBoundary<LayersModule>
+                key="deposit"
+                name="fan-layers"
+                frame={sheet('預金を積み増す', inert, actions.closeDeposit, '閉じる', null)}
+              >
+                {(m) =>
+                  sheet('預金を積み増す', inert, actions.closeDeposit, '閉じる', <m.DepositBody />)
+                }
+              </ChunkBoundary>
+            );
           case 'carry':
             return (
               <ChunkBoundary<LayersModule>

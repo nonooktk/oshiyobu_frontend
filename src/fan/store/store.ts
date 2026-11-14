@@ -1,20 +1,16 @@
 // ファン向けのストア。状態（端末の中だけ）と、申し込み・演出・特典・感謝の順番（タイマー）を持つ。
 // 数字・成立の判定は core の関数（domain/view.ts 経由）。通信は adapter の joinPerformance だけ（呼ぶだけで待たない。N-21）。
 import {
-  TEIKI,
   achievementPct,
   canApply,
   conditionOf,
   courseOffersOf,
   crossedMilestone,
-  nextDepositTarget,
-  PERSONA_DEFAULT_NO,
   performanceIdOf,
-  personaByNo,
 } from '../../core';
 import type { Condition, CourseId, PerformanceId } from '../../core';
 import { artistView } from '../art/registry';
-import { ACT_IDS, GIFT_ACTS, initialState, venueForCity } from '../domain/state';
+import { ACT_IDS, FAN_VENUE_ID, GIFT_ACTS, initialState } from '../domain/state';
 import type {
   AcctId,
   ActId,
@@ -34,7 +30,6 @@ import {
   courseOf,
   friendsToClinch,
   homeActionOf,
-  opensList,
   restText,
   viewOf,
 } from '../domain/view';
@@ -106,11 +101,9 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
   /** 仲間を呼んでいる最中か（押し続けても、1 回ぶんしか進めない）。 */
   let calling = false;
   let achTimer: ReturnType<typeof setTimeout> | null = null;
-  let achFlashAt = -Infinity;
   const timers = new Set<ReturnType<typeof setTimeout>>();
   const fxEnd = new Map<number, () => void>();
   const listeners = new Set<() => void>();
-  const now = (): number => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
   const emit = (): void => listeners.forEach((l) => l());
   const set = (patch: Partial<FanState>): void => {
@@ -166,7 +159,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
           delay: Number((delay + deps.random() * delaySpan).toFixed(2)),
         }));
 
-  /* ---------- 条件の達成のエフェクト（操作を止めない・押すと消える） ---------- */
+  /* ---------- 行動の直後の短い称賛（控えめな札。操作を止めない・押すと消える） ---------- */
   const endAch = (): void => {
     if (achTimer) clearTimeout(achTimer);
     achTimer = null;
@@ -181,21 +174,14 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     endAch();
     if (had) flushAch();
   };
-  const showAch = (a: Omit<AchSpec, 'id' | 'ms' | 'flash' | 'confetti'>): void => {
+  const showAch = (a: Pick<AchSpec, 'title' | 'sub'>): void => {
     clearAch();
     if (state.layers.length) {
       flushAch();
       return;
     }
-    const all = a.kind === 'all';
-    const ms = reduce() ? (all ? 1500 : 1200) : all ? 2000 : 1600;
-    // 閃光は、前の閃光から 0.35 秒以上あける（明暗の入れ替わりが 1 秒に 3 回を超えない）
-    const t = now();
-    const flash = !reduce() && t - achFlashAt > 350;
-    if (flash) achFlashAt = t;
-    set({
-      ach: { ...a, id: ++seq, ms, flash, confetti: confetti(all ? 40 : 22, 0.9, 0.8, 0, 0.45) },
-    });
+    const ms = reduce() ? 2000 : 2600;
+    set({ ach: { ...a, id: ++seq, ms } });
     achTimer = setTimeout(endAch, ms);
   };
 
@@ -362,6 +348,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     else if (top.kind === 'gift') closeGift();
     else if (top.kind === 'thanks') closeThanks();
     else if (top.kind === 'share') closeShare();
+    else if (top.kind === 'deposit') closeDeposit();
     else if (top.kind === 'cancel') closeCancel();
     else closeCarry();
   };
@@ -450,9 +437,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       origin,
       homeIdx,
       fresh: null,
-      ...(page === 'opt'
-        ? { pend: { oshiId: state.oshiId, city: state.city, seat: state.seat } }
-        : {}),
+      ...(page === 'opt' ? { pend: { oshiId: state.oshiId, seat: state.seat } } : {}),
     });
   };
 
@@ -512,116 +497,90 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
 
   /* ---------- 口座と預金の 3 つの行動 ---------- */
   const acctDone = (id: AcctId): boolean =>
-    id === 'main'
-      ? state.acct.pay
-      : id === 'teiki'
-        ? !!state.done.teiki
-        : nextDepositTarget(state.acct.deposit) === undefined;
+    id === 'main' ? state.acct.pay : id === 'teiki' ? !!state.done.teiki : false;
 
   /**
-   * 口座と預金の行動を進める。預金は、amount（円）を渡すと、その額だけ足す（利用者が入れた額。「口座と預金」の入力欄）。
-   * 渡さないと、次に開くコースの預金までちょうど足す（次のアクションの「預金を積み増す」）。
-   * 足せない額（整数でない・1 円未満・合計が上限を超える）は、何も変えない（画面が先に理由を出して断る）。
+   * 口座と預金の行動を進める。流れは、推し活定期をはじめる（デモの中で、口座が使える状態になる）→ 預金を積み増す → 申し込む。
+   * 預金は、amount（円）を渡して、その額だけ足す（利用者が入れた額）。足せない額（整数でない・1 円未満・合計が上限を超える）は、
+   * 何も変えない（画面が先に理由を出して断る）。口座を使う行動（預金・メイン口座）は、推し活定期をはじめたあとだけ。
+   * 足したあとは、短い称賛（控えめ）を出す。条件に届いたときは、預金の入力のシートを閉じる。
    */
   const runAcct = (id: AcctId, from: Page, amount?: number): void => {
-    const added = id === 'deposit' ? amount : undefined; // 利用者が決めた額（無ければ undefined）
-    if (added !== undefined ? !canAddDeposit(added, state.acct.deposit) : acctDone(id)) return;
+    if (
+      id === 'deposit'
+        ? amount === undefined || !canAddDeposit(amount, state.acct.deposit)
+        : acctDone(id)
+    )
+      return;
+    if (id !== 'teiki' && !state.done.teiki) return;
     clearAch();
     const v0 = view();
     const t = v0.joined ? null : v0.target;
-    const d0 = state.acct.deposit;
-    const p0 = state.acct.pay;
     const wasCk = t
       ? condItems(v0, t)
           .filter((i) => i.ok)
           .map((i) => i.id)
       : [];
     const wasOk = t ? canApplyOf(v0, t) : false;
-    // 状態を進める（利用者が決めた額を足す。額が無いときは、次に開くコースの預金までちょうど足す。擬似）
+    // 状態を進める（擬似）。推し活定期は、口座が使える状態にするだけ（預金は変えない）
     const acct = { ...state.acct };
     if (id === 'main') acct.pay = true;
     else if (id === 'deposit') {
-      acct.deposit = added !== undefined ? d0 + added : (nextDepositTarget(d0) ?? d0);
+      acct.deposit += amount ?? 0;
       acct.times += 1;
-    } else acct.deposit += TEIKI.monthlyYen;
+    }
     set({ acct, done: { ...state.done, [id]: true } });
     const v1 = view();
-    const d1 = acct.deposit;
-    const p1 = acct.pay;
-    const cond = v1.cond;
-    const opened = opensList(cond, d0, d1, p0, p1);
-    const t1 = t ? courseOf(cond, t.id) : null;
-    const nowOk = t1 ? canApplyOf(v1, t1) : false;
-    const strong = !!t1 && !wasOk && nowOk;
-    const crossed = cond.courses.some((k) => d0 < k.deposit && k.deposit <= d1);
-    const gotCond = id === 'main' || crossed;
-    const did =
-      id === 'main'
-        ? 'メイン口座にしました'
-        : id === 'deposit'
-          ? added !== undefined
-            ? `${yen(added)}を積み増しました（預金 ${yen(d1)}）`
-            : `預金が ${yen(d1)}になりました`
-          : `推し活定期をはじめました（預金 ${yen(d0)} → ${yen(d1)}）`;
-    let prog = '';
-    if (strong && t1) prog = `${t1.name}に申し込めます`;
-    else if (t1 && !nowOk) prog = `${t1.name}まで、残りは ${restText(t1, d1, p1)}`;
-    else if (opened.length)
-      prog = t1
-        ? `${opened.join('・')}にも申し込めます`
-        : `${opened.join('・')}の条件がそろいました`;
-    // 預金の増えた額は、利用者が決めた額のときは「◯◯円を積み増しました」（detail）で言うので、ここでは重ねない
-    const gain =
-      added !== undefined ? `${yen(added)}を積み増しました` : `預金が ${yen(d1 - d0)}増えました`;
-    const head = strong
-      ? '条件がそろいました'
-      : gotCond
-        ? '条件を1つ達成！'
-        : added !== undefined
-          ? ''
-          : gain;
-    const detail = did + (prog ? '。' + prog : '');
-    const nm =
-      id === 'main'
-        ? 'メイン口座にしました'
-        : id === 'deposit'
-          ? `預金 ${yen(d1)}に`
-          : '推し活定期をはじめました';
-    // 条件の ✓ が付く動きは、演出が薄れていく頃に始める（1 つ達成は 1.0 秒後・全部そろったときは 1.3 秒後。動きを減らす設定では 0）
-    const delay = reduce() ? 0 : strong ? 1.3 : 1.0;
+    const t1 = t ? courseOf(v1.cond, t.id) : null;
+    const reached = !!t1 && !wasOk && canApplyOf(v1, t1);
     const nowCk = t1
       ? condItems(v1, t1)
           .filter((i) => i.ok)
           .map((i) => i.id)
       : [];
+    const rest = t1 && !reached && !canApplyOf(v1, t1) ? restText(t1, acct.deposit, acct.pay) : '';
+    // 画面に出す文（トースト・読み上げ）と、短い称賛（行動 → それで何が進んだか）
+    const toastText =
+      id === 'teiki'
+        ? '推し活定期をはじめました。デモ用の操作で、実際の手続きは行われません'
+        : id === 'main'
+          ? 'メイン口座にしました（デモ用の操作）'
+          : `${yen(amount ?? 0)}を積み増しました（預金 ${yen(acct.deposit)}）`;
+    const praise =
+      id === 'teiki'
+        ? { title: 'はじめてくれてありがとう。', sub: '預金を積み増せるようになりました' }
+        : {
+            title: id === 'main' ? 'メイン口座にしてくれてありがとう。' : '積み増しありがとう。',
+            sub: reached
+              ? '申し込めるようになりました'
+              : t1
+                ? `${t1.name}まで、残りは ${rest}`
+                : '申し込みの条件が 1 つそろいました',
+          };
+    // 条件の ✓ が付く動きは、称賛が薄れていく頃に始める（動きを減らす設定では 0）
     set({
-      ckDelay: delay,
+      ckDelay: reduce() ? 0 : reached ? 1.3 : 1.0,
       fresh: {
         ids: nowCk.filter((x) => !wasCk.includes(x)),
-        all: strong,
+        all: reached,
         act: id,
         from,
         nonce: ++seq,
       },
     });
-    if (strong && t1)
-      showAch({
-        kind: 'all',
-        title: '条件が',
-        title2: 'そろいました！',
-        small: nm,
-        sub: `${t1.name}に申し込めます`,
-      });
-    else if (gotCond) showAch({ kind: 'one', title: '達成！', small: '条件を1つクリア', sub: nm });
-    else
-      showAch({
-        kind: 'one',
-        title: 'ナイス！',
-        small: gain,
-        sub: nm,
-      });
-    toast(detail, 3600);
-    announce(`${head === '' || /[！。]$/.test(head) ? head : `${head}。`}${detail}。`);
+    if (reached) popLayer('deposit'); // 条件に届いたら、額の入力を閉じて、ホームの「申し込む」へ
+    sound('share');
+    showAch(praise);
+    toast(toastText, 3600);
+    announce(`${praise.title}${praise.sub}。${toastText}。`);
+  };
+  /** 預金を積み増す額の入力（シート）。ホームの主のボタンと、次のアクションの画面から開く。 */
+  const openDeposit = (): void => {
+    if (!state.done.teiki || state.layers.some((l) => l.kind === 'deposit')) return;
+    pushLayer({ kind: 'deposit' });
+  };
+  const closeDeposit = (): void => {
+    popLayer('deposit');
   };
 
   /* ---------- 仲間を呼ぶ・共有 ---------- */
@@ -732,7 +691,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
         runAcct(a.id, 'home');
         break;
       case 'deposit':
-        go('acct'); // 口座と預金の画面で、積み増す額を決める
+        openDeposit(); // 額の入力がすぐ出る（目指すコースにちょうど届く額が、初めから入っている）
         break;
       case 'friend':
         callFriends();
@@ -749,8 +708,8 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     }
   };
 
-  /* ---------- はじめの画面 ---------- */
-  const startPick = (kind: 'oshi' | 'city' | 'seat', v: string): void => {
+  /* ---------- はじめの画面（推し → コースの 2 つ。市は久留米市に固定） ---------- */
+  const startPick = (kind: 'oshi' | 'seat', v: string): void => {
     const s = state.start;
     if (!s) return;
     set({
@@ -758,44 +717,39 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
         ...s,
         touched: true,
         ...(kind === 'oshi' ? { oshiId: v as typeof s.oshiId } : {}),
-        ...(kind === 'city' ? { city: v as typeof s.city } : {}),
         ...(kind === 'seat' ? { seat: v as typeof s.seat } : {}),
       },
     });
   };
-  const STEP_TITLES = ['推しを選ぶ', '呼びたい市を選ぶ', '目指すコースを選ぶ'] as const;
-  const startStep = (n: 0 | 1 | 2): void => {
+  const STEP_TITLES = ['推しを選ぶ', '目指すコースを選ぶ'] as const;
+  const startStep = (n: 0 | 1): void => {
     const s = state.start;
     if (!s) return;
     set({ start: { ...s, step: n } });
-    announce(`${n + 1} / 3。${STEP_TITLES[n]}`);
-    // 3/3 で取るのは、これから申し込む公演（選び直していれば、確定前の公演）。見ている公演は古いままのことがある（G2-04）
-    if (n === 2)
-      deps.fetch('course-select', performanceIdOf(s.oshiId, venueForCity(state, s.city)));
+    announce(`${n + 1} / 2。${STEP_TITLES[n]}`);
+    // 2/2 で取るのは、これから申し込む公演（見ている公演は古いままのことがある。G2-04）
+    if (n === 1) deps.fetch('course-select', performanceIdOf(s.oshiId, FAN_VENUE_ID));
   };
   const startBack = (): void => {
     const s = state.start;
-    if (s && s.step > 0) startStep((s.step - 1) as 0 | 1);
+    if (s && s.step > 0) startStep(0);
   };
   const startNext = (): void => {
     const s = state.start;
     if (!s) return;
-    if (s.step < 2) startStep((s.step + 1) as 1 | 2);
+    if (s.step < 1) startStep(1);
     else commitStart();
   };
-  /** 選び終えたら、ホームへ。申し込めるコースは、その場で申し込みが確定する。足りない上位コースは、目指すコースとして登録する。 */
+  /**
+   * 選び終えたら、ホームへ。初めは預金 0円・口座なしなので、まだ申し込めない。選んだコースは、目指すコースとして登録する
+   * （ホームの主のボタンが、推し活定期をはじめる → 預金を積み増す → 申し込む、と案内する）。
+   * 条件がそろっているコースは、その場で申し込みが確定する（事務所向けから戻ってきたときなど。普段は通らない）。
+   */
   const commitStart = (): void => {
     const s = state.start;
     if (!s) return;
-    const changedPid = performanceIdOf(s.oshiId, venueForCity(state, s.city)) !== pidNow();
-    set({
-      oshiId: s.oshiId,
-      seat: s.seat,
-      city: s.city,
-      venueId: venueForCity(state, s.city),
-      custom: s.city !== s.baseCity,
-      start: null,
-    });
+    const changedPid = performanceIdOf(s.oshiId, FAN_VENUE_ID) !== pidNow();
+    set({ oshiId: s.oshiId, seat: s.seat, venueId: FAN_VENUE_ID, start: null });
     if (changedPid) deps.fetch('performance-changed');
     go('home');
     const k = courseOffersOf(state.venueId).find((c) => c.id === s.seat);
@@ -858,23 +812,6 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     if (counted) announce('共有のメーターが初めに戻りました。もう一度申し込めます。');
   };
 
-  /**
-   * 事務所向けと連動したとき（設計 D-44）。まだ選び直していなければ、はじめの画面の初めの値を、
-   * 推し ＝ tech0・市と会場 ＝ 事務所向けの会場・預金とメイン口座 ＝ 人物 4 に取り替える（申し込み・達成・特典は取り直さない）。
-   */
-  const applyOffice = (venueId: Condition['venueId'] | null): void => {
-    const s = state.start;
-    if (venueId === null || !s || s.touched || state.custom || state.page !== 'start') return;
-    const c = conditionOf(venueId);
-    const p4 = personaByNo(PERSONA_DEFAULT_NO);
-    set({
-      oshiId: 'tech0',
-      city: c.city,
-      venueId,
-      acct: { pay: p4.mainAccount, deposit: p4.depositYen, times: 0 },
-      start: { ...s, oshiId: 'tech0', city: c.city, baseCity: c.city },
-    });
-  };
   const openCancel = (): void => pushLayer({ kind: 'cancel' });
   const closeCarry = (): void => {
     if (!popLayer('carry')) return;
@@ -902,24 +839,18 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
   };
 
   /* ---------- 「推し・条件の変更」（SP-25・SP-49。デモ用の操作） ---------- */
-  /** 選んでいる最中の条件（市を変えたときは、その市の会場の条件）。 */
-  const pendCond = (): Condition => {
-    const p = state.pend;
-    if (!p) return condNow();
-    return p.city === state.city ? condNow() : conditionOf(venueForCity(state, p.city));
-  };
-  const pickPend = (kind: 'oshi' | 'city' | 'seat', v: string): void => {
+  /** 選んでいる最中の条件（市は久留米市に固定なので、いまの条件のまま）。 */
+  const pendCond = (): Condition => condNow();
+  const pickPend = (kind: 'oshi' | 'seat', v: string): void => {
     const p = state.pend;
     if (!p) return;
     const next = {
       ...p,
       ...(kind === 'oshi' ? { oshiId: v as Pend['oshiId'] } : {}),
-      ...(kind === 'city' ? { city: v as Pend['city'] } : {}),
       ...(kind === 'seat' ? { seat: v as Pend['seat'] } : {}),
     };
     // 条件がそろっていないコースは選べない（選んでいたら、通常の席に戻す）
-    const pc = next.city === state.city ? condNow() : conditionOf(venueForCity(state, next.city));
-    const k = pc.courses.find((c) => c.id === next.seat);
+    const k = condNow().courses.find((c) => c.id === next.seat);
     if (!k || !canApply(k, state.acct.deposit, state.acct.pay)) next.seat = 'normal';
     set({ pend: next });
   };
@@ -927,25 +858,15 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
    * 条件を変える。開いた特典・達成の記録・呼んだ仲間の数・口座の設定は残し、
    * 申し込み（確保額）・80% の演出の済み・擬似の仲間・公演のメーターは、新しい条件で取り直す（共有のメーターへは送らない。決定 3）。
    */
-  const applyChange = (to?: {
-    oshiId: Pend['oshiId'];
-    venueId: Condition['venueId'];
-    seat: Pend['seat'];
-  }): void => {
-    const p = state.pend;
-    const target =
-      to ?? (p ? { oshiId: p.oshiId, venueId: venueForCity(state, p.city), seat: p.seat } : null);
+  const applyChange = (): void => {
+    const target = state.pend;
     if (!target) return;
     const before = view();
     const held = before.my?.price ?? 0;
-    const changedPid = performanceIdOf(target.oshiId, target.venueId) !== pidNow();
-    const venueCond = conditionOf(target.venueId);
+    const changedPid = performanceIdOf(target.oshiId, FAN_VENUE_ID) !== pidNow();
     set({
       oshiId: target.oshiId,
       seat: target.seat,
-      venueId: target.venueId,
-      city: venueCond.city,
-      custom: true,
       course: null,
       aim: null,
       friends: 0,
@@ -997,6 +918,8 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       closeShare,
       shareTo,
       homePrimary,
+      openDeposit,
+      closeDeposit,
       callFriends,
       notifyFriends,
       closeGift,
@@ -1013,7 +936,6 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       resetFanQuiet,
       resetForIdle,
       serverReset,
-      applyOffice,
       openCancel,
       closeCancel,
       doCancel,

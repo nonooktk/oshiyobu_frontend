@@ -1,8 +1,7 @@
 // 貢献（SP-45）と、推し・条件の変更（SP-49。デモ用の操作）。メニュー配下の画面（あとから読む側）。
 import type { CSSProperties } from 'react';
-import { CITY_NAMES, ARTIST_IDS, areaFor, canApply, conditionOf } from '../../core';
+import { ARTIST_IDS, areaFor, canApply } from '../../core';
 import { ARTISTS_VIEW, artistView } from '../art/registry';
-import { useLinkedOffice } from '../../shared/link';
 import { Av, GiftArt } from '../components/Art';
 import { ACT_IDS } from '../domain/state';
 import { courseOf, nextViewOf, restText, slotsText } from '../domain/view';
@@ -180,31 +179,23 @@ export function ContribPage() {
 /** 推し・条件の変更（デモ用の操作）。変えると、引き継ぎのシートが開く。 */
 export function OptPage() {
   const { state, view, actions } = useFan();
-  const office = useLinkedOffice();
-  const pend = state.pend ?? { oshiId: state.oshiId, city: state.city, seat: state.seat };
+  const pend = state.pend ?? { oshiId: state.oshiId, seat: state.seat };
   const pc = actions.pendCond();
   const { deposit, pay } = state.acct;
   const locked = pc.courses.filter((k) => !canApply(k, deposit, pay));
-  const changed =
-    pend.oshiId !== state.oshiId || pend.city !== view.cond.city || pend.seat !== state.seat;
+  const changed = pend.oshiId !== state.oshiId || pend.seat !== state.seat;
   const nk = courseOf(pc, pend.seat);
   const held = view.my?.price ?? 0;
   const diff: string[] = [];
   if (pend.oshiId !== state.oshiId)
     diff.push(`推し ${artistView(state.oshiId).name} → ${artistView(pend.oshiId).name}`);
-  if (pend.city !== view.cond.city)
-    diff.push(`市・会場 ${view.cond.city} → ${pend.city}（${pc.venue.name}）`);
   if (pend.seat !== state.seat) diff.push(`希望のコース → ${nk.name}（${yen(nk.price)}）`);
-  const syncVenue =
-    office && state.custom && office.selection.venueId !== view.cond.venueId
-      ? conditionOf(office.selection.venueId)
-      : null;
   return (
     <>
       <div className={fan.card}>
         <p className={`${styles.demoLine} ${styles.solo}`}>
           <span className={styles.demoChip}>デモ用の操作</span>
-          推し・市・コース（支払額）の変更は、デモ用です。実際は、決済が通った時点で確定します
+          推し・コース（支払額）の変更は、デモ用です。実際は、決済が通った時点で確定します
         </p>
       </div>
       <div className={fan.card}>
@@ -225,28 +216,6 @@ export function OptPage() {
             </button>
           ))}
         </div>
-      </div>
-      <div className={fan.card}>
-        <p className={fan.bigK} id="fan-op-city-h">
-          希望の市
-        </p>
-        <div className={styles.cityPick} role="group" aria-labelledby="fan-op-city-h">
-          {CITY_NAMES.map((name) => (
-            <button
-              key={name}
-              type="button"
-              className={styles.chip}
-              aria-pressed={name === pend.city}
-              onClick={() => actions.pickPend('city', name)}
-            >
-              {name}
-            </button>
-          ))}
-        </div>
-        <p className={styles.dSub}>
-          {pend.city}の会場: {pc.venue.name}（{pc.venue.cap}
-          {pc.venue.unit}）／ {pc.venue.day}（架空）
-        </p>
       </div>
       <div className={fan.card}>
         <p className={fan.bigK} id="fan-op-seat-h">
@@ -312,21 +281,6 @@ export function OptPage() {
         >
           この条件に変える（デモ用）
         </button>
-        {syncVenue ? (
-          <button
-            type="button"
-            className={`${fan.btn} ${fan.btnText} ${fan.btnSm} ${fan.btnFull}`}
-            onClick={() =>
-              actions.applyChange({
-                oshiId: state.oshiId,
-                venueId: syncVenue.venueId,
-                seat: 'normal',
-              })
-            }
-          >
-            事務所向けで選んだ条件に合わせる（{syncVenue.city}・{syncVenue.venue.name}）
-          </button>
-        ) : null}
       </div>
     </>
   );

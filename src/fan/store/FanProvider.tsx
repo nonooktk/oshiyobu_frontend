@@ -13,7 +13,7 @@ import {
 import type { ReactNode } from 'react';
 import { performanceIdOf } from '../../core';
 import { useEffectiveCondition } from '../../shared/condition';
-import { onResetAll, useLinkedOffice } from '../../shared/link';
+import { onResetAll } from '../../shared/link';
 import {
   isSoloMeter,
   joinPerformance,
@@ -96,11 +96,6 @@ export function FanProvider({ store, children }: Props) {
     };
     return createFanLifecycle({ resetForIdle, resetQuiet: resetFanQuiet, notice }).dispose;
   }, [store]);
-  // 事務所向けと連動したら、まだ選び直していない初めの値を、事務所向けの会場に合わせる
-  const officeVenue = useLinkedOffice()?.selection.venueId ?? null;
-  useEffect(() => {
-    store.actions.applyOffice(officeVenue);
-  }, [store, officeVenue]);
 
   // 称賛の音: オン・オフを合わせる。利用者の操作（押す・キーを押す）のあとにだけ、鳴らせるようにする（自動再生の制限）
   useEffect(() => {

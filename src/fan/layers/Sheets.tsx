@@ -8,6 +8,7 @@ import { yen } from '../text/format';
 import fan from '../fan.module.css';
 import { useFan } from '../store/FanProvider';
 import pages from '../pages/pages.module.css';
+import { DepositCard } from '../pages/DepositCard';
 
 /** 申し込みをやめる確認。戻る金額と、残るもの。成立後・未申し込みは「戻る」だけ。 */
 export function CancelBody() {
@@ -133,6 +134,25 @@ export function CarryBody() {
           onClick={actions.closeCarry}
         >
           ホームへ
+        </button>
+      </div>
+    </>
+  );
+}
+
+/** 預金を積み増す額の入力（ホームの主のボタン・次のアクションから開く）。条件に届くと、自動で閉じる。 */
+export function DepositBody() {
+  const { actions } = useFan();
+  return (
+    <>
+      <DepositCard title="預金を積み増す" desc="積み増す額を決めます。" primary />
+      <div className={fan.sheetBtns}>
+        <button
+          type="button"
+          className={`${fan.btn} ${fan.btnFull}`}
+          onClick={actions.closeDeposit}
+        >
+          閉じる
         </button>
       </div>
     </>

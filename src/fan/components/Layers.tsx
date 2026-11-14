@@ -139,31 +139,17 @@ export function FxLayer({ fx, inert }: { fx: FxSpec; inert: boolean }) {
   );
 }
 
-/** 条件の達成のエフェクト（画面いっぱい。操作は止めない。押す・キーを押すと消える）。 */
+/** 行動の直後の短い称賛（控えめな札。操作は止めない）。あなたがしたこと → それで何が進んだか。 */
 export function AchLayer({ ach }: { ach: AchSpec }) {
-  const { state } = useFan();
-  const all = ach.kind === 'all';
-  const o = artistView(state.oshiId);
   return (
     <div
-      className={all ? `${styles.ach} ${styles.achAll}` : styles.ach}
+      className={styles.achCard}
       aria-hidden="true"
       data-layer="ach"
-      style={vars({ '--ach-ms': `${ach.ms}ms`, '--ach-size': `${all ? 100 : 104}px` })}
+      style={vars({ '--ach-ms': `${ach.ms}ms` })}
     >
-      <div className={styles.dim} />
-      <div className={styles.lines} />
-      <Confetti list={ach.confetti} />
-      <div className={styles.achC}>
-        <b className={styles.achT}>{ach.title}</b>
-        {ach.title2 ? <b className={`${styles.achT} ${styles.l2}`}>{ach.title2}</b> : null}
-        {ach.small ? <span className={styles.achS}>{ach.small}</span> : null}
-        {all ? <Av a={o} className={styles.achAv} /> : null}
-        <span className={styles.achP}>{ach.sub}</span>
-      </div>
-      {ach.flash ? <div className={styles.flash} /> : null}
-      <span className={`${styles.chip} ${styles.fxNotice}`}>{DEMO_NOTICE_TEXT}</span>
-      <span className={`${styles.chip} ${styles.fxChip}`}>デモ用の架空データ</span>
+      <b className={styles.achT}>{ach.title}</b>
+      <span className={styles.achP}>{ach.sub}</span>
     </div>
   );
 }

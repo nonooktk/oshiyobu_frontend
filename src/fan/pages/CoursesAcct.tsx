@@ -155,7 +155,7 @@ const ACCT_DEF: Record<AcctId, { title?: string; btn: string; desc: string; tag?
   teiki: {
     title: '推し活定期をはじめる',
     btn: '推し活定期をはじめる',
-    desc: '毎月の積立で、推し活の資金をためていきます。預金が増えます。',
+    desc: '押すと、デモの中で、口座が使える状態になります。入力や本人確認は要りません。実際の手続きは行われません。毎月の積立で、推し活の資金をためていきます。',
     tag: '口座をお持ちでない方の入口',
   },
 };
@@ -192,7 +192,9 @@ export function AcctPage() {
     return 100;
   };
   const acctDone = (id: AcctId): boolean => actions.acctDone(id);
-  const primary = (['main', 'deposit', 'teiki'] as const).find((id) =>
+  // 流れは、推し活定期をはじめる → メイン口座（条件にあるコースのとき）→ 預金を積み増す。口座を使う行動は、はじめたあとから
+  const started = !!state.done.teiki;
+  const primary = (['teiki', 'main', 'deposit'] as const).find((id) =>
     id === 'deposit' ? !state.done.deposit : !acctDone(id),
   );
   const rowsOf = (id: AcctId): [string, string][] => {
@@ -202,12 +204,11 @@ export function AcctPage() {
         ['開くコース', opensText(cond, d, d, p, true)],
       ];
     return [
+      ['口座', '使えない → 使える（デモ用）'],
       [
         '毎月の積立',
         `毎月${yen(TEIKI.monthlyYen)}、${TEIKI.months}か月で${yen(TEIKI.monthlyYen * TEIKI.months)}`,
       ],
-      ['預金（最初の積立）', `${yen(d)} → ${yen(d + TEIKI.monthlyYen)}`],
-      ['開くコース', opensText(cond, d, d + TEIKI.monthlyYen, p, p)],
     ];
   };
   return (
@@ -254,8 +255,20 @@ export function AcctPage() {
         </dl>
       </div>
       <div className={styles.stack}>
-        {(['main', 'deposit', 'teiki'] as const).map((id) => {
+        {(['teiki', 'main', 'deposit'] as const).map((id) => {
           const def = ACCT_DEF[id];
+          // 口座を使う行動は、推し活定期をはじめたあとから
+          if (id !== 'teiki' && !started)
+            return (
+              <div key={id} className={fan.card} id={`ac-${id}`}>
+                <h3 className={styles.actH} id={`fan-ac-${id}-h`}>
+                  {def.title ?? def.btn}
+                </h3>
+                <p className={styles.actD}>
+                  先に、推し活定期をはじめます。そのあと、できるようになります。
+                </p>
+              </div>
+            );
           // 預金は、決まった額でなく、利用者が入れた額を足す（入力欄・足すボタン・よく使う額のボタン）
           if (id === 'deposit')
             return (
@@ -269,12 +282,7 @@ export function AcctPage() {
               <h3 className={styles.actH} id={`fan-ac-${id}-h`} tabIndex={-1}>
                 {def.title ?? ''}
               </h3>
-              <p className={styles.actD}>
-                {def.desc}
-                {id === 'teiki'
-                  ? 'このデモの登場人物は、すでに口座を持っています。入口の流れだけ、擬似的に体験できます。'
-                  : ''}
-              </p>
+              <p className={styles.actD}>{def.desc}</p>
               {done ? null : (
                 <>
                   <p className={styles.before}>押すと、こうなります</p>

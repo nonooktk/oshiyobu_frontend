@@ -450,19 +450,20 @@
   background: var(--ink);
 }
 /*
-  棒の色は、満タンのときの長さに対して固定の虹（青 → 水色 → 緑 → 黄 → 橙 → 赤）。長さが伸びるほど、色が足されて、FEVER（満タン）で全体が虹色になる。
+  棒の色は、満タンのときの長さに対して固定の虹（紫 → 青 → 水色 → 緑 → 黄 → 橙 → 赤）。紫は、棒の左端（--rainbow-violet。ファン向けの中だけで使う）。長さが伸びるほど、色が足されて、FEVER（満タン）で全体が虹色になる。
   色は、tokens.css にある値だけ（新しい色は足していない。緑と橙は、--success・--warning の値を借りた）。
 */
 .gTrough,
 .barH {
   --rainbow: linear-gradient(
     90deg,
-    var(--primary) 0%,
-    var(--sky) 18%,
-    var(--sky-light) 34%,
-    var(--success) 50%,
-    var(--yellow) 66%,
-    var(--warning) 82%,
+    var(--rainbow-violet) 0%,
+    var(--primary) 14%,
+    var(--sky) 29%,
+    var(--sky-light) 43%,
+    var(--success) 57%,
+    var(--yellow) 71%,
+    var(--warning) 86%,
     var(--heat-3) 100%
   );
 }
@@ -820,67 +821,6 @@
 }
 .stArt[aria-pressed='true'] .stArtCk {
   display: grid;
-}
-.stCities {
-  flex: 1 1 0;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-auto-rows: minmax(72px, 1fr);
-  gap: var(--s2);
-}
-.stCity {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  min-width: 0;
-  min-height: 0;
-  padding: var(--s1);
-  border: 1px solid var(--primary);
-  border-radius: var(--r);
-  background: var(--surface);
-  color: var(--primary);
-  font: inherit;
-  font-size: var(--fs-body);
-  font-weight: 700;
-  line-height: var(--lh-tight);
-  cursor: pointer;
-}
-.stCity:hover {
-  background: var(--bg-c);
-}
-.stCity[aria-pressed='true'] {
-  border-width: 3px;
-  padding: 2px;
-  background: var(--primary);
-  color: var(--surface);
-}
-.stCity svg {
-  flex: 1 1 0;
-  min-height: 0;
-  width: 100%;
-  max-height: 72px;
-}
-.kyUse {
-  fill: var(--bg-c);
-  stroke: var(--gray-300);
-  stroke-width: 1.2px;
-}
-.kyDot {
-  fill: var(--primary);
-  stroke: var(--surface);
-  stroke-width: 2px;
-  vector-effect: non-scaling-stroke;
-}
-.stCity[aria-pressed='true'] .kyUse {
-  fill: var(--surface);
-  stroke: var(--sky-light);
-}
-.stCity[aria-pressed='true'] .kyDot {
-  fill: var(--yellow);
-  stroke: var(--ink);
 }
 .stVenue {
   margin: 0;
@@ -1972,122 +1912,47 @@ button.rcard:hover {
   }
 }
 
-/* 条件の達成のエフェクト（画面いっぱい。操作は止めない。押す・キーを押すと消える） */
-.ach {
+/* 行動の直後の短い称賛（推し活定期をはじめた・預金を積み増した・メイン口座にした）。控えめな札。操作は止めない */
+.achCard {
   position: absolute;
-  inset: 0;
+  left: var(--s3);
+  right: var(--s3);
+  top: 150px;
   z-index: 50;
-  overflow: hidden;
-  pointer-events: none;
-  animation: achLife var(--ach-ms, 1.6s) linear both;
-}
-.ach > * {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-.ach .conf i {
-  top: -24px;
-}
-.ach .flash {
-  animation: achFlash 0.45s ease-out both;
-}
-.achC {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--s2);
-  padding: 0 var(--s3) 8%;
+  gap: 2px;
+  padding: var(--s2) var(--s3);
+  border: 2px solid var(--yellow);
+  border-radius: var(--r);
+  background: var(--surface);
   text-align: center;
-  animation: achTxt var(--ach-ms, 1.6s) linear both;
+  pointer-events: none;
+  animation: achLife var(--ach-ms, 2.6s) linear both;
 }
 .achT {
-  display: block;
-  font-size: var(--ach-size, 100px);
+  font-size: var(--fs-body);
   font-weight: 700;
-  line-height: 1.05;
-  color: var(--yellow-light);
-  white-space: nowrap;
-  -webkit-text-stroke: 10px var(--ink);
-  paint-order: stroke fill;
-  animation: titleIn 0.45s cubic-bezier(0.2, 1.3, 0.4, 1) 0.08s both;
-}
-.achT.l2 {
-  font-size: 44px;
-  -webkit-text-stroke-width: 7px;
-  margin-top: -4px;
-  animation-delay: 0.2s;
-}
-.achAll .achT:not(.l2) {
-  animation:
-    titleIn 0.45s cubic-bezier(0.2, 1.3, 0.4, 1) 0.08s both,
-    shake 0.1s linear 0.6s 6 alternate;
-}
-.achS {
-  margin-top: var(--s1);
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1.3;
-  color: var(--surface);
-  letter-spacing: 0.08em;
-  animation: fadeIn 0.25s 0.28s both;
+  line-height: var(--lh-tight);
+  color: var(--ink);
 }
 .achP {
-  display: inline-block;
-  max-width: 100%;
-  padding: var(--s2) var(--s4);
-  border: 4px solid var(--yellow);
-  border-radius: var(--pill);
-  background: var(--surface);
-  color: var(--primary-dark);
-  font-size: 20px;
+  font-size: var(--fs-body);
   font-weight: 700;
-  line-height: 1.3;
-  animation: subIn 0.4s cubic-bezier(0.2, 1.3, 0.4, 1) 0.38s both;
-}
-.achAv {
-  width: 104px;
-  height: 104px;
-  border: 5px solid var(--yellow);
-  border-radius: 50%;
-  font-size: 44px;
-  animation: avPop 0.5s cubic-bezier(0.2, 1.5, 0.4, 1) 0.3s both;
+  line-height: var(--lh-tight);
+  color: var(--primary-dark);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 @keyframes achLife {
-  0%,
-  68% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-@keyframes achTxt {
-  0%,
-  58% {
-    opacity: 1;
-  }
-  80%,
-  100% {
-    opacity: 0;
-  }
-}
-@keyframes achFade {
   0% {
     opacity: 0;
+    transform: translateY(-8px);
   }
-  15%,
-  80% {
+  10%,
+  75% {
     opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-@keyframes achFlash {
-  0% {
-    opacity: 0.8;
+    transform: none;
   }
   100% {
     opacity: 0;
@@ -2282,15 +2147,7 @@ button.rcard:hover {
   .thanksCard {
     animation: fadeIn 0.3s both;
   }
-  .ach {
-    animation: achFade var(--ach-ms, 1.2s) linear both;
-  }
-  .achC,
-  .achT,
-  .achAll .achT:not(.l2),
-  .achS,
-  .achP,
-  .achAv {
+  .achCard {
     animation: none;
   }
   .ck li.got,

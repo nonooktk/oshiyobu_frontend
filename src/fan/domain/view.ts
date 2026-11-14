@@ -1,6 +1,6 @@
 // ファン向けの、いまの状態から決まる値（人数・達成率・成立・次のアクションなど）。
 // 数字・成立の判定は core の関数だけを使う（画面の側で同じ式を書かない）。
-import { TEIKI, canApply, nextDepositTarget, restParts, supportStatus } from '../../core';
+import { TEIKI, canApply, restParts, supportStatus } from '../../core';
 import type { Condition, CourseId, CourseOffer, SupportStatus } from '../../core';
 import { heatOf } from './heat';
 import type { Heat } from './heat';
@@ -86,6 +86,10 @@ export function viewOf(fan: Fan, cond: Condition, meter: MeterIn, solo = false):
     friendsClinch: solo && joined && friendsToClinch(fan, cond, meter) !== null,
   };
 }
+
+/** 目指すコースの預金の条件に、あといくら足りないか（自分の預金の話。0 なら足りている）。 */
+export const depositGapOf = (k: CourseOffer, deposit: number): number =>
+  Math.max(0, k.deposit - deposit);
 
 export const canApplyOf = (v: FanView, k: CourseOffer): boolean =>
   canApply(k, v.fan.acct.deposit, v.fan.acct.pay);
@@ -195,7 +199,7 @@ const heatAfterJoin = (v: FanView): Heat =>
 
 /** 次のアクション（SP-42）。いまできる行動の一覧と、ホームの 2 行目に出す 1 行。 */
 export function nextViewOf(v: FanView): NextView {
-  const { fan, cond, status } = v;
+  const { fan, status } = v;
   const { deposit: d, pay: p } = fan.acct;
   const rows: NextRow[] = [];
 
@@ -204,10 +208,33 @@ export function nextViewOf(v: FanView): NextView {
     if (!t) throw new Error('申し込む前は、目指すコースがあります');
     const ok = canApplyOf(v, t);
     const needMain = t.mainAccount && !p;
-    const to = nextDepositTarget(d);
     const after = heatAfterJoin(v);
     const afterJoin = after.stage > v.heat.stage ? `${after.name}へ進みます` : '熱が高まります';
-    if (ok) {
+    // 流れ: 推し活定期をはじめる（口座が使える）→ メイン口座にする（条件にあるとき）→ 預金を積み増す → 申し込む。いまやる 1 つだけが並ぶ
+    if (!fan.done.teiki) {
+      rows.push({
+        id: 'teiki',
+        label: '推し活定期をはじめる',
+        why: [
+          `預金を積み増せるようになります。毎月 ${yen(TEIKI.monthlyYen)}の積立です（デモ用の操作）`,
+        ],
+        hint: '',
+      });
+    } else if (needMain) {
+      rows.push({
+        id: 'main',
+        label: 'メイン口座にする',
+        why: [`${t.name}の条件の 1 つです（預金は変わりません）`],
+        hint: '',
+      });
+    } else if (!ok) {
+      rows.push({
+        id: 'deposit',
+        label: '預金を積み増す',
+        why: [`${t.name}まで、あと ${yen(Math.max(0, t.deposit - d))}。額は、入力で決めます`],
+        hint: '',
+      });
+    } else {
       rows.push({
         id: 'apply',
         label: `${t.name}に申し込む`,
@@ -215,40 +242,6 @@ export function nextViewOf(v: FanView): NextView {
         hint: '',
       });
     }
-    const mainRow: NextRow = {
-      id: 'main',
-      label: 'メイン口座にする',
-      why: [
-        needMain
-          ? `${t.name}の条件の 1 つです（預金は変わりません）`
-          : `${cond.courses
-              .filter((k) => k.mainAccount)
-              .map((k) => k.name)
-              .join('・')}の条件の 1 つです（預金は変わりません）`,
-      ],
-      hint: '',
-    };
-    if (!p && needMain) rows.push(mainRow);
-    if (to !== undefined) {
-      rows.push({
-        id: 'deposit',
-        label: `預金を積み増す ＋${yen(to - d)}`,
-        why: [{ nw: `預金 ${yen(d)} → ${yen(to)}` }, `。${opensSentence(cond, d, to, p, p)}`],
-        hint: '',
-      });
-    }
-    if (!fan.done.teiki) {
-      rows.push({
-        id: 'teiki',
-        label: '推し活定期をはじめる',
-        why: [
-          `毎月 ${yen(TEIKI.monthlyYen)}。`,
-          { nw: `預金 ${yen(d)} → ${yen(d + TEIKI.monthlyYen)}` },
-        ],
-        hint: '',
-      });
-    }
-    if (!p && !needMain) rows.push(mainRow);
     const hint = ok
       ? `申し込む → ${after.stage > v.heat.stage ? `${after.name}へ` : '熱が高まります'}（${yen(t.price)}）`
       : `${t.name}まで、残りは ${restText(t, d, p)}`;
@@ -338,15 +331,15 @@ export function homeActionOf(v: FanView): HomeAction {
       return {
         id,
         label: 'メイン口座にする',
-        sub: '→ 申し込みの条件の 1 つです',
+        sub: '→ 申し込めるようになります',
         hint: '押すと、メイン口座にします（擬似）',
       };
     case 'teiki':
       return {
         id,
         label: '推し活定期をはじめる',
-        sub: '→ 申し込みの条件に近づきます',
-        hint: '押すと、推し活定期をはじめます（擬似）',
+        sub: '→ 預金を積み増せるようになります',
+        hint: '押すと、推し活定期をはじめます。デモ用の操作で、実際の手続きは行われません',
       };
     case 'friend': {
       const clinch = v.friendsClinch || v.status.friendClinches;
@@ -383,8 +376,8 @@ export function homeActionOf(v: FanView): HomeAction {
       return {
         id: 'deposit',
         label: '預金を積み増す',
-        sub: '→ 申し込みの条件に近づきます',
-        hint: '押すと、口座と預金の画面で、積み増す額を決めます',
+        sub: '→ 申し込めるようになります',
+        hint: '押すと、積み増す額の入力が開きます',
       };
   }
 }

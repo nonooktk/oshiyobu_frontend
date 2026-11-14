@@ -120,3 +120,28 @@ export function startBackground(command, args, options = {}) {
     },
   };
 }
+
+// 中断（Ctrl + C など）されたときに、自分が起動したものを片づけるための登録。
+// 起動した API・配るサーバー・ブラウザは、中断されても残さない（終わったら、返り値の関数で登録を外す）
+const interruptCleanups = new Set();
+let interruptInstalled = false;
+
+export function onInterrupt(cleanup) {
+  interruptCleanups.add(cleanup);
+  if (!interruptInstalled) {
+    interruptInstalled = true;
+    const handler = async () => {
+      for (const fn of [...interruptCleanups]) {
+        try {
+          await fn();
+        } catch {
+          // 片づけに失敗しても、ほかの片づけを続ける
+        }
+      }
+      process.exit(130);
+    };
+    process.on('SIGINT', handler);
+    process.on('SIGTERM', handler);
+  }
+  return () => interruptCleanups.delete(cleanup);
+}

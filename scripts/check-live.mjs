@@ -24,7 +24,14 @@ import {
   maskUrls,
   renderReport,
 } from './accept-lib.mjs';
-import { isMain, isPortFree, runNpm, startBackground, waitForHttp } from './accept-run.mjs';
+import {
+  isMain,
+  isPortFree,
+  onInterrupt,
+  runNpm,
+  startBackground,
+  waitForHttp,
+} from './accept-run.mjs';
 import { isMeterUrl, judgeLiveMeter } from './api-check-lib.mjs';
 import { ROOT } from './core-lib.mjs';
 
@@ -124,6 +131,12 @@ export async function runCheckLive({
   const items = [];
   let server = null;
   let browser = null;
+  // 自分が起動した配るサーバーとブラウザは、終わったときも、中断されたときも、自分で止める
+  const closeAll = async () => {
+    if (browser) await browser.close().catch(() => {});
+    if (server) await server.stop();
+  };
+  const unregister = onInterrupt(closeAll);
   try {
     let base = publishedBase;
     if (!published) {
@@ -227,8 +240,8 @@ export async function runCheckLive({
     );
     return items;
   } finally {
-    if (browser) await browser.close();
-    if (server) await server.stop();
+    unregister();
+    await closeAll();
   }
 }
 

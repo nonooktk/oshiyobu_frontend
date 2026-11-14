@@ -14,6 +14,7 @@ import { DEFAULT_API_PORT, DEFAULT_WEB_PORT } from './accept-lib.mjs';
 import {
   isMain,
   isPortFree,
+  onInterrupt,
   runCommand,
   runNpm,
   startBackground,
@@ -80,9 +81,12 @@ export async function startLocalApi({
     },
   });
   const stop = async () => {
+    unregister();
     await server.stop();
     rmSync(dataDir, { recursive: true, force: true });
   };
+  // 中断されたときも、起動した API を止めて、データを消す
+  const unregister = onInterrupt(stop);
   const origin = `http://127.0.0.1:${port}`;
   if (!(await waitForHttp(`${origin}/healthz`, { isAlive: server.isAlive, timeoutMs: 20_000 }))) {
     const output = server.output();
@@ -115,11 +119,6 @@ if (isMain(import.meta.url)) {
   }
   console.log(`手元の API を起動しました: ${api.origin}`);
   console.log(`画面の接続元として許しているのは ${api.webOrigin} だけです。止めるときは Ctrl + C`);
-  const shutdown = async () => {
-    await api.stop();
-    process.exit(0);
-  };
-  process.on('SIGINT', shutdown);
-  process.on('SIGTERM', shutdown);
+  // 止めるのは Ctrl + C（startLocalApi が登録した片づけが、API を止めて、データを消す）
   await new Promise(() => {});
 }

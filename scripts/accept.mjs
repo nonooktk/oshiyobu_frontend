@@ -52,11 +52,6 @@ if (isMain(import.meta.url)) {
     if (local) await local.stop();
     local = null;
   };
-  process.on('SIGINT', async () => {
-    await stopLocal();
-    process.exit(130);
-  });
-
   // ① 手元の検査
   console.log('【1/3】手元の検査（npm run verify）を実行します');
   const verifyItems = await runVerify({ echo: true });

@@ -42,14 +42,14 @@ useEffect(() => onResetAll(resetFan), []); // resetFan は F-2 が作る（人�
 const meter = useSharedMeter(performanceId);                  // { joined, status, mineCounted, resetEpoch }。ホーム以降で呼ぶ（2 秒おきに取る）
 const meter = useSharedMeter(performanceId, { poll: false }); // 値を読むだけの画面（はじめの画面）。2 秒おきには取らない
 joinPerformance(performanceId);                               // 申し込み。すぐ戻る。失敗しても例外を投げない。再送は内側
-requestMeterFetch('open' | 'course-select' | 'performance-changed'); // 取得の契機（D-18 の規則 8）
+requestMeterFetch('open' | 'course-select' | 'performance-changed', performanceId?); // 取得の契機（D-18 の規則 8）。公演を渡すと、その公演を取る
 onMeterReset(() => { /* 自分の加算・擬似の仲間の加算を消す */ });
 ```
 
 - `joined` は、サーバーの申し込みの件数（0 から。開始人数は含まない）。表示する人数は、core の
   `displayedCount(condition.start, { serverJoined: meter.joined, counted: meter.mineCounted, joined: 申し込み済みか, pseudoFriends })` で出します
 - `resetEpoch` が増えたら reset があったので、「自分の加算・擬似の仲間の加算」を消します（達成した行動・開いた特典・呼んだ仲間・口座・演出の済みは変えません。D-18 の規則 10）。`mineCounted` は内側で false に戻ります。reset のあとは、同じコースをもう一度押せます（`joinPerformance` を呼び直す）
-- 取得の契機: ① ファン向けを開いた直後に `requestMeterFetch('open')`（0〜1 秒のゆらぎ）② 3/3 に入ったとき `'course-select'` ③ 推し・市を選び直したとき `'performance-changed'`。④ ホーム以降は `useSharedMeter` が 2 秒おきに取る。どの契機も、前の取得の開始から 1.8 秒未満では送りません。公演が分かる前（`useSharedMeter` を呼ぶ前）の依頼は、覚えておいて、公演が分かったら取ります
+- 取得の契機: ① ファン向けを開いた直後に `requestMeterFetch('open')`（0〜1 秒のゆらぎ）② 3/3 に入ったとき `'course-select'`（はじめの画面で選び直して、まだ確定していない公演は、`performanceId` で渡す。見ている公演は古いままのことがある。G2-04）③ 推し・市を選び直したとき `'performance-changed'`。④ ホーム以降は `useSharedMeter` が 2 秒おきに取る。どの契機も、前の取得の開始から 1.8 秒未満では送りません。公演が分かる前（`useSharedMeter` を呼ぶ前）の依頼は、覚えておいて、公演が分かったら取ります
 - 隠れている間・回線が切れている間は取りません（戻ったら 1 回すぐ）。失敗が続くと 2 → 4 → 8 → 10 秒と間隔を空け、止めません。待ちは 8 秒で、遅れて届いた応答も使います
 - 画面の部品から `fetch` を呼びません（ESLint が止めます）。通信は `src/shared/meter/` の中だけです
 - **接続先**: ビルド時の環境変数 `VITE_API_BASE`（例: `https://api.example.test`）で渡します。**未設定なら、サーバーなしで動きます**（`joined` は 0、`status` は `offline`、通信しない）。設定してビルドすると、ファン向けの HTML に `preconnect` が入ります

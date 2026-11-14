@@ -10,6 +10,8 @@ import {
   minHelp,
   minResetLabel,
   needText,
+  QUAD_NAMES,
+  QUAD_ORDER,
   ruleText,
   shortText,
   text,
@@ -112,6 +114,17 @@ function Scatter({ view }: { readonly view: OfficeView }) {
           熱量 →
         </text>
       </svg>
+      <ul className={styles.qNames} aria-hidden="true">
+        {QUAD_ORDER.map((key) => (
+          <li key={key} className={key === 'hotRich' ? styles.hot : undefined}>
+            <span className={styles.qName}>{QUAD_NAMES[key]}</span>
+            <span className={styles.qNum} data-testid={`quad-${key}`}>
+              {key === 'hotRich' ? view.expected : demand.people[key]}
+              <small>人</small>
+            </span>
+          </li>
+        ))}
+      </ul>
       <p className={styles.qUnit}>● 1点 ≒ {demand.perDot}人</p>
     </section>
   );

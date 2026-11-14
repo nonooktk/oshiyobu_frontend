@@ -70,6 +70,15 @@ export const text = {
   noneCost: '（会場を選ぶと入ります）',
 } as const;
 
+/** 4 象限の名前（要件 R-11。仕様 3.2 の案）。並びは、図の左上・右上・左下・右下 */
+export const QUAD_ORDER = ['hotPoor', 'hotRich', 'coolPoor', 'coolRich'] as const;
+export const QUAD_NAMES: Readonly<Record<(typeof QUAD_ORDER)[number], string>> = {
+  hotRich: 'いま呼べる',
+  hotPoor: '熱いが資金が足りない',
+  coolRich: '資金はあるが熱が低い',
+  coolPoor: 'どちらも低い',
+};
+
 export const capChip = (need: number, cap: number, unit: string): string =>
   need <= cap ? `キャパ ${cap}${unit}に収まる` : `キャパ ${cap}${unit}を超える`;
 

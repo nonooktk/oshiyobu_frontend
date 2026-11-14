@@ -143,10 +143,19 @@ export function createMeterEngine(deps: EngineDeps): MeterEngine {
     setStatus('failing');
   };
 
-  /** 応答を反映する。古い連番の応答だけ捨てる。reset の検知は D-18 の規則 10 */
+  /** 応答を反映する。古い連番の応答は、人数を反映せず捨てる（例外は下）。reset の検知は D-18 の規則 10 */
   const apply = (pid: PerformanceId, seq: number, meter: MeterResponse, isJoin: boolean): void => {
     const state = stateOf(pid);
-    if (seq < state.applied) return;
+    if (seq < state.applied) {
+      // 申し込みの応答が、あとに出した取得の応答より遅く着いたとき。人数は新しい応答のままにするが、
+      // 「自分が数えられた」印だけは立てる。立てないと、サーバーの人数に入った自分の分を、表示でもう 1 回足し、
+      // reset でも戻らない（G2-01）。resetAt が基準と違う応答は、戻す前の申し込みなので、これまでどおり捨てる
+      if (isJoin && meter.resetAt === state.baseline && !state.mineCounted) {
+        state.mineCounted = true;
+        publish(pid);
+      }
+      return;
+    }
     state.applied = seq;
     if (state.baseline === undefined) {
       state.baseline = meter.resetAt;

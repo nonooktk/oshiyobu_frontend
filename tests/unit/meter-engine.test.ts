@@ -501,6 +501,101 @@ describe('共有メーターの仕組み', () => {
     });
   });
 
+  // 申し込み（POST）の応答が、あとから出した取得（GET）の応答より遅く着くと、古い連番として捨てられ、
+  // 「数えられた印」が立たなかった。自分の分が二重になり、reset でも戻らなかった（要件 F-38・F-40。D-18 の規則 4・10）
+  describe('申し込みの応答が、あとに出した取得の応答より遅く着くとき（G2-01）', () => {
+    /** 表示の人数（初めの支援者 74 人から。自分の申し込みを端末の中で足した形） */
+    const shown = (mine: boolean): number => {
+      const meter = engine.getSnapshot(PID);
+      return displayedCount(74, {
+        serverJoined: meter.joined,
+        counted: meter.mineCounted,
+        joined: mine,
+        pseudoFriends: 0,
+      });
+    };
+    /**
+     * 申し込みだけが遅い通信: 申し込み（連番 1）を 3 秒後に数えて応答する。
+     * その間に 2 秒おきの取得（連番 2）が先に返り、そのあと 3 秒の時点で、申し込みの応答が古い連番で着く。
+     */
+    const joinWithSlowResponse = async (): Promise<void> => {
+      engine.subscribe(PID);
+      api.latency = 3000;
+      engine.join(PID);
+      api.latency = 0;
+      await advance(POLL_MS + 10); // 2 秒: 取得が先に返る。サーバーは、まだ自分を数えていない
+      expect(engine.getSnapshot(PID)).toMatchObject({ joined: 0, mineCounted: false });
+      await advance(1000); // 3 秒: 申し込みの応答が着く
+    };
+
+    it('数えられた印が立つ。人数は新しい取得の応答のまま。次の取得のあとも自分の分を二重に数えない（75 人。76 人にならない）', async () => {
+      await joinWithSlowResponse();
+      expect(engine.getSnapshot(PID)).toMatchObject({ joined: 0, mineCounted: true });
+      await advance(POLL_MS); // 次の取得: サーバーの人数に自分が入る
+      expect(engine.getSnapshot(PID)).toMatchObject({ joined: 1, mineCounted: true });
+      expect(shown(true)).toBe(75);
+    });
+
+    it('応答の counted が false（前に数えられていた端末の 2 回目）でも、数えられた印が立つ', async () => {
+      api.devices.add(DEVICE);
+      api.joined = 1;
+      engine.subscribe(PID);
+      api.latency = 3000;
+      engine.join(PID);
+      api.latency = 0;
+      await advance(POLL_MS + 10 + 1000);
+      expect(engine.getSnapshot(PID)).toMatchObject({ joined: 1, mineCounted: true });
+      expect(shown(true)).toBe(75);
+    });
+
+    it('そのあとサーバーが戻すと、数えられた印が消え、reset の動きが呼ばれる（74 人に戻る）', async () => {
+      const onReset = vi.fn();
+      engine.onReset(onReset);
+      await joinWithSlowResponse();
+      expect(engine.getSnapshot(PID).mineCounted).toBe(true);
+      api.reset();
+      await advance(POLL_MS + 10);
+      expect(engine.getSnapshot(PID)).toMatchObject({
+        joined: 0,
+        mineCounted: false,
+        resetEpoch: 1,
+      });
+      expect(onReset).toHaveBeenCalledTimes(1);
+      expect(shown(false)).toBe(74);
+    });
+
+    it('戻す前に出した申し込みの応答は、戻したあとの取得より遅く着いても、数えられた印を立てない（resetAt が基準と違う応答は捨てる）', async () => {
+      // 申し込みの応答だけを止めておく偽のサーバー。サーバーは先に数え終わり、応答だけが遅れて届く
+      let release: () => void = () => undefined;
+      vi.stubGlobal('fetch', (input: string | URL | Request, init?: RequestInit) => {
+        const response = api.fetch(input, init);
+        if (init?.method !== 'POST') return response;
+        return new Promise<Response>((resolve, reject) => {
+          release = () => void response.then(resolve, reject);
+        });
+      });
+      engine.subscribe(PID);
+      await advance(POLL_MS + 10); // 最初の取得（連番 1）。基準の resetAt が決まる
+      engine.join(PID); // 連番 2。戻す前の resetAt で数えられ、応答は止められる
+      await advance(10);
+      expect(api.joined).toBe(1);
+      api.reset();
+      await advance(POLL_MS); // 戻したあとの取得（連番 3）で、reset を検知する
+      expect(engine.getSnapshot(PID)).toMatchObject({
+        joined: 0,
+        mineCounted: false,
+        resetEpoch: 1,
+      });
+      release(); // 戻す前の申し込みの応答が、ようやく着く（連番 2 < 3）
+      await advance(10);
+      expect(engine.getSnapshot(PID)).toMatchObject({
+        joined: 0,
+        mineCounted: false,
+        resetEpoch: 1,
+      });
+    });
+  });
+
   it('通信が飛んでいる間は busy（絵の先読みを始めない）', async () => {
     api.latency = 1000;
     engine.watch(PID);

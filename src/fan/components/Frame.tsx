@@ -120,7 +120,11 @@ export function SheetShell({
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className={styles.sheet} role="dialog" aria-modal="true" aria-label={title}>
-        <h2>{title}</h2>
+        {/* 札は、後ろの画面が下へスクロールされていても見えるよう、シートの中に置く（C-06） */}
+        <div className={styles.sheetHead}>
+          <h2>{title}</h2>
+          <DemoBadge />
+        </div>
         {children}
       </div>
     </div>

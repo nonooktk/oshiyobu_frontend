@@ -1,4 +1,12 @@
-/* 「デモ用の架空データ」の札。黄の面に濃紺の文字（10:1 以上） */
+/* 「動作確認用のデモ画面です」と「デモ用の架空データ」の 2 枚を、1 行に並べる（幅 320px でも 1 行に収まる） */
+.pair {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+/* 札。黄の面に濃紺の文字（10:1 以上） */
 .badge {
   display: inline-block;
   padding: 0 var(--s2);

@@ -3,6 +3,8 @@
   色・角丸・間隔・書体は、ここだけで決める。新しい色は足さない（足すときは、統括の承認を得る）。
   画面の CSS は、値を直接書かず、var(--名前) で使う。
 */
+@import './fonts.css';
+
 :root {
   --primary: #005ebb;
   --primary-dark: #004c97;
@@ -46,6 +48,17 @@
   --tap: 44px; /* 操作できる部品の最小の高さ（N-03） */
   --scrim: rgba(11, 42, 74, 0.6); /* --ink の半透明（ダイアログの背面） */
 
-  /* 書体は端末にある日本語ゴシックだけ。外部のフォントは読み込まない（N-07） */
-  --font: 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+  /*
+    書体は MOBO（fonts.css。同じサイトの /fonts/ から配る。外部のフォントは読み込まない〈N-07〉）。
+    うしろは端末にある日本語ゴシック（MOBO に無い字と、読み込み前の表示に使う）。
+    MOBO をやめるときは、先頭の 'MOBO', を消す（public/simulator.html の --font も同じ）。
+  */
+  --font:
+    'MOBO', 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+  /*
+    推し・応援の熱が出る所だけに当てる書体（Corporate Logo Rounded）。うしろは --font と同じ並び。
+    当てる場所は、src/fan/fan.module.css の 1 つの規則（一覧は docs/フォント.md）。
+    やめるときは、その規則を消す（または、ここの先頭の書体を消す）。
+  */
+  --font-display: 'Corporate Logo Rounded Bold ver3', var(--font);
 }

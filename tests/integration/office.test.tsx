@@ -283,33 +283,22 @@ describe('事務所向け', () => {
       expect(screen.queryByText(NOTE)).toBeNull();
     });
 
-    it('11 会場すべて（RISE UP 以外）に入口がある', () => {
-      const cities = [
-        ['福岡市', 3],
-        ['北九州市', 1],
-        ['久留米市', 2],
-        ['佐賀市', 1],
-        ['長崎市', 1],
-        ['熊本市', 1],
-        ['大分市', 1],
-        ['宮崎市', 1],
-        ['鹿児島市', 1],
-      ] as const;
+    it('9 市すべての会場 12 件のうち、入口があるのは 11 件。注記が出るのは RISE UP の 1 件だけ', () => {
       render(<App />);
+      let total = 0;
       let withLink = 0;
       let withNote = 0;
-      for (const [city, count] of cities) {
-        choose(city);
-        for (let i = 0; i < count; i++) {
-          const buttons = screen
-            .getByRole('heading', { name: `${city}の会場` })
-            .parentElement?.querySelectorAll<HTMLButtonElement>('ul button');
-          fireEvent.click(buttons?.[i] as HTMLButtonElement);
+      for (const dot of screen.getAllByRole('button', { name: /を選ぶ/ })) {
+        fireEvent.click(dot);
+        const heading = screen.getByRole('heading', { level: 3, name: /の会場$/ });
+        for (const venue of heading.parentElement?.querySelectorAll('li button') ?? []) {
+          fireEvent.click(venue);
+          total += 1;
           if (simulatorLink() !== null) withLink += 1;
           if (screen.queryByText(NOTE) !== null) withNote += 1;
         }
       }
-      expect([withLink, withNote]).toEqual([11, 1]);
+      expect([total, withLink, withNote]).toEqual([12, 11, 1]);
     });
   });
 

@@ -650,22 +650,23 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     achTimer = null;
     fxEnd.clear();
   };
-  /** ファン向けだけを、はじめの画面に戻す（人物の初めの値。共有のメーターには触らない）。 */
-  const resetFan = (): void => {
+  /** 初めの状態に戻す（人物の初めの値。タイマーを止めて、状態を作り直す。共有のメーターには触らない）。 */
+  const backToStart = (): void => {
     clearTimers();
     state = { ...initialState(personaNo), live: '' };
     emit();
+  };
+  /** ファン向けだけを、はじめの画面に戻す（「リセット（デモ用）」）。 */
+  const resetFan = (): void => {
+    backToStart();
     toast('ファン向けを、はじめの画面に戻しました', 4000);
     announce('ファン向けを、はじめの画面に戻しました');
   };
   /** 事務所向けの「デモを最初に戻す」を受けたとき（連動）。ファン向けの表示だけ戻す（事務所向けの帯が知らせる）。 */
   const resetFanQuiet = (): void => {
-    clearTimers();
-    state = { ...initialState(personaNo), live: '' };
-    emit();
+    backToStart();
     announce('最初に戻しました');
   };
-
   /**
    * 操作が無いまま時間がたったとき（ひとり体験）。はじめの画面のまま何も選んでいなければ、戻すものが無いので何もしない。
    * それ以外は、ファン向けを初めの状態に戻す（理由の表示は、画面が見えるときに、呼んだ側が出す）。戻したか、を返す。
@@ -673,9 +674,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
   const resetForIdle = (): boolean => {
     const s = state.start;
     if (state.page === 'start' && s !== null && s.step === 0 && !s.touched) return false;
-    clearTimers();
-    state = { ...initialState(personaNo), live: '' };
-    emit();
+    backToStart();
     return true;
   };
 

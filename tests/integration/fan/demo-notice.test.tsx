@@ -75,7 +75,6 @@ describe('ファン向けの全画面', () => {
     click(/^次のアクション/);
     click(/^SNSで広める/);
     fireEvent.click(btn('X'));
-    vi.spyOn(window, 'open').mockReturnValue(null);
     await tick(400 + 2300);
     fireEvent.click(within(layer('gift') as HTMLElement).getByRole('button', { name: '閉じる' }));
     fireEvent.click(within(layer('share') as HTMLElement).getByRole('button', { name: '閉じる' }));

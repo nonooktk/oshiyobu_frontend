@@ -58,7 +58,6 @@ export function createFanLifecycle(deps: LifecycleDeps): { dispose: () => void }
     arm();
   };
 
-  const onActivity = (): void => restart();
   const onVisibility = (): void => {
     if (!visible()) return;
     if (pendingNotice) {
@@ -77,7 +76,7 @@ export function createFanLifecycle(deps: LifecycleDeps): { dispose: () => void }
   };
 
   for (const type of ACTIVITY_EVENTS)
-    window.addEventListener(type, onActivity, { capture: true, passive: true });
+    window.addEventListener(type, restart, { capture: true, passive: true });
   document.addEventListener('visibilitychange', onVisibility);
   window.addEventListener('pagehide', onPageHide);
   window.addEventListener('pageshow', onPageShow);
@@ -87,7 +86,7 @@ export function createFanLifecycle(deps: LifecycleDeps): { dispose: () => void }
     dispose() {
       clear();
       for (const type of ACTIVITY_EVENTS)
-        window.removeEventListener(type, onActivity, { capture: true });
+        window.removeEventListener(type, restart, { capture: true });
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('pagehide', onPageHide);
       window.removeEventListener('pageshow', onPageShow);

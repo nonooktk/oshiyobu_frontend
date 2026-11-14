@@ -236,6 +236,24 @@ describe('事務所向け', () => {
     expect(within(dialog).getByText('デモ用の架空データ')).toBeTruthy();
   });
 
+  it('C-01 提案の 1 枚を開くとき、「閉じる」へ移るが、枠の中をスクロールさせない（見出し・札が上へ隠れない）', () => {
+    // jsdom にはスクロールが無いので、ブラウザの既定の動き（フォーカス先が見える位置まで枠を送る）を止める指定で確かめる。
+    // 実ブラウザでの隠れる量は、Playwright の台本で前後を測る（完了報告）
+    const focus = vi.spyOn(HTMLElement.prototype, 'focus');
+    try {
+      render(<App />);
+      pickBase();
+      fireEvent.click(screen.getByRole('button', { name: '提案を見る' }));
+      const close = within(screen.getByRole('dialog')).getByRole('button', { name: '閉じる' });
+      const at = focus.mock.contexts.indexOf(close);
+      expect(at).toBeGreaterThanOrEqual(0); // 開いたら「閉じる」へ移る（従来どおり）
+      expect(focus.mock.calls[at]?.[0]).toEqual({ preventScroll: true });
+      expect(within(screen.getByRole('dialog')).getByText('デモ用の架空データ')).toBeTruthy();
+    } finally {
+      focus.mockRestore();
+    }
+  });
+
   it('提案の 1 枚は、Esc で閉じ、押した場所に戻る', () => {
     render(<App />);
     pickBase();

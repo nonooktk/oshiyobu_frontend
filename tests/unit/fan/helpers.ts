@@ -18,7 +18,6 @@ export function harness(
   const fetches: string[] = [];
   /** 取得の依頼で渡された公演（渡さなかったときは undefined）。fetches と同じ順 */
   const fetchPids: (PerformanceId | undefined)[] = [];
-  const copied: string[] = [];
   let server = opts.server ?? 0;
   let counted = false;
   const deps: Deps = {
@@ -35,10 +34,6 @@ export function harness(
       fetchPids.push(pid);
     },
     reduceMotion: () => opts.reduceMotion ?? false,
-    copyText: async (text) => {
-      copied.push(text);
-      return true;
-    },
     random: () => 0.5,
   };
   const store = createFanStore({ personaNo, deps });
@@ -61,7 +56,6 @@ export function harness(
     joins,
     fetches,
     fetchPids,
-    copied,
     state: () => store.getState(),
     view: () => store.view(),
     setServer(n: number) {

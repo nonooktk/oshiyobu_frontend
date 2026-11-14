@@ -46,8 +46,8 @@ export const gzipBytes = (buffer) => gzipSync(buffer).length;
  * 検査する。manifest は dist/.vite/manifest.json の中身、read(path) は dist からの相対パスで中身（Buffer）を返す、
  * images は scripts/images-config.mjs の一覧、listBundle() は dist/bundle のファイル名の一覧を返す。
  * fonts は dist/fonts の中のファイル（{ name, bytes }）の一覧（無ければ検査しない）。
- * strictImages が真のとき、元絵の形式（jpg・png）のまま配っていることをエラーにする（deploy.yml）。偽のときは警告
- * （ファン向けが WebP に移る前の CI を、赤にしないため）。
+ * strictImages が真のとき、元絵の形式（jpg・png）のまま配っていることをエラーにする（deploy.yml と npm run verify）。
+ * 偽のとき（check:budget を単独で実行したとき）は警告。
  */
 export function evaluate({
   manifest,

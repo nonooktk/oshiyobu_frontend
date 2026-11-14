@@ -10,6 +10,7 @@ export default defineConfig([
   globalIgnores([
     'dist',
     'dist-e2e',
+    'dist-accept',
     'coverage',
     'assets-src',
     'src/core',

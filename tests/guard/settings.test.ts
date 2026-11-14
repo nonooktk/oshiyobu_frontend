@@ -84,6 +84,8 @@ describe('Claude Code の設定（.claude/settings.json）', () => {
       ['G-26', 'gh secret *', 'GitHub の Secrets'],
       ['G-26', 'gh variable *', 'GitHub の Variables'],
       ['G-26', 'gh workflow run *', '配備の起動'],
+      ['G-26', 'gh -R *', 'gh の -R（リポジトリの指定を先に書く形）'],
+      ['G-26', 'gh --repo *', 'gh の --repo（リポジトリの指定を先に書く形）'],
       ['G-26', 'az *', 'Azure'],
       ['G-17', 'npm run core:sync *', 'core の置き直し'],
     ];

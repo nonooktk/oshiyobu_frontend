@@ -62,14 +62,25 @@
 .soundBtn[aria-pressed='false'] {
   color: var(--ink-soft);
 }
-/* 層（演出・シート・特典）が出ているあいだ、層の上に重ねる音のボタン。帯の音のボタンと同じ場所・同じ大きさ。暗幕の上でも見えるよう、白い丸の地を付ける */
+/* 全画面の層（演出・特典・感謝）が出ているあいだ、層の上に重ねる音のボタン。層の札（上の端）の行の下に置いて、札を隠さない。暗幕の上でも見えるよう、白い丸の地を付ける */
 .soundFloat {
   position: absolute;
-  top: 0;
+  top: var(--tap);
   left: var(--s2);
   z-index: 70;
   margin-left: 0;
   background: var(--surface);
+}
+/* ホームの上の称賛の演出: 暗くした範囲の下の端、「タップで閉じます」（その高さの中心）の右に置く。大きい文字・褒めことば・札に重ならない */
+.soundFx {
+  top: calc(var(--fx-cut, 100%) - 63px);
+  right: var(--s3);
+  left: auto;
+}
+/* 下から出るシートの中（見出しの行の右）の音のボタン。帯のように、左へ食い込ませない。見出しの行の高さは増やさない（上下の余白に食い込ませる） */
+.soundSheet {
+  margin-block: calc(var(--s2) * -1);
+  margin-left: auto;
 }
 /* 幅 320 の画面: 音のボタン・札 2 枚が、1 行に収まるよう、帯の左右の余白を詰める（右の札が画面の右端をはみ出さない。QA H-04） */
 @container phone (max-width: 339px) {
@@ -79,9 +90,6 @@
   }
   .soundBtn {
     margin-left: 0;
-  }
-  .soundFloat {
-    left: 0;
   }
 }
 .chip {

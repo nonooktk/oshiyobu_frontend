@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { DEMO_NOTICE_TEXT, DemoBadge } from '../../shared/components/DemoBadge';
+import { SoundToggle } from './SoundToggle';
 import { artistView } from '../art/registry';
 import { thanksOf } from '../text/thanks';
 import { SHARE_NAMES, SHARE_ORDER, buildPostText } from '../domain/share';
@@ -73,6 +74,8 @@ export function FxLayer({ fx, inert }: { fx: FxSpec; inert: boolean }) {
       const gauge = fx.overHome ? shell.querySelector('[data-heat]') : null;
       const cut = gauge ? gauge.getBoundingClientRect().top - box.top - 6 : box.height;
       el.style.setProperty('--fx-cut', `${Math.max(120, Math.round(cut))}px`);
+      // 音のボタン（演出の上に重ねる。殻の直下）も、暗くした範囲の下の端に合わせるため、殻にも渡す
+      shell.style.setProperty('--fx-cut', `${Math.max(120, Math.round(cut))}px`);
       el.style.setProperty('--fx-cy', gauge ? `${Math.round(cut * 0.34)}px` : '42%');
       // 大きい文字は、画面の幅からはみ出さない（左右の余白と、縁取りの分を引いた幅に収める）
       const t = title.current;
@@ -94,6 +97,7 @@ export function FxLayer({ fx, inert }: { fx: FxSpec; inert: boolean }) {
     return () => {
       alive = false;
       ro?.disconnect();
+      shell.style.removeProperty('--fx-cut');
     };
   }, [fx.overHome, fx.size, fx.stroke, fx.title]);
   const cls = fx.strong ? `${styles.fx} ${styles.fxStrong}` : styles.fx;
@@ -296,6 +300,7 @@ export function ShareSheet({ mode, inert }: { mode: ShareMode; inert: boolean })
         {/* 札は、シートの見出しの行に置く（後ろの画面が下へスクロールされていても見える。P-01） */}
         <div className={styles.sheetHead}>
           <h2>{SHARE_TITLE[mode]}</h2>
+          <SoundToggle place="sheet" />
           <DemoBadge />
         </div>
         <div

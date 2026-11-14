@@ -6,15 +6,18 @@ import { setMeterEngineForTest } from '../../../src/shared/meter';
 import { createMeterEngine } from '../../../src/shared/meter/engine';
 import { FakeAudioContext, audioLog } from '../../helpers/fakeAudio';
 import {
+  act,
   click,
   closeGiftAfterFx,
   fireEvent,
   layer,
   mountFan,
   passStart,
+  passStartOnly,
   screen,
   setupFanTest,
   tick,
+  within,
 } from './helpers';
 
 setupFanTest();
@@ -46,6 +49,24 @@ describe('層が出ている最中の音のボタン', () => {
     expect(pressable()).toHaveLength(1);
     expect(pressable()[0]?.getAttribute('aria-pressed')).toBe('true');
     expect(pressable()[0]?.closest('[data-layer="fx"]')).toBeNull(); // 演出の中ではなく、演出の外に重ねている
+  });
+
+  it('下から出るシート（額の入力）が出ているときは、シートの見出しの行に、押せる音のボタンがある。押すとオフになる', async () => {
+    mountFan('?p=4');
+    passStartOnly();
+    fireEvent.click(screen.getByRole('button', { name: /^推し活定期をはじめる/ }));
+    fireEvent.pointerDown(document.body);
+    fireEvent.click(screen.getByRole('button', { name: /^預金を積み増す/ }));
+    await act(async () => {
+      await vi.dynamicImportSettled();
+    });
+    const sheet = screen.getByRole('dialog', { name: '預金を積み増す' });
+    const inSheet = within(sheet).getByRole('button', { name: '称賛の音' });
+    expect(pressable()).toEqual([inSheet]); // 下の画面（帯）の音のボタンは押せない。押せるのは、シートの中の 1 つ
+    expect(inSheet.getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(inSheet);
+    expect(inSheet.getAttribute('aria-pressed')).toBe('false');
+    expect(within(sheet).getByRole('textbox', { name: '積み増す額（円）' })).toBeTruthy(); // シートは閉じない
   });
 
   it('演出の最中にオフにすると、すぐオフになり、そのあとの音は鳴らない。演出は閉じない', async () => {

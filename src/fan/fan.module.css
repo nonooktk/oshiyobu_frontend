@@ -71,6 +71,19 @@
   margin-left: 0;
   background: var(--surface);
 }
+/* 幅 320 の画面: 音のボタン・札 2 枚が、1 行に収まるよう、帯の左右の余白を詰める（右の札が画面の右端をはみ出さない。QA H-04） */
+@container phone (max-width: 339px) {
+  .strip {
+    gap: var(--s1);
+    padding: 0 var(--s2) 0 0;
+  }
+  .soundBtn {
+    margin-left: 0;
+  }
+  .soundFloat {
+    left: 0;
+  }
+}
 .chip {
   display: inline-block;
   padding: 0 var(--s2);

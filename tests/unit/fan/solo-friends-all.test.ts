@@ -6,16 +6,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   ARTISTS,
-  CITIES,
   COURSES,
   PERFORMANCE_IDS,
   PERSONA_COUNT,
   canApply,
   conditionOf,
-  defaultVenueIdOf,
   performanceIdOf,
 } from '../../../src/core';
-import type { ArtistId, CityName, CourseId, VenueId } from '../../../src/core';
+import type { ArtistId, CourseId, VenueId } from '../../../src/core';
+import { FAN_VENUE_ID } from '../../../src/fan/domain/state';
 import { initialFan } from '../../../src/fan/domain/state';
 import { courseOf, friendsToClinch, viewOf } from '../../../src/fan/domain/view';
 import { harness } from './helpers';
@@ -67,21 +66,21 @@ describe('① core の関数だけで、全 60 公演 × 4 コース', () => {
   });
 });
 
-describe('② ストアの操作で、人物 15 通り × 画面から選べる公演 × 4 コース', () => {
-  /** 条件（預金・メイン口座）がそろうまで積んで、申し込み、仲間を呼ぶ */
-  function run(personaNo: number, artistId: ArtistId, city: CityName, courseId: CourseId) {
+describe('② ストアの操作で、人物 15 通り × 5 組（久留米市に固定）× 4 コース', () => {
+  /** はじめる（推し活定期）→ 条件（メイン口座・預金）がそろうまで積む → 申し込む → 仲間を呼ぶ */
+  function run(personaNo: number, artistId: ArtistId, courseId: CourseId) {
     const h = harness(personaNo, { solo: true });
     h.a.startPick('oshi', artistId);
-    h.a.startPick('city', city);
+    h.a.startPick('seat', courseId);
     h.a.startNext();
-    h.a.startNext();
-    h.a.startNext(); // 3/3 の「この内容で申し込む」
+    h.a.startNext(); // 2/2 の「このコースを目指して始める」
+    h.a.runAcct('teiki', 'home');
     const k = () => courseOf(h.view().cond, courseId);
-    for (let i = 0; i < 30 && !canApply(k(), h.state().acct.deposit, h.state().acct.pay); i += 1) {
-      if (k().mainAccount && !h.state().acct.pay) h.a.runAcct('main', 'next');
-      else h.a.runAcct('deposit', 'next');
-    }
-    h.a.applyCourse(courseId);
+    if (k().mainAccount) h.a.runAcct('main', 'home');
+    const gap = Math.max(0, k().deposit - h.state().acct.deposit);
+    if (gap > 0) h.a.runAcct('deposit', 'home', gap);
+    expect(canApply(k(), h.state().acct.deposit, h.state().acct.pay)).toBe(true);
+    h.a.homePrimary(); // 主のボタン「申し込む」
     vi.advanceTimersByTime(10_000);
     const applied = h.state().course === courseId;
     h.a.closeGift(); // 申し込みの称賛と特典 1/3 の絵のあと、ホームの主のボタン「仲間を呼ぶ」を押す
@@ -97,21 +96,18 @@ describe('② ストアの操作で、人物 15 通り × 画面から選べる�
     let cases = 0;
     for (let personaNo = 1; personaNo <= PERSONA_COUNT; personaNo += 1) {
       for (const artistId of ARTIST_IDS) {
-        for (const { name: city } of CITIES) {
-          for (const courseId of COURSE_IDS) {
-            cases += 1;
-            const r = run(personaNo, artistId, city, courseId);
-            const label = `人物${personaNo}/${performanceIdOf(artistId, defaultVenueIdOf(city))}/${courseId}`;
-            if (!r.applied) failures.push(`${label}: 申し込めなかった`);
-            else if (!r.status.established) failures.push(`${label}: 成立に届かない`);
-            else if (r.status.supporters > r.cond.venue.cap)
-              failures.push(`${label}: 席数を超えた`);
-            else if (r.state.friends < 1) failures.push(`${label}: 仲間が増えていない`);
-          }
+        for (const courseId of COURSE_IDS) {
+          cases += 1;
+          const r = run(personaNo, artistId, courseId);
+          const label = `人物${personaNo}/${performanceIdOf(artistId, FAN_VENUE_ID)}/${courseId}`;
+          if (!r.applied) failures.push(`${label}: 申し込めなかった`);
+          else if (!r.status.established) failures.push(`${label}: 成立に届かない`);
+          else if (r.status.supporters > r.cond.venue.cap) failures.push(`${label}: 席数を超えた`);
+          else if (r.state.friends < 1) failures.push(`${label}: 仲間が増えていない`);
         }
       }
     }
-    expect(cases).toBe(PERSONA_COUNT * ARTIST_IDS.length * CITIES.length * COURSE_IDS.length);
+    expect(cases).toBe(PERSONA_COUNT * ARTIST_IDS.length * COURSE_IDS.length);
     expect(failures).toEqual([]);
   });
 });

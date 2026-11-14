@@ -14,6 +14,7 @@ import {
   fireEvent,
   layer,
   mountFan,
+  fundAndApply,
   passStart,
   screen,
   setupFanTest,
@@ -129,9 +130,8 @@ describe('申し込みをやめる・コースの札・支援の状況（I-25・
     expect(within(sheet).getByRole('button', { name: '戻る' })).toBeTruthy();
   });
 
-  it('人物 4 が前方の席を目指しているとき、応援コースは、通常の席だけ「申し込む」・前方の席は「目指すコースにしています」・ほかは「目指すコースにする」（I-21）', async () => {
+  it('前方の席を目指しているとき（口座なし・預金 0円）、応援コースは、前方の席は「目指すコースにしています」・ほかは「目指すコースにする」（I-21）', async () => {
     mountFan('?p=4');
-    click('次へ');
     click('次へ');
     const front = screen
       .getAllByRole('button')
@@ -142,17 +142,18 @@ describe('申し込みをやめる・コースの札・支援の状況（I-25・
     await settle();
     click(/^応援コース/);
     await settle();
-    expect(screen.getAllByRole('button', { name: '申し込む' })).toHaveLength(1);
+    // 初めは口座なし・預金 0円なので、どのコースにも申し込めない。前方の席は目指すコースにしていて、ほかは「目指すコースにする」
+    expect(screen.queryAllByRole('button', { name: '申し込む' })).toHaveLength(0);
     expect(screen.getAllByRole('button', { name: '目指すコースにしています' })).toHaveLength(1);
-    expect(screen.getAllByRole('button', { name: '目指すコースにする' })).toHaveLength(2);
-    expect(screen.getAllByRole('button', { name: '口座と預金へ' })).toHaveLength(3);
+    expect(screen.getAllByRole('button', { name: '目指すコースにする' })).toHaveLength(3);
+    expect(screen.getAllByRole('button', { name: '口座と預金へ' })).toHaveLength(4);
   });
 
   it('支援の状況: 画面は人数を出さず（G-08）、県・市の行と「地元」の札と熱量を出す。内訳の計算（74 人: 福岡県 60・久留米市 43 が地元・佐賀県 7・熊本県 5・そのほか 2。申し込み後の 75 人）は、core の関数で確かめる（I-30）', async () => {
     mountFan('?p=4');
     click('次へ');
-    click('次へ');
-    click('この内容で申し込む');
+    click('このコースを目指して始める');
+    fundAndApply();
     await tick(700 + 2600);
     click('閉じる');
     click('メニュー');

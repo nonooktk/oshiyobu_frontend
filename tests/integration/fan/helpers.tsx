@@ -75,11 +75,33 @@ export const click = (name: string | RegExp): void => {
   fireEvent.click(btn(name));
 };
 
-/** はじめの画面の「次へ」を 3 回押して、ホームへ。 */
+/** はじめの画面を進めて、ホームへ（目指すコースは通常の席。まだ申し込めない: 口座なし・預金 0円）。 */
+export function passStartOnly(): void {
+  click('次へ');
+  click('このコースを目指して始める');
+}
+
+/**
+ * ホームから、申し込むところまで（主のボタンの流れ）。推し活定期をはじめる → 預金を積み増す（条件にちょうど届く額）→ 申し込む。
+ * 預金の入力のシートは、別のテスト（heat-flow）で、画面の操作として確かめる。ここでは、ストアの操作で足す。
+ */
+export function fundAndApply(): void {
+  click(/^推し活定期をはじめる/);
+  act(() => {
+    const store = getAppStore();
+    const t = store.view().target;
+    if (t?.mainAccount) store.actions.runAcct('main', 'home');
+    const gap = t ? Math.max(0, t.deposit - store.getState().acct.deposit) : 0;
+    if (gap > 0) store.actions.runAcct('deposit', 'home', gap);
+    store.actions.clearAch();
+  });
+  click(/^申し込む/);
+}
+
+/** はじめの画面を進めて、申し込むところまで（人物ごとの違いは無い）。 */
 export function passStart(): void {
-  click('次へ');
-  click('次へ');
-  click('この内容で申し込む');
+  passStartOnly();
+  fundAndApply();
 }
 
 /** 特典の絵（層）を閉じる。 */

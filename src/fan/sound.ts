@@ -3,6 +3,7 @@
 // 短く（1 秒前後。FEVER は 2〜3 秒まで）、音量は控えめ、明るい音階（メジャーペンタトニック。遊技や賭けを連想させる音にしない。G-04）。
 // 鳴る条件: ①音がオン ②利用者の操作のあと（自動再生の制限に従う。unlock が呼ばれたあと）③音が使える環境。どれかが欠けたら、黙って何もしない。
 // 「動きを減らす」設定とは別に扱う（音のオン・オフは、画面の音ボタン）。
+// オフにしたら、鳴り始めた音・予約した音も、その場で止める（演出の最中でも、音のボタンは押せる）。
 
 /** 音を鳴らす場面。 */
 export type SoundCue = 'join' | 'share' | 'friend' | 'stage' | 'fever';
@@ -79,13 +80,41 @@ export interface Sound {
   play: (cue: SoundCue) => void;
 }
 
+/** 鳴っている最中・予約した音（オフにしたとき、その場で止めるために覚える）。 */
+interface Playing {
+  readonly osc: OscillatorNode;
+  readonly amp: GainNode;
+  /** 鳴り終わる時刻（AudioContext の時計）。 */
+  readonly end: number;
+}
+
 export function createSound(): Sound {
   let on = true;
   let ctx: AudioContext | null = null;
   let unsupported = false;
+  let playing: Playing[] = [];
+  /** 鳴っている音・予約した音を、すぐ止めて、出力から切り離す（止められない環境でも、例外は出さない）。 */
+  const silence = (): void => {
+    const items = playing;
+    playing = [];
+    for (const { osc, amp } of items) {
+      try {
+        osc.stop();
+      } catch {
+        // 止められなくても、切り離せば鳴らない
+      }
+      try {
+        amp.disconnect();
+        osc.disconnect();
+      } catch {
+        // 切り離せない環境でも、先へ進む
+      }
+    }
+  };
   return {
     setOn(next) {
       on = next;
+      if (!next) silence(); // オフにしたら、鳴り始めた音・予約した音も、その場で止める
     },
     isOn: () => on,
     unlock() {
@@ -109,6 +138,7 @@ export function createSound(): Sound {
       try {
         if (audio.state === 'suspended') void audio.resume().catch(() => undefined);
         const t0 = audio.currentTime;
+        playing = playing.filter((p) => p.end > t0); // もう鳴り終わった音は、覚えておかない
         for (const note of CUES[cue]) {
           const start = t0 + note.at;
           const end = start + note.dur;
@@ -123,6 +153,7 @@ export function createSound(): Sound {
           amp.connect(audio.destination);
           osc.start(start);
           osc.stop(end + 0.02);
+          playing.push({ osc, amp, end: end + 0.02 });
         }
       } catch {
         // 音が出せなくても、画面は何事もなく進む

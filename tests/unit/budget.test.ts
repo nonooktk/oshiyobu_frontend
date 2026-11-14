@@ -2,7 +2,13 @@
 // 量の検査（check-budget。設計 D-40・I-91・I-92・I-120）。作り物の manifest で、検査が効くことを確かめる
 import { randomBytes } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { FIRST_LOAD_LIMIT, evaluate, firstLoadFiles } from '../../scripts/budget-lib.mjs';
+import {
+  FIRST_LOAD_LIMIT,
+  FONT_LIMIT,
+  FONT_SIM_LIMIT,
+  evaluate,
+  firstLoadFiles,
+} from '../../scripts/budget-lib.mjs';
 
 type Chunk = { file: string; imports?: string[]; dynamicImports?: string[]; css?: string[] };
 const manifest = (over: Record<string, Chunk> = {}): Record<string, Chunk> => ({
@@ -90,5 +96,56 @@ describe('check-budget', () => {
       searchText: (needle) => needle === 'assets-src',
     });
     expect(result.errors.some((error) => error.includes('assets-src'))).toBe(true);
+  });
+});
+
+// フォント（dist/fonts/）の量。核（全ページが読む 2 本）と、シミュレーター用の追加（*-sim.woff2）を、別の枠で数える
+describe('check-budget: フォント', () => {
+  const runFonts = (fonts: { name: string; bytes: number }[]) =>
+    evaluate({
+      manifest: manifest(),
+      read: files({}),
+      images: [],
+      listBundle: () => [],
+      searchText: () => false,
+      fonts,
+    });
+
+  it('核の WOFF2（MOBO 2 本 + 見出し書体 1 本）の合計が上限（400,000 B）以下なら通る。超えたらエラー', () => {
+    expect(FONT_LIMIT).toBe(400_000);
+    const ok = runFonts([
+      { name: 'MOBO-Regular.woff2', bytes: 120_000 },
+      { name: 'MOBO-Bold.woff2', bytes: 130_000 },
+      { name: 'Corporate-Logo-Rounded-Bold-ver3.woff2', bytes: 150_000 },
+    ]);
+    expect(ok.errors).toEqual([]);
+    const over = runFonts([
+      { name: 'MOBO-Regular.woff2', bytes: 120_000 },
+      { name: 'MOBO-Bold.woff2', bytes: 130_000 },
+      { name: 'Corporate-Logo-Rounded-Bold-ver3.woff2', bytes: 150_001 },
+    ]);
+    expect(over.errors).toHaveLength(1);
+    expect(over.errors[0]).toContain('400000');
+  });
+
+  it('シミュレーター用の追加（-sim.woff2）は、核の枠に入れず、別の枠で数える', () => {
+    const fonts = [
+      { name: 'MOBO-Regular.woff2', bytes: 100_000 },
+      { name: 'MOBO-Bold.woff2', bytes: 100_000 },
+      { name: 'MOBO-Regular-sim.woff2', bytes: 150_000 },
+      { name: 'MOBO-Bold-sim.woff2', bytes: 150_000 },
+    ];
+    expect(runFonts(fonts).errors).toEqual([]);
+    const over = runFonts([...fonts, { name: 'MOBO-Bold-sim.woff2', bytes: FONT_SIM_LIMIT }]);
+    expect(over.errors.some((error) => error.includes('シミュレーター'))).toBe(true);
+  });
+
+  it('元のフォント（otf・ttf）を配ろうとしていたら、エラー（合計が小さくても）', () => {
+    const result = runFonts([{ name: 'MOBO-Regular.otf', bytes: 10 }]);
+    expect(result.errors.some((error) => error.includes('MOBO-Regular.otf'))).toBe(true);
+  });
+
+  it('フォントを置いていなくても（fonts を渡さなくても）、他の検査は今までどおり', () => {
+    expect(runFonts([]).errors).toEqual([]);
   });
 });

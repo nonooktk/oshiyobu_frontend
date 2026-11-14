@@ -311,6 +311,65 @@
   font-size: var(--fs-body);
   font-weight: 700;
 }
+/* 預金を積み増す額の入力（口座と預金）。入力欄・ボタンは高さ 44px 以上。色・大きさはトークンだけ */
+.amountLab {
+  display: block;
+  margin: var(--s2) 0 var(--s1);
+  font-size: var(--fs-note);
+  font-weight: 700;
+  color: var(--ink-soft);
+  line-height: var(--lh-note);
+}
+.amountRow {
+  display: flex;
+  gap: var(--s2);
+}
+.amount {
+  /* 入力欄の「いつもの幅」で、親の幅（最小の幅）を押し広げない。幅 320px でも、枠からはみ出さない */
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+  min-height: var(--tap);
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--ink-soft);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--fs-body);
+  font-weight: 700;
+  line-height: var(--lh-tight);
+  font-variant-numeric: tabular-nums;
+}
+.amount[aria-invalid='true'] {
+  border-width: 2px;
+  border-color: var(--error-ink);
+}
+.amountRow > button {
+  flex: none;
+}
+.amountErr {
+  margin: var(--s2) 0 0;
+  font-size: var(--fs-note);
+  font-weight: 700;
+  color: var(--error-ink);
+  line-height: var(--lh-note);
+}
+.amountHint {
+  margin: var(--s2) 0 0;
+  font-size: var(--fs-note);
+  line-height: var(--lh-note);
+}
+.quick {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s2);
+  margin: var(--s3) 0;
+}
+.quick > button {
+  padding-inline: var(--s1);
+  font-size: var(--fs-note);
+}
 .actDone {
   margin: var(--s2) 0 0;
   font-size: var(--fs-body);

@@ -39,8 +39,9 @@ export function NextAction() {
     if (row.id === 'apply' && view.target) actions.applyCourse(view.target.id);
     else if (row.id === 'main' || row.id === 'deposit' || row.id === 'teiki')
       actions.runAcct(row.id, 'next');
-    else
-      actions.openShare(row.id === 'notice' ? 'notice' : row.id === 'share' ? 'share' : 'friend');
+    else if (row.id === 'friend') actions.callFriends();
+    else if (row.id === 'notice') actions.notifyFriends();
+    else actions.openShare(row.id === 'share' ? 'share' : 'friend');
   };
   const doneIds = (
     view.joined ? (['friend', 'share'] as const) : (['deposit', 'teiki', 'main'] as const)
@@ -132,7 +133,7 @@ export function NextAction() {
         </div>
         <p className={styles.dNote}>
           {view.joined
-            ? '押すと、共有のシートが開きます。'
+            ? '押すと、その場で進みます。SNS への投稿は、ホームの「SNSに投稿する（任意）」からできます。'
             : '押すと、その場で完了します。擬似の動きで、実際の入出金は始まりません。'}
         </p>
       </div>

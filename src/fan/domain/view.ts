@@ -299,6 +299,93 @@ export function nextViewOf(v: FanView): NextView {
   return { head, rows, hint: rows[0]?.hint ?? '' };
 }
 
+/** ホームの主のボタンの行動。押すと、その行動がその場で進む（別の画面へ移って選ばせない）。 */
+export type HomeActionId =
+  'apply' | 'main' | 'deposit' | 'teiki' | 'friend' | 'share' | 'notice' | 'again';
+export type HomeAction = {
+  id: HomeActionId;
+  /** ボタンの 1 行目（行動そのもの）。 */
+  label: string;
+  /** 2 行目（押すと何が進むか）。 */
+  sub: string;
+  /** 読み上げ用の、押したあとの説明。 */
+  hint: string;
+};
+
+/**
+ * ホームの主のボタン（ゲージのすぐ下）。ゲージが進むために、いま何をすればよいかを、行動そのもので示す。
+ * 場面: ①預金などが足りない → 預金を積み増す ②条件がそろっている → 申し込む ③申し込んだ → 仲間を呼ぶ ④成立した → 仲間に知らせる。
+ * 一覧（次のアクション）の先頭の行と同じ順で決める（先頭に出る行動を、そのままホームの主のボタンにする）。
+ */
+export function homeActionOf(v: FanView): HomeAction {
+  const first = nextViewOf(v).rows[0];
+  const id = first?.id ?? 'deposit';
+  switch (id) {
+    case 'apply': {
+      const after = heatOf({ supporters: v.status.supporters + 1, established: false }, v.cond.min);
+      const up = after.stage > v.heat.stage;
+      return {
+        id,
+        label: '申し込む',
+        sub: up ? `→ ${after.name}へ` : '→ 熱量が高まります',
+        hint: up ? `押すと、${after.name}へ進みます` : '押すと、熱量が高まります',
+      };
+    }
+    case 'main':
+      return {
+        id,
+        label: 'メイン口座にする',
+        sub: '→ 申し込みの条件の 1 つです',
+        hint: '押すと、メイン口座にします（擬似）',
+      };
+    case 'teiki':
+      return {
+        id,
+        label: '推し活定期をはじめる',
+        sub: '→ 申し込みの条件に近づきます',
+        hint: '押すと、推し活定期をはじめます（擬似）',
+      };
+    case 'friend': {
+      const clinch = v.friendsClinch || v.status.friendClinches;
+      return {
+        id,
+        label: '仲間を呼ぶ',
+        sub: clinch ? '→ FEVER（開催決定）へ' : '→ 熱が高まります',
+        hint: clinch ? '押すと、FEVER（開催決定）へ進みます' : '押すと、熱が高まります',
+      };
+    }
+    case 'share':
+      return {
+        id,
+        label: 'SNSに投稿する',
+        sub: '→ 応援が広がります',
+        hint: '押すと、投稿のシートが開きます',
+      };
+    case 'notice':
+      return {
+        id,
+        label: '仲間に知らせる',
+        sub: '→ 開催が決まったことを伝える',
+        hint: '押すと、開催が決まったことを仲間に伝えます',
+      };
+    case 'again':
+      return {
+        id,
+        label: 'もう一度、仲間を呼ぶ',
+        sub: '→ 投稿のシートで、声をかけられます',
+        hint: '押すと、投稿のシートが開きます',
+      };
+    default:
+      // 預金（口座と預金の画面で、積み増す額を決める）
+      return {
+        id: 'deposit',
+        label: '預金を積み増す',
+        sub: '→ 申し込みの条件に近づきます',
+        hint: '押すと、口座と預金の画面で、積み増す額を決めます',
+      };
+  }
+}
+
 /** ホームのコメントのキー（SP-30）。 */
 export function homeKeyOf(v: FanView): HomeKey {
   if (v.status.established) return 'reached';

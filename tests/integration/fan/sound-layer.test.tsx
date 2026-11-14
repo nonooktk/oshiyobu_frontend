@@ -4,6 +4,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { setMeterEngineForTest } from '../../../src/shared/meter';
 import { createMeterEngine } from '../../../src/shared/meter/engine';
+import { FakeAudioContext, audioLog } from '../../helpers/fakeAudio';
 import {
   click,
   closeGiftAfterFx,
@@ -18,41 +19,8 @@ import {
 
 setupFanTest();
 
-let oscillators = 0;
-class FakeAudioContext {
-  state = 'running';
-  currentTime = 0;
-  destination = {};
-  resume() {
-    return Promise.resolve();
-  }
-  createGain() {
-    return {
-      gain: {
-        setValueAtTime: () => undefined,
-        linearRampToValueAtTime: () => undefined,
-        exponentialRampToValueAtTime: () => undefined,
-        cancelScheduledValues: () => undefined,
-      },
-      connect: () => undefined,
-      disconnect: () => undefined,
-    };
-  }
-  createOscillator() {
-    oscillators += 1;
-    return {
-      type: '',
-      frequency: { value: 0 },
-      connect: () => undefined,
-      disconnect: () => undefined,
-      start: () => undefined,
-      stop: () => undefined,
-    };
-  }
-}
-
 beforeEach(() => {
-  oscillators = 0;
+  audioLog.oscillators = 0;
   vi.stubGlobal('AudioContext', FakeAudioContext);
   setMeterEngineForTest(createMeterEngine({ apiBase: '', random: () => 0.5 }));
 });
@@ -85,14 +53,14 @@ describe('層が出ている最中の音のボタン', () => {
     fireEvent.pointerDown(document.body);
     passStart(); // 申し込んだ直後の音（join）は鳴る。FEVER 目前の音（stage）は 0.65 秒あと
     await tick(300);
-    const before = oscillators;
+    const before = audioLog.oscillators;
     expect(before).toBeGreaterThan(0);
     fireEvent.click(pressable()[0] as HTMLElement); // 演出の前（称賛を待っている間）でも、押せる
     await tick(700); // 称賛の演出が出る
     expect(layer('fx')).not.toBeNull();
     expect(pressable()[0]?.getAttribute('aria-pressed')).toBe('false');
     await tick(10_000);
-    expect(oscillators).toBe(before); // オフにしたあとは、鳴らない（FEVER 目前の音も）
+    expect(audioLog.oscillators).toBe(before); // オフにしたあとは、鳴らない（FEVER 目前の音も）
   });
 
   it('層が閉じると、層の上のボタンは消えて、帯の 1 つだけに戻る。オフのまま', async () => {
@@ -110,6 +78,6 @@ describe('層が出ている最中の音のボタン', () => {
     fireEvent.click(pressable()[0] as HTMLElement);
     expect(pressable()[0]?.getAttribute('aria-pressed')).toBe('true');
     click(/^仲間を呼ぶ/);
-    expect(oscillators).toBeGreaterThan(0);
+    expect(audioLog.oscillators).toBeGreaterThan(0);
   });
 });

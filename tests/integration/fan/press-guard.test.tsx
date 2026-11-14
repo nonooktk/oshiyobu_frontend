@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { conditionOf } from '../../../src/core';
 import { setMeterEngineForTest } from '../../../src/shared/meter';
 import { createMeterEngine } from '../../../src/shared/meter/engine';
+import { FakeAudioContext, audioLog } from '../../helpers/fakeAudio';
 import { CUES } from '../../../src/fan/sound';
 import { getAppStore, setSettleMsForTest } from '../../../src/fan/store/FanProvider';
 import { SETTLE_MS } from '../../../src/fan/store/store';
@@ -27,42 +28,9 @@ import {
 setupFanTest();
 
 /** 鳴らした音の数（記録するだけの AudioContext の偽物）。 */
-let oscillators = 0;
-class FakeAudioContext {
-  state = 'running';
-  currentTime = 0;
-  destination = {};
-  resume() {
-    return Promise.resolve();
-  }
-  createGain() {
-    return {
-      gain: {
-        setValueAtTime: () => undefined,
-        linearRampToValueAtTime: () => undefined,
-        exponentialRampToValueAtTime: () => undefined,
-        cancelScheduledValues: () => undefined,
-      },
-      connect: () => undefined,
-      disconnect: () => undefined,
-    };
-  }
-  createOscillator() {
-    oscillators += 1;
-    return {
-      type: '',
-      frequency: { value: 0 },
-      connect: () => undefined,
-      disconnect: () => undefined,
-      start: () => undefined,
-      stop: () => undefined,
-    };
-  }
-}
-
 beforeEach(() => {
   setSettleMsForTest(SETTLE_MS); // この検査は、押したあとに受けない間を、本番と同じ長さで確かめる
-  oscillators = 0;
+  audioLog.oscillators = 0;
   vi.stubGlobal('AudioContext', FakeAudioContext);
   setMeterEngineForTest(createMeterEngine({ apiBase: '', random: () => 0.5 }));
 });
@@ -165,7 +133,7 @@ describe.each([2, 5])('主のボタンを間を置かずに %i 回押す', (n) =
   it('「申し込む」: 申し込みだけ進む。仲間を呼ぶ・FEVER へは進まず、称賛の音は申し込みの分だけ', async () => {
     await toApply();
     expect(actOf()).toBe('apply');
-    const before = oscillators;
+    const before = audioLog.oscillators;
     hammer(primary(), n);
     await tick(10_000);
     const s = store().getState();
@@ -176,28 +144,28 @@ describe.each([2, 5])('主のボタンを間を置かずに %i 回押す', (n) =
     expect(store().view().status.established).toBe(false); // FEVER（開催決定）へは進んでいない
     expect(store().view().status.supporters).toBe(cond.start + 1);
     // 申し込みの音（join）と、FEVER 目前の音（stage）だけ。仲間（friend）・FEVER の音は鳴らない
-    expect(oscillators - before).toBe(CUES.join.length + CUES.stage.length);
+    expect(audioLog.oscillators - before).toBe(CUES.join.length + CUES.stage.length);
   });
 
   it('「仲間を呼ぶ」: 1 回だけ進む（音・人数が二重にならない）', async () => {
     await toFriend();
     expect(actOf()).toBe('friend');
-    const before = oscillators;
+    const before = audioLog.oscillators;
     hammer(primary(), n);
     await tick(10_000);
     expect(store().view().status.established).toBe(true);
     expect(store().view().status.supporters).toBe(cond.min); // 成立に届く人数だけ。二重に足されない
     expect(store().getState().called).toBe(cond.min - (cond.start + 1));
-    expect(oscillators - before).toBe(CUES.friend.length + CUES.fever.length);
+    expect(audioLog.oscillators - before).toBe(CUES.friend.length + CUES.fever.length);
   });
 
   it('「仲間に知らせる」: 称賛は 1 回だけ', async () => {
     await toNotice();
     expect(actOf()).toBe('notice');
-    const before = oscillators;
+    const before = audioLog.oscillators;
     hammer(primary(), n);
     await tick(10_000);
-    expect(oscillators - before).toBe(CUES.share.length);
+    expect(audioLog.oscillators - before).toBe(CUES.share.length);
   });
 
   it('副のボタン「SNSに投稿する（任意）」: 投稿のシートは 1 枚だけ', async () => {

@@ -625,8 +625,7 @@
 }
 /* 押した直後（次の押下を受けない間。0.6 秒ほどか、称賛が終わるまで）は、少し淡くして、押したことを受け取ったと見せる。固まって見えないよう、すぐ戻る */
 .homeNext,
-.shareBtn,
-.nxRow {
+.shareBtn {
   transition: opacity 0.15s;
 }
 .homeNext[aria-busy='true'],
@@ -1142,6 +1141,7 @@ button.rcard:hover {
   font: inherit;
   text-align: left;
   cursor: pointer;
+  transition: opacity 0.15s;
 }
 .nxRow:hover {
   background: var(--bg-c);

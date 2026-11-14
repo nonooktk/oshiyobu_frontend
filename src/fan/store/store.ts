@@ -694,6 +694,19 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
   };
 
   /**
+   * 操作が無いまま時間がたったとき（ひとり体験）。はじめの画面のまま何も選んでいなければ、戻すものが無いので何もしない。
+   * それ以外は、ファン向けを初めの状態に戻す（理由の表示は、画面が見えるときに、呼んだ側が出す）。戻したか、を返す。
+   */
+  const resetForIdle = (): boolean => {
+    const s = state.start;
+    if (state.page === 'start' && s !== null && s.step === 0 && !s.touched) return false;
+    clearTimers();
+    state = { ...initialState(personaNo), live: '' };
+    emit();
+    return true;
+  };
+
+  /**
    * 共有のメーターが初めに戻された（reset）と検知したとき（設計 D-18 の規則 10）。
    * 数えられていた自分の申し込みは「未申し込み」に戻し（同じコースを押し直して申し込める）、擬似の仲間の加算を消す。
    * まだ数えられていない申し込み（未送信・再送中）は消さない。達成した行動・開いた特典・呼んだ仲間・口座・演出の済みは変えない。
@@ -857,6 +870,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       startNext,
       resetFan,
       resetFanQuiet,
+      resetForIdle,
       serverReset,
       applyOffice,
       openCancel,

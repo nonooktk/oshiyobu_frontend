@@ -24,6 +24,7 @@ import { getPersona } from '../../shared/persona';
 import type { FanState } from '../domain/state';
 import { viewOf } from '../domain/view';
 import type { FanView } from '../domain/view';
+import { createFanLifecycle } from './lifecycle';
 import { createFanStore, defaultDeps } from './store';
 import type { FanActions, FanStore } from './store';
 
@@ -75,6 +76,17 @@ export function FanProvider({ store, children }: Props) {
 
   // 事務所向けの「デモを最初に戻す」を受けたら、ファン向けも初めに戻る（連動。共有メーターには触らない）
   useEffect(() => onResetAll(store.actions.resetFanQuiet), [store]);
+  // ひとり体験のとき: 閉じたら（bfcache から戻ったときも）初めの状態に戻し、5 分操作が無くても戻す。
+  // 共有メーターあり（VITE_SHARED_METER=on）は、これまでどおり、戻さない
+  useEffect(() => {
+    if (!isSoloMeter()) return undefined;
+    const { resetForIdle, resetFanQuiet, toast, announce } = store.actions;
+    const notice = (text: string): void => {
+      toast(text, 4000);
+      announce(text);
+    };
+    return createFanLifecycle({ resetForIdle, resetQuiet: resetFanQuiet, notice }).dispose;
+  }, [store]);
   // 事務所向けと連動したら、まだ選び直していない初めの値を、事務所向けの会場に合わせる
   const officeVenue = useLinkedOffice()?.selection.venueId ?? null;
   useEffect(() => {

@@ -2,7 +2,6 @@
 // 枠（背景・見出し・閉じる）は、読み込み前から出ている（components/SheetShell）。
 import { useEffect, useRef } from 'react';
 import { ACT_IDS } from '../domain/state';
-import { heatOf } from '../domain/heat';
 import { ACT_NAMES } from '../text/ui';
 import { yen } from '../text/format';
 import fan from '../fan.module.css';
@@ -13,16 +12,14 @@ import { DepositCard } from '../pages/DepositCard';
 /** 申し込みをやめる確認。戻る金額と、残るもの。成立後・未申し込みは「戻る」だけ。 */
 export function CancelBody() {
   const { state, view, actions } = useFan();
-  const { status, cond, my } = view;
+  const { status, my } = view;
   const no = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     no.current?.focus({ preventScroll: true });
   }, []);
   const held = my?.price ?? 0;
   // やめたあとの熱量（数字は出さず、段階の名前で伝える）
-  const after = view.joined
-    ? heatOf({ supporters: status.supporters - 1, established: false }, cond.min)
-    : view.heat;
+  const after = view.afterCancel;
   return (
     <>
       <p className={pages.plain} style={{ margin: 0 }}>

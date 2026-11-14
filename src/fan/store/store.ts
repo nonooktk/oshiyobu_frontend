@@ -561,6 +561,13 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
           .map((i) => i.id)
       : [];
     const rest = t1 && !reached && !canApplyOf(v1, t1) ? restText(t1, acct.deposit, acct.pay) : '';
+    // 熱量の段階が上がったか（ひとり体験は、行動のたびに上がる。共有メーターありは、人数が変わらないので上がらない）
+    const up = v1.heat.stage > v0.heat.stage;
+    const bump = !v1.solo
+      ? ''
+      : up
+        ? `熱量が「${v1.heat.name}」へ進みました。`
+        : '熱量が少し高まりました。';
     // 画面に出す文（トースト・読み上げ）と、短い称賛（行動 → それで何が進んだか）
     const toastText =
       id === 'teiki'
@@ -570,14 +577,16 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
           : `${yen(amount ?? 0)}を積み増しました（預金 ${yen(acct.deposit)}）`;
     const praise =
       id === 'teiki'
-        ? { title: 'はじめてくれてありがとう。', sub: '預金を積み増せるようになりました' }
+        ? { title: 'はじめてくれてありがとう。', sub: `${bump}預金を積み増せるようになりました` }
         : {
             title: id === 'main' ? 'メイン口座にしてくれてありがとう。' : '積み増しありがとう。',
-            sub: reached
-              ? '申し込めるようになりました'
-              : t1
-                ? `${t1.name}まで、残りは ${rest}`
-                : '申し込みの条件が 1 つそろいました',
+            sub:
+              bump +
+              (reached
+                ? '申し込めるようになりました'
+                : t1
+                  ? `${t1.name}まで、残りは ${rest}`
+                  : '申し込みの条件が 1 つそろいました'),
           };
     // 条件の ✓ が付く動きは、称賛が薄れていく頃に始める（動きを減らす設定では 0）
     set({
@@ -591,7 +600,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       },
     });
     if (reached) popLayer('deposit'); // 条件に届いたら、額の入力を閉じて、ホームの「申し込む」へ
-    sound('share');
+    sound(up ? 'stage' : 'share'); // 段階が上がったときは、段階の音。上がらない行動は、行動の音
     showAch(praise);
     toast(toastText, 3600);
     announce(`${praise.title}${praise.sub}。${toastText}。`);
@@ -627,7 +636,12 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     if (state.page !== 'home') go('home'); // ゲージが見える画面で伸ばす
     const v0 = view();
     const add = solo() ? Math.max(1, friendsToClinch(state, condNow(), meterNow()) ?? 1) : 1;
-    const v1 = viewOf({ ...state, friends: state.friends + add }, condNow(), meterNow(), solo());
+    const v1 = viewOf(
+      { ...state, friends: state.friends + add, done: { ...state.done, friend: true } },
+      condNow(),
+      meterNow(),
+      solo(),
+    );
     const reach = v1.status.established;
     const ms = reduce() ? (reach ? 1800 : 1500) : reach ? 2600 : 1200;
     sound('friend');

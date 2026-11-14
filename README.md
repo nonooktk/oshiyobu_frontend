@@ -45,7 +45,7 @@ Node.js が要ります（22 LTS の 22.22.2 以降。24 LTS の 24.15.0 以降�
 | 量・CSP の検査（ビルドのあと） | `npm run check:budget`・`npm run check:csp` |
 | 実ブラウザの試験（任意） | `npm run e2e`（手元の Chrome なら `E2E_CHANNEL=chrome npm run e2e`） |
 | 手元の検査をまとめて（CI と同じ） | `npm run verify` |
-| 検収（検査 → API → 画面の通信） | `npm run accept -- --local-api`（手元の API を立てて確かめる。詳しくは [docs/検収.md](docs/検収.md)） |
+| 検収（検査 → API → 画面の通信 → ひとり体験の通し） | `npm run accept -- --local-api`（手元の API を立てて確かめる。詳しくは [docs/検収.md](docs/検収.md)） |
 
 PR を出す前に、`npm ci` のあと `npm run verify` が、エラーなしで通ることを確かめてください（lint・型・整形・テスト・ビルド・量と CSP の検査・core の検査を順に回します。CI と同じ検査です）。
 

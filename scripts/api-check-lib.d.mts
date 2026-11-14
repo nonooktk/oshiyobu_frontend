@@ -32,3 +32,19 @@ export function judgeLiveMeter(args: {
   apiOrigin?: string;
   failures?: readonly string[];
 }): Judged;
+export function isApiRequestUrl(
+  url: string,
+  options?: { apiOrigin?: string; pageOrigin?: string },
+): boolean;
+export function isHealthUrl(url: string): boolean;
+export function judgeSoloFan(args: {
+  apiRequests: readonly { method: string; path: string }[];
+}): Judged;
+export function judgePresenterHealth(args: {
+  responses: readonly { status: number; allowOrigin: string; origin?: string }[];
+  failures?: readonly string[];
+  shownMs: number | null;
+  pageOrigin: string;
+  apiOrigin?: string;
+}): Judged;
+export function parseShownMs(text: string, prefix: string, suffix: string): number | null;

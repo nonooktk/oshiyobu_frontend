@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 import {
   SLOW_MS,
   UNKNOWN_ORIGIN,
+  isApiRequestUrl,
+  isHealthUrl,
   isMeterUrl,
   judgeCorsAllow,
   judgeCorsDeny,
@@ -14,10 +16,14 @@ import {
   judgeMeter,
   judgeNotFound,
   judgePreflight,
+  judgePresenterHealth,
+  judgeSoloFan,
   judgeTiming,
   meterBodyErrors,
+  parseShownMs,
 } from '../../scripts/api-check-lib.mjs';
 import { parseJoinResponse, parseMeterResponse } from '../../src/core';
+import { pageText } from '../../src/presenter/text/page';
 
 const PID = 'terao:KGS-001';
 const WEB = 'https://web.example.test';
@@ -186,5 +192,108 @@ describe('画面（ブラウザ）から見たメーターの取得', () => {
       judgeLiveMeter({ responses: [ok], pageOrigin: WEB, apiOrigin: 'https://api.example.test' })
         .ok,
     ).toBe(true);
+  });
+});
+
+describe('ひとり体験（既定）のファン向け: API への通信が 0 件', () => {
+  const API = 'https://api.example.test';
+  const PAGE = 'https://web.example.test';
+  const opts = { apiOrigin: API, pageOrigin: PAGE };
+
+  it('API への通信かどうかを、API の接続先か、画面とは別の origin の /api/v1/・/healthz で見分ける', () => {
+    expect(isApiRequestUrl(`${API}/api/v1/performances/tech0:cbox/meter`, opts)).toBe(true);
+    expect(isApiRequestUrl(`${API}/healthz`, opts)).toBe(true);
+    // 接続先が分からないとき（公開中の画面で VITE_API_BASE を渡さなかった）も、パスで見分ける
+    expect(
+      isApiRequestUrl('https://other.example.test/api/v1/performances/x:y/joins', {
+        pageOrigin: PAGE,
+      }),
+    ).toBe(true);
+    expect(isApiRequestUrl('https://other.example.test/healthz', { pageOrigin: PAGE })).toBe(true);
+  });
+
+  it('画面自身の配信（同じ origin）・外の通信・URL でないものは、API への通信に数えない', () => {
+    expect(isApiRequestUrl(`${PAGE}/fan/index.html`, opts)).toBe(false);
+    expect(isApiRequestUrl(`${PAGE}/healthz`, opts)).toBe(false);
+    expect(isApiRequestUrl('https://fonts.example.test/a.woff2', opts)).toBe(false);
+    expect(isApiRequestUrl('data:image/png;base64,AAAA', opts)).toBe(false);
+    expect(isApiRequestUrl('URLではない', opts)).toBe(false);
+  });
+
+  it('0 件なら合格。1 件でもあれば不合格で、先頭の通信の種類とパスだけを出す（URL は出さない）', () => {
+    expect(judgeSoloFan({ apiRequests: [] }).ok).toBe(true);
+    const bad = judgeSoloFan({
+      apiRequests: [
+        { method: 'GET', path: '/api/v1/performances/tech0:cbox/meter' },
+        { method: 'POST', path: '/api/v1/performances/tech0:cbox/joins' },
+      ],
+    });
+    expect(bad.ok).toBe(false);
+    expect(bad.detail).toContain('2 件');
+    expect(bad.detail).toContain('GET /api/v1/performances/tech0:cbox/meter');
+    expect(bad.detail).not.toContain('https://');
+  });
+});
+
+describe('発表者用の「接続を確認する」', () => {
+  const WEB = 'https://web.example.test';
+  const API = 'https://api.example.test';
+  const ok = { status: 200, allowOrigin: WEB, origin: API };
+  const base = { responses: [ok], shownMs: 32, pageOrigin: WEB, apiOrigin: API };
+
+  it('/healthz の URL を見分ける', () => {
+    expect(isHealthUrl(`${API}/healthz`)).toBe(true);
+    expect(isHealthUrl(`${API}/healthz/x`)).toBe(false);
+    expect(isHealthUrl(`${API}/api/v1/performances/a:b/meter`)).toBe(false);
+  });
+
+  it('200・CORS で許される・画面に応答の時間が出る、がそろえば合格', () => {
+    const judged = judgePresenterHealth(base);
+    expect(judged.ok).toBe(true);
+    expect(judged.detail).toContain('応答 32 ms');
+    expect(judgePresenterHealth({ ...base, responses: [{ ...ok, allowOrigin: '*' }] }).ok).toBe(
+      true,
+    );
+  });
+
+  it('通信が出ていない・失敗した・指定した API に出ていない・200 でない・CORS で許されない・時間が出ないは、不合格', () => {
+    expect(judgePresenterHealth({ ...base, responses: [], shownMs: null }).ok).toBe(false);
+    const failed = judgePresenterHealth({
+      ...base,
+      responses: [],
+      failures: ['net::ERR_CONNECTION_REFUSED'],
+      shownMs: null,
+    });
+    expect(failed.ok).toBe(false);
+    expect(failed.detail).toContain('ERR_CONNECTION_REFUSED');
+    expect(judgePresenterHealth({ ...base, apiOrigin: 'https://another.example.test' }).ok).toBe(
+      false,
+    );
+    expect(judgePresenterHealth({ ...base, responses: [{ ...ok, status: 503 }] }).ok).toBe(false);
+    expect(judgePresenterHealth({ ...base, responses: [{ ...ok, allowOrigin: '' }] }).ok).toBe(
+      false,
+    );
+    const noTime = judgePresenterHealth({ ...base, shownMs: null });
+    expect(noTime.ok).toBe(false);
+    expect(noTime.detail).toContain('応答の時間');
+  });
+
+  it('画面の文から「応答 N ms」の N を読む（前後の文字は、画面の文言から取る）', () => {
+    const prefix = 'つながっています（応答 ';
+    const suffix = ' ms）';
+    expect(
+      parseShownMs(`接続を確認する\nつながっています（応答 32 ms）\n操作の違い`, prefix, suffix),
+    ).toBe(32);
+    expect(parseShownMs('つながっていません', prefix, suffix)).toBeNull();
+    expect(parseShownMs('つながっています（応答 abc ms）', prefix, suffix)).toBeNull();
+    expect(parseShownMs('つながっています（応答 32', prefix, suffix)).toBeNull();
+  });
+
+  it('いまの画面の文言（src/presenter/text/page.ts）からも、時間を読める（画面の文言を変えたら、ここで気づく）', () => {
+    const mark = 1234567;
+    const [prefix, suffix] = pageText.healthOk(mark).split(String(mark));
+    expect(prefix).toBeTruthy();
+    expect(parseShownMs(pageText.healthOk(98), prefix as string, suffix as string)).toBe(98);
+    expect(pageText.check).toBe('接続を確認する');
   });
 });

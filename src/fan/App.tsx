@@ -70,6 +70,16 @@ function Screen() {
   // Esc でいちばん上の層を閉じる。押す・キーを押すと、条件の達成のエフェクトは、すぐ消える
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
+      // Enter の押しっぱなし（キーのリピート）は、ボタン・入力欄では受けない。押した先で、フォーカスの移った次のボタンまで
+      // 続けて押されて、2 段進む・開いてすぐ閉じる、を防ぐ（click は、最初の 1 回だけ起こす）
+      if (
+        e.key === 'Enter' &&
+        e.repeat &&
+        e.target instanceof Element &&
+        e.target.closest('button, input')
+      ) {
+        e.preventDefault();
+      }
       if (e.key === 'Escape') actions.escape();
       actions.clearAch();
     };

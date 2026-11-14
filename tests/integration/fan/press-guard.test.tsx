@@ -23,6 +23,7 @@ import {
   screen,
   setupFanTest,
   tick,
+  within,
 } from './helpers';
 
 setupFanTest();
@@ -228,19 +229,42 @@ describe('押せない間と、押せるようになるとき', () => {
 });
 
 describe('Enter の押しっぱなし（キーのリピート）', () => {
+  const repeatIsStopped = (el: HTMLElement): boolean =>
+    fireEvent.keyDown(el, { key: 'Enter', repeat: true }) === false;
+  const firstIsKept = (el: HTMLElement): boolean =>
+    fireEvent.keyDown(el, { key: 'Enter', repeat: false }) === true;
+
   it('リピートの keydown は、click を起こさないよう止める。最初の 1 回は止めない', () => {
     toHome();
-    expect(fireEvent.keyDown(primary(), { key: 'Enter', repeat: false })).toBe(true);
-    expect(fireEvent.keyDown(primary(), { key: 'Enter', repeat: true })).toBe(false);
-    expect(fireEvent.keyDown(primary(), { key: ' ', repeat: true })).toBe(false);
+    expect(firstIsKept(primary())).toBe(true);
+    expect(repeatIsStopped(primary())).toBe(true);
+    // Space は、キーを離したときに 1 回だけ click になる（keydown のリピートでは何も起きない）ので、対象にしない
+    expect(fireEvent.keyDown(primary(), { key: ' ', repeat: true })).toBe(true);
   });
 
   it('副のボタンと、次のアクションの行も、同じ', async () => {
     await toFriend();
-    expect(fireEvent.keyDown(secondary(), { key: 'Enter', repeat: true })).toBe(false);
-    expect(fireEvent.keyDown(secondary(), { key: 'Enter', repeat: false })).toBe(true);
+    expect(repeatIsStopped(secondary())).toBe(true);
+    expect(firstIsKept(secondary())).toBe(true);
     openNextPage();
     const row = screen.getAllByRole('button', { name: /^仲間を呼ぶ/ })[0] as HTMLButtonElement;
-    expect(fireEvent.keyDown(row, { key: 'Enter', repeat: true })).toBe(false);
+    expect(repeatIsStopped(row)).toBe(true);
+  });
+
+  it('層（シート）の中のボタン・入力欄も、同じ。押しっぱなしで、開いたシートがすぐ閉じることがない', async () => {
+    toHome();
+    fireEvent.click(primary()); // 推し活定期
+    await tick(700);
+    fireEvent.click(primary()); // 額の入力のシート
+    await act(async () => {
+      await vi.dynamicImportSettled();
+    });
+    const sheet = screen.getByRole('dialog', { name: '預金を積み増す' });
+    const close = within(sheet).getByRole('button', { name: '閉じる' });
+    const input = within(sheet).getByRole('textbox', { name: '積み増す額（円）' });
+    expect(repeatIsStopped(close)).toBe(true);
+    expect(repeatIsStopped(input)).toBe(true);
+    expect(firstIsKept(close)).toBe(true);
+    expect(firstIsKept(input)).toBe(true);
   });
 });

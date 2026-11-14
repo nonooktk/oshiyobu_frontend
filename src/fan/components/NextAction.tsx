@@ -7,7 +7,6 @@ import type { NextRow } from '../domain/view';
 import styles from '../fan.module.css';
 import { useFan } from '../store/FanProvider';
 import { DetailPage } from './Frame';
-import { noRepeat } from './press';
 import { Rich } from './text';
 
 export function NextAction() {
@@ -125,7 +124,6 @@ export function NextAction() {
               style={delay}
               aria-busy={state.held}
               onClick={() => actions.press(() => run(row))}
-              onKeyDown={noRepeat}
             >
               <b>{row.label}</b>
               <small>

@@ -12,7 +12,6 @@ import { useFan } from '../store/FanProvider';
 import { WholeArt } from './Art';
 import { Meter } from './Meter';
 import { Strip } from './Frame';
-import { noRepeat } from './press';
 import { Wbr } from './text';
 
 export function Home() {
@@ -140,7 +139,6 @@ export function Home() {
         aria-label={`${act.label}。${act.hint}`}
         aria-busy={state.held}
         onClick={() => actions.press(actions.homePrimary)}
-        onKeyDown={noRepeat}
       >
         <span className={styles.nxL}>
           {act.label}
@@ -157,7 +155,6 @@ export function Home() {
             className={`${styles.btn} ${styles.btnSecondary} ${styles.btnSm} ${styles.shareBtn}`}
             aria-busy={state.held}
             onClick={() => actions.press(() => actions.openShare('share'))}
-            onKeyDown={noRepeat}
           >
             SNSに投稿する（任意）
           </button>

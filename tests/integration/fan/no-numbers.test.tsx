@@ -10,7 +10,6 @@ import {
   act,
   btn,
   click,
-  closeGiftAfterFx,
   fireEvent,
   layer,
   mountFan,

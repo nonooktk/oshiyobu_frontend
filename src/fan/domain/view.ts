@@ -247,7 +247,7 @@ export function nextViewOf(v: FanView): NextView {
     }
     if (!p && !needMain) rows.push(mainRow);
     const hint = ok
-      ? `${t.name}（${yen(t.price)}）に申し込めます`
+      ? `申し込む → ${after.stage > v.heat.stage ? `${after.name}へ` : '熱が高まります'}（${yen(t.price)}）`
       : `${t.name}まで、残りは ${restText(t, d, p)}`;
     return { head: { kind: 'pre', course: t, items: condItems(v, t), ok }, rows, hint };
   }
@@ -257,18 +257,18 @@ export function nextViewOf(v: FanView): NextView {
       id: 'notice',
       label: '仲間に知らせる',
       why: [`いまの熱量は ${v.heat.name}。投稿文は、いまの熱量で作られます`],
-      hint: '仲間に知らせましょう',
+      hint: '仲間に知らせる → 開催が決まったことを伝える',
     });
   } else {
     // 仲間を呼ぶと成立する（ひとり体験は、必ず成立に届く所まで増える）
     const clinch = {
       why: '仲間が申し込むと、ライブの開催が決まります',
-      hint: '仲間を呼ぶと、ライブの開催が決まります',
+      hint: '仲間を呼ぶ → FEVER（開催決定）へ',
     };
     const ft =
       v.friendsClinch || status.friendClinches
         ? clinch
-        : { why: '仲間が申し込むと、熱が高まります', hint: '仲間を呼ぶと、熱が高まります' };
+        : { why: '仲間が申し込むと、熱が高まります', hint: '仲間を呼ぶ → 熱が高まります' };
     const gc = v.giftCount;
     if (!fan.done.friend)
       rows.push({ id: 'friend', label: '仲間を呼ぶ', why: [ft.why], hint: ft.hint });

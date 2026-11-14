@@ -429,19 +429,28 @@
   border-radius: var(--pill);
   background: var(--ink);
 }
-/* 棒の色は、満タンのときの長さに対して固定（青 → 水色 → 黄 → 赤）。長さが伸びるほど、色が足されていく */
+/*
+  棒の色は、満タンのときの長さに対して固定の虹（青 → 水色 → 緑 → 黄 → 橙 → 赤）。長さが伸びるほど、色が足されて、FEVER（満タン）で全体が虹色になる。
+  色は、tokens.css にある値だけ（新しい色は足していない。緑と橙は、--success・--warning の値を借りた）。
+*/
+.gTrough,
+.barH {
+  --rainbow: linear-gradient(
+    90deg,
+    var(--primary) 0%,
+    var(--sky) 18%,
+    var(--sky-light) 34%,
+    var(--success) 50%,
+    var(--yellow) 66%,
+    var(--warning) 82%,
+    var(--heat-3) 100%
+  );
+}
 .gTrough i {
   display: block;
   width: calc(var(--g) * 100%);
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    var(--primary) 0%,
-    var(--sky) 25%,
-    var(--sky-light) 45%,
-    var(--yellow) 70%,
-    var(--heat-3) 100%
-  );
+  background: var(--rainbow);
   background-size: calc(100% / var(--g)) 100%;
   transition: width 0.9s cubic-bezier(0.2, 0.9, 0.3, 1);
 }
@@ -1108,14 +1117,7 @@ button.rcard:hover {
   display: block;
   width: calc(var(--g, 0) * 100%);
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    var(--primary) 0%,
-    var(--sky) 25%,
-    var(--sky-light) 45%,
-    var(--yellow) 70%,
-    var(--heat-3) 100%
-  );
+  background: var(--rainbow);
   background-size: calc(100% / var(--g, 1)) 100%;
   transition: width 0.5s ease;
 }

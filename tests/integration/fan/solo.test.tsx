@@ -73,7 +73,7 @@ describe('ひとり体験（既定）', () => {
     passStart();
     await closeGiftAfterFx();
     expect(screen.getByRole('button', { name: /^次のアクション/ }).textContent).toContain(
-      '仲間を呼ぶと、ライブの開催が決まります',
+      '仲間を呼ぶ → FEVER（開催決定）へ',
     );
   });
 

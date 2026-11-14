@@ -141,21 +141,21 @@ describe('次のアクション（SP-42）', () => {
     expect(v.rows[1]?.label).toBe('預金を積み増す ＋10,000円');
   });
 
-  it('条件がそろうと、先頭に「{コース}に申し込む」が出て、押すと支援者が 74 人から 75 人になる説明が付く', () => {
+  it('条件がそろうと、先頭に「{コース}に申し込む」が出て、押すと何が進むか（FEVER 目前へ）の説明が付く', () => {
     const h = harness(4);
     h.a.aimCourse('front');
     h.a.runAcct('main', 'next');
     h.a.runAcct('deposit', 'next');
     const v = nextViewOf(h.view());
     expect(v.rows[0]).toMatchObject({ id: 'apply', label: '前方の席に申し込む' });
-    expect(v.hint).toBe('前方の席（21,000円）に申し込めます');
+    expect(v.hint).toBe('申し込む → FEVER 目前へ（21,000円）'); // 行動 → 結果の対。自分が払う金額だけ残す
   });
 
   it('申し込んだあとは、仲間を呼ぶ・SNSで広めるだけ。成立後は「仲間に知らせる」（B4）', () => {
     const h = harness(4);
     passStart(h);
     expect(nextViewOf(h.view()).rows.map((r) => r.id)).toEqual(['friend', 'share']);
-    expect(nextViewOf(h.view()).rows[0]?.hint).toBe('仲間を呼ぶと、熱が高まります'); // 人数は言わない
+    expect(nextViewOf(h.view()).rows[0]?.hint).toBe('仲間を呼ぶ → 熱が高まります'); // 人数は言わない
     const h2 = harness(4, { server: 19 });
     passStart(h2);
     expect(nextViewOf(h2.view()).rows.map((r) => r.id)).toEqual(['notice']);

@@ -39,8 +39,8 @@ export type Env = { cond: Condition; pid: PerformanceId; meter: MeterIn };
 export type Deps = {
   /** 申し込みの送信（即座に戻る。数えられる前でも画面は先に進む）。 */
   join: (pid: PerformanceId) => void;
-  /** 共有メーターの取得の依頼。 */
-  fetch: (reason: 'open' | 'course-select' | 'performance-changed') => void;
+  /** 共有メーターの取得の依頼。pid を渡すと、見ている公演ではなく、その公演を取る（選び直して、まだ確定していない公演）。 */
+  fetch: (reason: 'open' | 'course-select' | 'performance-changed', pid?: PerformanceId) => void;
   /** 動きを減らす設定か。 */
   reduceMotion: () => boolean;
   /** 別タブで開く（X・Facebook）。 */
@@ -599,7 +599,9 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     if (!s) return;
     set({ start: { ...s, step: n } });
     announce(`${n + 1} / 3。${STEP_TITLES[n]}`);
-    if (n === 2) deps.fetch('course-select');
+    // 3/3 で取るのは、これから申し込む公演（選び直していれば、確定前の公演）。見ている公演は古いままのことがある（G2-04）
+    if (n === 2)
+      deps.fetch('course-select', performanceIdOf(s.oshiId, venueForCity(state, s.city)));
   };
   const startBack = (): void => {
     const s = state.start;

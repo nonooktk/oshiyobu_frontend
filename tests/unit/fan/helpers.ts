@@ -17,6 +17,8 @@ export function harness(
   const joins: PerformanceId[] = [];
   const opened: string[] = [];
   const fetches: string[] = [];
+  /** 取得の依頼で渡された公演（渡さなかったときは undefined）。fetches と同じ順 */
+  const fetchPids: (PerformanceId | undefined)[] = [];
   const copied: string[] = [];
   let server = opts.server ?? 0;
   let counted = false;
@@ -29,8 +31,9 @@ export function harness(
         sync();
       }
     },
-    fetch: (reason) => {
+    fetch: (reason, pid) => {
       fetches.push(reason);
+      fetchPids.push(pid);
     },
     reduceMotion: () => opts.reduceMotion ?? false,
     openWindow: (url) => opened.push(url),
@@ -59,6 +62,7 @@ export function harness(
     a: store.actions,
     joins,
     fetches,
+    fetchPids,
     opened,
     copied,
     state: () => store.getState(),

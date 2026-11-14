@@ -47,9 +47,12 @@ export function joinPerformance(performanceId: PerformanceId): void {
   getEngine().join(performanceId);
 }
 
-/** サーバーの人数を、1 回取りに行くよう頼む（前の取得から 1.8 秒たってから送る） */
-export function requestMeterFetch(reason: MeterFetchReason): void {
-  getEngine().requestFetch(reason);
+/**
+ * サーバーの人数を、1 回取りに行くよう頼む（前の取得から 1.8 秒たってから送る）。
+ * performanceId を渡すと、見ている公演ではなく、その公演を取る（はじめの画面で選び直して、まだ確定していない公演。G2-04）
+ */
+export function requestMeterFetch(reason: MeterFetchReason, performanceId?: PerformanceId): void {
+  getEngine().requestFetch(reason, performanceId);
 }
 
 /** reset を検知したときの動きを登録する。返す関数で解除する */

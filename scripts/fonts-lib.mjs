@@ -164,14 +164,23 @@ export function collectChars(text, kind) {
   return set;
 }
 
-/** 画面の字を集めるファイルの一覧（根からの相対パス・/ 区切り・並び順は固定） */
+/**
+ * 画面の字を集める対象から外す置き場（根からの相対パス・/ 区切り・末尾に /）。
+ * 事務所向けの実在データ（会場・過去の公演。G-30）。実在の名前は漢字の種類が多く、配るフォントに足すと量の上限を超えるため、
+ * 字を足さない（統括の決定 2026-11-14）。この置き場の字は、漏れの検査にも、fonts:build が絞る字の集合にも入れない。
+ * フォントに無い字は、書体の並びの後ろにある端末の書体で出る（tokens.css の --font）。
+ */
+export const FONT_EXCLUDED_DIRS = ['src/office/data/'];
+
+/** 画面の字を集めるファイルの一覧（根からの相対パス・/ 区切り・並び順は固定）。FONT_EXCLUDED_DIRS の中は入れない */
 export function screenSourceFiles(root) {
   const out = [];
   const walk = (dir, prefix) => {
     for (const entry of readdirSync(join(root, dir), { withFileTypes: true })) {
       const rel = `${prefix}${entry.name}`;
-      if (entry.isDirectory()) walk(join(dir, entry.name), `${rel}/`);
-      else if (/\.(tsx?|css)$/.test(entry.name)) out.push(rel);
+      if (entry.isDirectory()) {
+        if (!FONT_EXCLUDED_DIRS.includes(`${rel}/`)) walk(join(dir, entry.name), `${rel}/`);
+      } else if (/\.(tsx?|css)$/.test(entry.name)) out.push(rel);
     }
   };
   walk('src', 'src/');

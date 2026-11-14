@@ -2,7 +2,7 @@
 // 通信は無い。共有メーターは、仮の I/F のメモリの値（サーバーへの申し込みの合図は、画面の人数に足されないことを確かめる）。
 import { describe, expect, it, vi } from 'vitest';
 import { getAppStore } from '../../../src/fan/store/FanProvider';
-import { createLink } from '../../../src/shared/link';
+import { LINK_CHANNEL_NAME, createLink } from '../../../src/shared/link';
 import { asBroadcastChannel, FakeChannel } from '../../helpers/fakeChannel';
 import {
   act,
@@ -294,12 +294,17 @@ describe('共有メーターの reset と連動（I-64・I-126・A-62 のファ�
     FakeChannel.reset();
     vi.stubGlobal('BroadcastChannel', asBroadcastChannel);
     mountFan('?p=4');
-    const office = createLink(asBroadcastChannel);
+    // 事務所向けは、もう選択を送らない（tests/integration/fan/office-isolation.test.tsx）。昔の版が送っていた形のメッセージが
+    // 別の接続から届いても、ファン向けは読まない
+    const office = new FakeChannel(LINK_CHANNEL_NAME);
     await act(async () => {
-      office.publishOffice({
-        venueId: 'KMM-002',
-        costs: { venue: 60000, prod: 100000, fee: 250000, travel: 120000, profit: 120000 },
-        minPeople: null,
+      office.postMessage({
+        type: 'office',
+        selection: {
+          venueId: 'KMM-002',
+          costs: { venue: 60000, prod: 100000, fee: 250000, travel: 120000, profit: 120000 },
+          minPeople: null,
+        },
       });
       vi.advanceTimersByTime(200);
     });

@@ -1,7 +1,7 @@
 // 事務所向け（/）の結合テスト（I-01〜I-15・I-101・I-110・I-113 の事務所側）。画面を描き、core の数字と照合する
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { PUBLISH_DEBOUNCE_MS, createLink, resetLinkForTest } from '../../src/shared/link';
+import { LINK_CHANNEL_NAME, createLink, resetLinkForTest } from '../../src/shared/link';
 import { App } from '../../src/office/App';
 import { initialOfficeState, officeStore } from '../../src/office/store';
 import { FakeChannel, asBroadcastChannel } from '../helpers/fakeChannel';
@@ -465,18 +465,21 @@ describe('事務所向け', () => {
       return fan;
     };
 
-    it('会場を選ぶと、100 ms でまとめて、ファン向けに会場・費用・最低人数が届く', () => {
+    it('会場・費用・最低人数を変えても、ファン向けへ選択を送らない。事務所向けの画面の中の判定は、変えた条件で動く', () => {
       vi.useFakeTimers();
-      const fan = open();
+      const seen: unknown[] = [];
+      new FakeChannel(LINK_CHANNEL_NAME).addEventListener('message', (e) => seen.push(e.data));
       render(<App />);
       pickBase();
       openAdjust();
       type('最低人数', '80');
+      type('会場費', '100000');
       act(() => {
-        vi.advanceTimersByTime(PUBLISH_DEBOUNCE_MS);
+        vi.advanceTimersByTime(1000);
       });
-      expect(fan.getLinked()?.selection).toMatchObject({ venueId: 'cbox', minPeople: 80 });
-      expect(fan.getLinked()?.selection.costs.venue).toBe(60000);
+      expect(seen).toEqual([]); // 選択のメッセージは、1 件も流れない
+      expect(screen.getByTestId('rule').textContent).toContain('80人');
+      expect(text('line')).toBe('690,000円'); // 会場費 +40,000円（60,000円 → 100,000円）
     });
 
     it('「デモを最初に戻す」は、ファン向けを戻す（resetAll）。「事務所向けだけ戻す」は、送らない', () => {

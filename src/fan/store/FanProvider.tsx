@@ -11,8 +11,7 @@ import {
   useSyncExternalStore,
 } from 'react';
 import type { ReactNode } from 'react';
-import { performanceIdOf } from '../../core';
-import { useEffectiveCondition } from '../../shared/condition';
+import { conditionOf, performanceIdOf } from '../../core';
 import { onResetAll } from '../../shared/link';
 import {
   isSoloMeter,
@@ -71,7 +70,9 @@ type Props = { store: FanStore; children: ReactNode };
 export function FanProvider({ store, children }: Props) {
   const state = useSyncExternalStore(store.subscribe, store.getState);
   const pid = performanceIdOf(state.oshiId, state.venueId);
-  const cond = useEffectiveCondition(state.venueId);
+  // ファン向けの条件は、core の既定の条件だけを使う（会場は、久留米市の既定の会場に固定）。事務所向けで選んだ会場・費用・最低人数は読まない。
+  // 読むと、事務所向けの作り直しで、「申し込む → 仲間を呼ぶ」で必ず成立に届く決まり（G-02）が崩れうる（統括の決定 2026-11-14）
+  const cond = useMemo(() => conditionOf(state.venueId), [state.venueId]);
   // はじめの画面では、2 秒おきの取得はしない（契機の 1 回だけ。設計 D-18 の規則 8）
   const meter = useSharedMeter(pid, { poll: state.page !== 'start' });
   const serverJoined = meter.joined;

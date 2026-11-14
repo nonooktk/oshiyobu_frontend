@@ -84,8 +84,8 @@ describe('② ストアの操作で、人物 15 通り × 画面から選べる�
     h.a.applyCourse(courseId);
     vi.advanceTimersByTime(10_000);
     const applied = h.state().course === courseId;
-    h.a.openShare('friend');
-    h.a.closeShare();
+    h.a.closeGift(); // 申し込みの称賛と特典 1/3 の絵のあと、ホームの主のボタン「仲間を呼ぶ」を押す
+    h.a.callFriends();
     vi.advanceTimersByTime(10_000);
     const result = { applied, status: h.view().status, state: h.state(), cond: h.view().cond };
     h.store.dispose();

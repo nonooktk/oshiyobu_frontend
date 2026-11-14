@@ -14,6 +14,7 @@ import {
   homeActionButtons,
   layer,
   mountFan,
+  openNextPage,
   passStart,
   screen,
   tick,
@@ -59,7 +60,7 @@ describe('基準の流れ（人物 4・tech0・久留米市・Cボックス）',
     expect(screen.getByText('デモ用の架空データ')).toBeTruthy();
   });
 
-  it('ホームのボタンは「次のアクション」の 1 つだけ（A-34）。申し込む前の知らせは、申し込むと消える', () => {
+  it('ホームのボタンは主のボタンの 1 つだけ（A-34。申し込む前。SNS の副のボタンは、申し込んだあと）。申し込む前の知らせは、申し込むと消える', () => {
     mountFan('?p=4');
     click('次へ');
     click('次へ');
@@ -67,7 +68,8 @@ describe('基準の流れ（人物 4・tech0・久留米市・Cボックス）',
     click('このコースを目指して始める');
     expect(screen.getByText('まだチケットと特典は入手できていません！')).toBeTruthy();
     expect(homeActionButtons()).toHaveLength(1);
-    expect(homeActionButtons()[0]).toMatch(/^次のアクション/);
+    // 前方の席を目指す人物 4（メイン口座はまだ）: いまやることは「メイン口座にする」
+    expect(homeActionButtons()[0]).toMatch(/^メイン口座にする/);
   });
 
   it('申し込むと 0.65 秒後に FEVER 目前の演出が出て、押すと飛ばせて、特典の絵が出る（A-40・A-41）', async () => {
@@ -87,7 +89,7 @@ describe('基準の流れ（人物 4・tech0・久留米市・Cボックス）',
     mountFan('?p=4');
     passStart();
     await closeGiftAfterFx();
-    click(/^次のアクション/);
+    openNextPage();
     const rows = screen
       .getAllByRole('button')
       .map((b) => b.textContent ?? '')
@@ -131,7 +133,7 @@ describe('前方の席を目指す流れ（人物 4。A-24〜A-27・I-23）', ()
     click('次へ');
     fireEvent.click(seatCard('前方の席'));
     click('このコースを目指して始める');
-    click(/^次のアクション/);
+    openNextPage();
     expect(screen.getByText('預金 あと 10,000円（いま 90,000円／100,000円以上）')).toBeTruthy();
     expect(screen.getByText('メイン口座にする', { selector: 'li span' })).toBeTruthy();
 
@@ -157,7 +159,7 @@ describe('前方の席を目指す流れ（人物 4。A-24〜A-27・I-23）', ()
     click('次へ');
     fireEvent.click(seatCard('前方の席'));
     click('このコースを目指して始める');
-    click(/^次のアクション/);
+    openNextPage();
     fireEvent.click(screen.getByRole('button', { name: /^メイン口座にする/ }));
     expect(layer('ach')?.textContent).toContain('条件を1つクリア');
     fireEvent.click(screen.getByRole('button', { name: /^預金を積み増す/ }));
@@ -172,7 +174,7 @@ describe('前方の席を目指す流れ（人物 4。A-24〜A-27・I-23）', ()
     click('次へ');
     fireEvent.click(seatCard('前方の席'));
     click('このコースを目指して始める');
-    click(/^次のアクション/);
+    openNextPage();
     fireEvent.click(screen.getByRole('button', { name: /^メイン口座にする/ }));
     fireEvent.click(screen.getByRole('button', { name: /^預金を積み増す/ })); // 条件がそろう（2.0 秒のエフェクト）
     expect(layer('ach')?.textContent).toContain('そろいました！');
@@ -195,7 +197,7 @@ describe('前方の席を目指す流れ（人物 4。A-24〜A-27・I-23）', ()
       click('次へ');
       fireEvent.click(seatCard('前方の席'));
       click('このコースを目指して始める');
-      click(/^次のアクション/);
+      openNextPage();
       fireEvent.click(screen.getByRole('button', { name: /^メイン口座にする/ }));
       const ach = layer('ach') as HTMLElement;
       expect(ach.querySelectorAll('i')).toHaveLength(0); // 紙吹雪 0
@@ -247,8 +249,7 @@ describe('共有メーターの reset と連動（I-64・I-126・A-62 のファ�
     await tick(6000); // 次の取得で、resetAt の変化を見つける（3 秒前後）
     expect(supporters()).toBe(74);
     expect(screen.getByText('まだチケットと特典は入手できていません！')).toBeTruthy();
-    click(/^次のアクション/);
-    fireEvent.click(screen.getByRole('button', { name: /^通常の席に申し込む/ }));
+    click(/^申し込む/); // ホームの主のボタン（その場で申し込む）
     await tick(3000);
     expect(api.joined).toBe(1);
     expect(supporters()).toBe(75);

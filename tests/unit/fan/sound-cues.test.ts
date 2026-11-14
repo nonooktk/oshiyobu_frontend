@@ -42,11 +42,9 @@ describe('鳴る時点の一覧', () => {
     vi.advanceTimersByTime(700 + 2510);
     h.a.closeGift();
     sounds.length = 0;
-    h.a.openShare('friend');
-    h.a.closeShare();
-    vi.advanceTimersByTime(2000);
+    h.a.callFriends();
     expect(sounds).toEqual(['friend']);
-    vi.advanceTimersByTime(700);
+    vi.advanceTimersByTime(2600); // ゲージが伸びきった瞬間（FEVER）
     expect(sounds).toEqual(['friend', 'fever']);
   });
 

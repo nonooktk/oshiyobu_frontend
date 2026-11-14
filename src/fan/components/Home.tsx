@@ -1,9 +1,10 @@
-// ホーム（SP-41）。上の帯 → 推しの絵と名札 → 推しのコメント → メーター → 〔申し込む前だけ〕知らせ → 「次のアクション」。
-// 幅 375px・高さ 667px と 812px の両方で、スクロールなしに全部が見える。ボタンは「次のアクション」1 つだけ（帯の「メニュー」「リセット」を除く）。
+// ホーム（SP-41）。上の帯 → 推しの絵と名札 → 推しのコメント → メーター → 〔申し込む前だけ〕知らせ → 主のボタン → 副のボタン（SNS への投稿）。
+// 主のボタンは、ゲージを進めるために、いま何をすればよいかを示す行動そのもの（申し込む／仲間を呼ぶ／仲間に知らせる／預金を積み増す）。押すと、その場で進む。
+// 幅 320〜390px・高さ 640〜844px で、スクロールなしに全部が見える。
 import { useEffect, useRef, useState } from 'react';
 import { artistView } from '../art/registry';
 import logoMark from '../../assets/img/logo-mark.webp';
-import { homeKeyOf, nextViewOf } from '../domain/view';
+import { homeActionOf, homeKeyOf } from '../domain/view';
 import { VOICES } from '../text/voices';
 import styles from '../fan.module.css';
 import { useFan } from '../store/FanProvider';
@@ -16,23 +17,34 @@ export function Home() {
   const { state, view, actions } = useFan();
   const o = artistView(state.oshiId);
   const voice = VOICES[o.id];
-  const next = nextViewOf(view);
+  const act = homeActionOf(view);
   const key = homeKeyOf(view);
   const lines = voice.home[key](view.heat.stage, view.cond.city);
   const src = o.art.imgs ? (o.art.imgs[Math.max(0, state.homeIdx)] ?? o.art.imgs[0]) : o.art.img;
   const nextBtn = useRef<HTMLButtonElement>(null);
-  // ホームに着いたら、「次のアクション」にフォーカスを置く
+  // ホームに着いたら、主のボタンにフォーカスを置く
   useEffect(() => {
     nextBtn.current?.focus({ preventScroll: true });
   }, []);
-  // 2 行目の 1 行が変わったときだけ、ボタンがはずむ
-  const [prevHint, setPrevHint] = useState(next.hint);
+  // 行動が変わったとき（2 行目の 1 行が変わったとき）だけ、ボタンがはずむ
+  const hint = `${act.label}${act.sub}`;
+  const [prevHint, setPrevHint] = useState(hint);
   const [popKey, setPopKey] = useState(0);
-  if (prevHint !== next.hint) {
-    setPrevHint(next.hint);
+  if (prevHint !== hint) {
+    setPrevHint(hint);
     setPopKey(popKey + 1);
   }
-
+  // 副のボタン（SNS への投稿）は、申し込んだあとから。まだ投稿していない間だけ。主のボタンが投稿のときは、重ねない
+  const showShare = view.joined && !state.done.share && act.id !== 'share';
+  const note = !view.joined
+    ? act.id === 'apply'
+      ? '押すと、その場で完了します。擬似の動きで、実際の手続きは始まりません。'
+      : act.id === 'deposit'
+        ? '積み増す額は、次の画面で決めます。仮の預金で、実際の入金は始まりません。'
+        : '押すと、その場で完了します。擬似の動きで、実際の入出金は始まりません。'
+    : view.status.established
+      ? '開催が決まったことを、仲間にも伝えられます。'
+      : '投稿してくれてありがとう。';
   return (
     <div className={`${styles.page} ${styles.home}`}>
       <Strip />
@@ -99,7 +111,7 @@ export function Home() {
         <Wbr parts={lines} />
       </p>
 
-      <Meter view={view} />
+      <Meter view={view} run={state.gaugeRun} />
 
       {view.joined ? null : (
         <p className={styles.warn}>
@@ -115,21 +127,36 @@ export function Home() {
       <button
         ref={nextBtn}
         type="button"
+        data-act={act.id}
         className={
           popKey === 0
             ? styles.homeNext
             : `${styles.homeNext} ${popKey % 2 ? styles.btnPopA : styles.btnPopB}`
         }
-        onClick={() => actions.go('next')}
+        aria-label={`${act.label}。${act.hint}`}
+        onClick={actions.homePrimary}
       >
         <span className={styles.nxL}>
-          次のアクション
+          {act.label}
           <i className={styles.chev} aria-hidden="true">
             ›
           </i>
         </span>
-        <span className={styles.nxW}>{next.hint}</span>
+        <span className={styles.nxW}>{act.sub}</span>
       </button>
+      <div className={styles.slot}>
+        {showShare ? (
+          <button
+            type="button"
+            className={`${styles.btn} ${styles.btnSecondary} ${styles.btnSm} ${styles.shareBtn}`}
+            onClick={() => actions.openShare('share')}
+          >
+            SNSに投稿する（任意）
+          </button>
+        ) : (
+          <p className={styles.slotNote}>{note}</p>
+        )}
+      </div>
     </div>
   );
 }

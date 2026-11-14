@@ -21,6 +21,7 @@ import type {
   AchSpec,
   Confetto,
   FanState,
+  FxKind,
   FxSpec,
   Layer,
   Page,
@@ -32,6 +33,7 @@ import {
   condItems,
   courseOf,
   friendsToClinch,
+  homeActionOf,
   opensList,
   restText,
   viewOf,
@@ -42,6 +44,16 @@ import { postedText } from '../domain/share';
 import type { ShareChannel } from '../domain/share';
 import type { SoundCue } from '../sound';
 import { yen } from '../text/format';
+import {
+  PRAISE_FEVER,
+  PRAISE_FRIEND,
+  PRAISE_JOIN,
+  PRAISE_JOIN_FEVER,
+  PRAISE_NOTIFY,
+  PRAISE_SHARE,
+  praiseJoinStage,
+} from '../text/praise';
+import type { Praise } from '../text/praise';
 import { VOICES } from '../text/voices';
 
 /** ストアが外から受ける、条件とメーターの最新値（Provider が描画のたびに渡す）。 */
@@ -91,7 +103,8 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
   let state: FanState = initialState(personaNo);
   let env: Env | null = null;
   let seq = 0;
-  let inviteTimer: ReturnType<typeof setTimeout> | null = null;
+  /** 仲間を呼んでいる最中か（押し続けても、1 回ぶんしか進めない）。 */
+  let calling = false;
   let achTimer: ReturnType<typeof setTimeout> | null = null;
   let achFlashAt = -Infinity;
   const timers = new Set<ReturnType<typeof setTimeout>>();
@@ -200,6 +213,11 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
   };
 
   const showFx = (o: {
+    kind: FxKind;
+    /** 派手にするか（帯・揺れ。FEVER の瞬間だけ）。 */
+    strong?: boolean;
+    /** ホームの上で、ゲージの手前までを暗くするか（称賛の演出）。 */
+    overHome?: boolean;
     title: string;
     small: string;
     sub: string;
@@ -210,11 +228,17 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     ms: number;
     reduceMs: number;
     live: string;
+    /** 読み上げを遅らせるとき（ミリ秒）。先に伝えた文を、上書きしない。 */
+    liveAfter?: number;
     onEnd?: () => void;
-  }): void => {
+  }): number => {
     const id = ++seq;
+    const strong = o.strong ?? false;
     const spec: FxSpec = {
       id,
+      kind: o.kind,
+      strong,
+      overHome: o.overHome ?? false,
       title: o.title,
       small: o.small,
       sub: o.sub,
@@ -223,14 +247,51 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       subSize: o.subSize,
       ms: o.ms,
       reduceMs: o.reduceMs,
-      confetti: confetti(46, 1.6, 1.6, 0.2, 0.9),
+      confetti: confetti(strong ? 110 : 56, 1.6, 1.6, 0.2, 0.9),
       ...(o.say ? { say: o.say } : {}),
     };
     if (o.onEnd) fxEnd.set(id, o.onEnd);
     pushLayer({ kind: 'fx', fx: spec });
-    announce(o.live);
+    if (o.liveAfter === undefined) announce(o.live);
+    else later(o.liveAfter, () => announce(o.live));
     later(reduce() ? o.reduceMs : o.ms, () => hideFx(id));
+    return id;
   };
+  /**
+   * 称賛の演出（行動の直後）。大きい文字 → 褒めことばのカード（あなたがしたこと → それで何が進んだか）→ 推しのひとこと。
+   * 強さは標準。派手（帯・揺れ）にするのは、FEVER の瞬間（strong）だけ。ゲージの手前までを暗くして、ゲージの伸びを見せる。
+   */
+  const showPraise = (o: {
+    kind: FxKind;
+    praise: Praise;
+    strong?: boolean;
+    /** ゲージの手前までを暗くするか（既定は true。投稿のシートの上など、ゲージが見えないときは false）。 */
+    overHome?: boolean;
+    size: number;
+    say?: string;
+    ms: number;
+    reduceMs: number;
+    live: string;
+    liveAfter?: number;
+    onEnd?: () => void;
+  }): number =>
+    showFx({
+      kind: o.kind,
+      overHome: o.overHome ?? true,
+      ...(o.strong ? { strong: true } : {}),
+      title: o.praise.title,
+      small: o.praise.small,
+      sub: o.praise.sub,
+      size: o.size,
+      stroke: o.strong ? 12 : 10,
+      subSize: 18,
+      ms: o.ms,
+      reduceMs: o.reduceMs,
+      live: o.live,
+      ...(o.liveAfter !== undefined ? { liveAfter: o.liveAfter } : {}),
+      ...(o.say ? { say: o.say } : {}),
+      ...(o.onEnd ? { onEnd: o.onEnd } : {}),
+    });
   /** 演出を閉じて、次（絵）へ進む。押して飛ばしたときも、時間が来たときも同じ。 */
   const hideFx = (id?: number): void => {
     const top = state.layers[state.layers.length - 1];
@@ -267,6 +328,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     }
     const k = view().giftCount;
     showFx({
+      kind: 'gift',
       title: 'ごほうび',
       small: `特典 ${k}/3 が開いた！`,
       sub: GIFT_SUB[k - 1] ?? GIFT_SUB[0],
@@ -316,35 +378,49 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
   /**
    * 称賛の演出の中身（FEVER 目前・FEVER）。申し込んだ直後と、仲間を呼んで成立したときが使う。
    * 褒めるのは行動だけ（あなたがしたこと → それで何が進んだか）。数字は出さない（G-08）。
+   * FEVER の瞬間だけ派手（帯・揺れ）。申し込みのときの推しのひとことは、開いた特典を伝える。仲間を呼んだときは、仲間のことを伝える。
    */
   const showReached = (cb: () => void, withGift: boolean, by: 'join' | 'friend'): void => {
-    const established = view().status.established;
+    const v = view();
+    const established = v.status.established;
     sound(established ? 'fever' : 'stage');
-    const t = established
-      ? {
-          title: 'FEVER！',
-          small: by === 'friend' ? '仲間を呼んでくれてありがとう' : '申し込んでくれてありがとう',
-          sub: 'あなたの声が届いて、開催が決まりました',
-          size: 76,
-        }
-      : {
-          title: 'FEVER 目前！',
-          small: 'あなたの一歩で、',
-          sub: 'FEVER 目前まで来ました',
-          size: 52,
-        };
-    showFx({
-      ...t,
-      stroke: 12,
-      subSize: 18,
-      ms: 2500,
-      reduceMs: 1500,
-      ...(withGift ? { say: VOICES[state.oshiId].say.gift('特典 1/3') } : {}),
+    const praise = established
+      ? by === 'friend'
+        ? PRAISE_FEVER
+        : PRAISE_JOIN_FEVER
+      : praiseJoinStage(v.heat.name);
+    const say = withGift
+      ? VOICES[state.oshiId].say.gift('特典 1/3')
+      : established && by === 'friend'
+        ? VOICES[state.oshiId].say.friend()
+        : undefined;
+    showPraise({
+      kind: established ? 'fever' : 'stage',
+      praise,
+      strong: established,
+      size: established ? 80 : 64,
+      ...(say ? { say } : {}),
+      ms: established ? 3600 : 2500,
+      reduceMs: established ? 2000 : 1500,
       live:
         (established
           ? 'FEVER。あなたの声が届いて、ライブの開催が決まりました。'
           : 'FEVER 目前。あなたの一歩で、ここまで来ました。') +
         (withGift ? 'ごほうびが開きました。特典 1/3。' : ''),
+      onEnd: cb,
+    });
+  };
+  /** 段階が上がらない（または 80% を越えない）申し込みの直後の称賛。特典 1/3 のごほうびを、推しのひとことで伝える。 */
+  const showJoinPraise = (cb: () => void, stageUp: boolean): void => {
+    const praise = stageUp ? praiseJoinStage(view().heat.name) : PRAISE_JOIN;
+    showPraise({
+      kind: stageUp ? 'stage' : 'join',
+      praise,
+      size: 64,
+      say: VOICES[state.oshiId].say.gift('特典 1/3'),
+      ms: 2500,
+      reduceMs: 1500,
+      live: `申し込みありがとう。${praise.sub}。ごほうびが開きました。特典 1/3。`,
       onEnd: cb,
     });
   };
@@ -407,10 +483,15 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       const cond = condNow();
       return crossedMilestone(achievementPct(s.supporters - 1, cond.min), s.pct);
     };
+    const stage0 = v.heat.stage;
     later(reduce() ? 0 : 150, () => {
       if (!crosses()) {
-        announce(`申し込みが確定しました。熱量は${view().heat.name}です。`);
-        after(false);
+        // 最初の申し込みは、称賛の演出のあとに特典 1/3 へ。コースの変更・申し込み直しは、トーストだけ
+        if (first) showJoinPraise(() => after(true), view().heat.stage > stage0);
+        else {
+          announce(`申し込みが確定しました。熱量は${view().heat.name}です。`);
+          after(false);
+        }
         return;
       }
       later(reduce() ? 0 : 500, () => {
@@ -543,48 +624,79 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     announce(`${head === '' || /[！。]$/.test(head) ? head : `${head}。`}${detail}。`);
   };
 
-  /* ---------- 共有 ---------- */
+  /* ---------- 仲間を呼ぶ・共有 ---------- */
   const openShare = (mode: ShareMode): void => {
     pushLayer({ kind: 'share', mode });
   };
   const closeShare = (): void => {
-    if (!popLayer('share')) return;
-    // 閉じて 2 秒後に、デモ用の擬似の仲間が 1 人申し込む（1 回だけ。共有のメーターには送らない。決定 3）
-    if (state.course !== null && !state.done.friend && !inviteTimer) {
-      inviteTimer = setTimeout(() => {
-        inviteTimer = null;
-        friendJoins();
-      }, 2000);
-    }
+    popLayer('share');
   };
-  const friendJoins = (): void => {
-    if (state.course === null || state.done.friend) return;
-    const wasEstablished = view().status.established;
-    // ひとり体験は、成立に届く所まで一度に増やす（少なくとも 1 人。届かない公演は 1 人）。共有メーターありは、1 人ずつ
+  /**
+   * 仲間を呼ぶ（ホームの主のボタン）。共有のシートは開かず、すぐ進む。
+   * 押した直後に称賛（「届いた！」）→ ゲージが伸びる（終わりに近いほど速く伸びる）→ 成立のときは FEVER の瞬間の演出、まで一続き。
+   * ひとり体験は、成立に届く所まで一度に増える（少なくとも 1 人。届かない公演は 1 人）。共有メーターありは、1 人ずつ。
+   * 申し込む前は呼べない。成立のあと（と、呼んだあと）は、もう一度は呼べない。人数は、ゲージが伸びきったときに変わる（内部の数字）。
+   */
+  const callFriends = (): void => {
+    if (calling || state.course === null || state.done.friend) return;
+    if (view().status.established || state.layers.length) return;
+    calling = true;
+    clearAch();
+    if (state.page !== 'home') go('home'); // ゲージが見える画面で伸ばす
+    const v0 = view();
     const add = solo() ? Math.max(1, friendsToClinch(state, condNow(), meterNow()) ?? 1) : 1;
-    set({
-      friends: state.friends + add,
-      called: state.called + add,
-      done: { ...state.done, friend: true },
-    });
-    if (state.page !== 'next') go('home');
-    const s = view().status;
-    toast('呼んだ仲間が申し込みました');
+    const v1 = viewOf({ ...state, friends: state.friends + add }, condNow(), meterNow(), solo());
+    const reach = v1.status.established;
+    const ms = reduce() ? (reach ? 1800 : 1500) : reach ? 2600 : 1200;
     sound('friend');
-    announce(
-      `呼んだ仲間が申し込みました。熱量は${view().heat.name}です。` +
-        (s.established ? 'ライブの開催が決まりました。' : ''),
-    );
-    // 仲間を呼んで成立したときは、成立の演出を出してから、特典 3/3 に進む
-    later(reduce() ? 0 : 700, () => {
-      if (!wasEstablished && view().status.established)
-        showReached(() => unlockGift(2), false, 'friend');
-      else unlockGift(2);
+    set({ gaugeRun: reduce() ? null : { from: v0.heat.fill, to: v1.heat.fill, ms, nonce: ++seq } });
+    const fxId = showPraise({
+      kind: 'friend',
+      praise: PRAISE_FRIEND,
+      size: 64,
+      ms,
+      reduceMs: ms,
+      live: '仲間を呼んでくれてありがとう。あなたの声が届いて、熱が高まっています。',
+    });
+    later(ms, () => {
+      hideFx(fxId); // 「届いた！」が残っていれば、ここで閉じる（飛ばしていても、ゲージの伸びは続いている）
+      calling = false;
+      if (state.course === null) {
+        set({ gaugeRun: null }); // 伸びている間に、申し込みをやめた・条件を変えた
+        return;
+      }
+      set({
+        gaugeRun: null,
+        friends: state.friends + add,
+        called: state.called + add,
+        done: { ...state.done, friend: true },
+      });
+      // 成立したときは、FEVER の瞬間の演出を出してから、特典 3/3 に進む
+      if (view().status.established) showReached(() => unlockGift(2), false, 'friend');
+      else {
+        announce(`呼んだ仲間が申し込みました。熱量は${view().heat.name}です。`);
+        unlockGift(2);
+      }
+    });
+  };
+  /** 仲間に知らせる（成立のあと）。短い称賛だけ。人数・状態は変えない。 */
+  const notifyFriends = (): void => {
+    if (state.course === null || !view().status.established || state.layers.length) return;
+    sound('share');
+    showPraise({
+      kind: 'notify',
+      praise: PRAISE_NOTIFY,
+      size: 64,
+      say: VOICES[state.oshiId].say.share(),
+      ms: 2600,
+      reduceMs: 2000,
+      live: '知らせてくれてありがとう。あなたの声が、仲間に届きました。',
     });
   };
   /**
-   * 共有ボタン。外のサイトは開かず、コピーもせず、押したら投稿したことにする（デモなので、実際には投稿しない。統括の決定 2026-11-14）。
-   * 投稿したことを画面と読み上げで伝え、共有した印を付ける（1 回目だけ、0.4 秒後に特典 2/3 が開く）。
+   * 共有ボタン（SNS への投稿。ゲージは動かさない）。外のサイトは開かず、コピーもせず、押したら投稿したことにする
+   * （デモなので、実際には投稿しない。統括の決定 2026-11-14）。投稿したことを画面と読み上げで伝え、音を鳴らす。
+   * 最初の 1 回だけ、共有した印を付け、短い称賛のあとに特典 2/3 が開く。
    */
   const shareTo = (ch: ShareChannel): void => {
     const text = postedText(ch);
@@ -593,7 +705,47 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     announce(`${text}。`); // トーストは読み上げの対象外なので、読み上げの領域でも伝える
     if (!state.done.share) {
       set({ done: { ...state.done, share: true } });
-      later(reduce() ? 0 : 400, () => unlockGift(1));
+      showPraise({
+        kind: 'share',
+        praise: PRAISE_SHARE,
+        overHome: false, // 投稿のシートの上（ゲージは見えない）
+        size: 64,
+        say: VOICES[state.oshiId].say.share(),
+        ms: 2600,
+        reduceMs: 2000,
+        live: '投稿してくれてありがとう。応援が広がっています。',
+        liveAfter: 900,
+        onEnd: () => unlockGift(1),
+      });
+    }
+  };
+  /** ホームの主のボタン。ゲージの下の 1 つの行動を、その場で進める（別の画面で選ばせない）。 */
+  const homePrimary = (): void => {
+    const v = view();
+    const a = homeActionOf(v);
+    switch (a.id) {
+      case 'apply':
+        if (v.target) applyCourse(v.target.id);
+        break;
+      case 'main':
+      case 'teiki':
+        runAcct(a.id, 'home');
+        break;
+      case 'deposit':
+        go('acct'); // 口座と預金の画面で、積み増す額を決める
+        break;
+      case 'friend':
+        callFriends();
+        break;
+      case 'notice':
+        notifyFriends();
+        break;
+      case 'share':
+        openShare('share');
+        break;
+      case 'again':
+        openShare('friend');
+        break;
     }
   };
 
@@ -663,8 +815,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
   const clearTimers = (): void => {
     timers.forEach(clearTimeout);
     timers.clear();
-    if (inviteTimer) clearTimeout(inviteTimer);
-    inviteTimer = null;
+    calling = false;
     if (achTimer) clearTimeout(achTimer);
     achTimer = null;
     fxEnd.clear();
@@ -787,8 +938,6 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     if (!target) return;
     const before = view();
     const held = before.my?.price ?? 0;
-    if (inviteTimer) clearTimeout(inviteTimer);
-    inviteTimer = null;
     const changedPid = performanceIdOf(target.oshiId, target.venueId) !== pidNow();
     const venueCond = conditionOf(target.venueId);
     set({
@@ -847,6 +996,9 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       openShare,
       closeShare,
       shareTo,
+      homePrimary,
+      callFriends,
+      notifyFriends,
       closeGift,
       closeThanks,
       closeCarry,
@@ -870,7 +1022,6 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       applyChange,
       toast,
       announce,
-      friendJoins,
       toggleSound: (): void => set({ soundOn: !state.soundOn }),
     },
   };

@@ -16,6 +16,7 @@ import {
   fireEvent,
   layer,
   mountFan,
+  openNextPage,
   passStart,
   ReadyImage,
   screen,
@@ -132,7 +133,7 @@ describe('推しの口調（A-42）', () => {
     const before = bubbleText();
     expect(before).toContain('だいぶ熱くなってきたね。'); // 申し込む前（熱量はヒートアップ）。人数は言わない
     expect(before).not.toMatch(/\d+人/);
-    click(/^次のアクション/);
+    openNextPage();
     for (const label of [/^メイン口座にする/, /^預金を積み増す/])
       fireEvent.click(screen.getByRole('button', { name: label }));
     fireEvent.click(screen.getByRole('button', { name: /^前方の席に申し込む/ }));
@@ -152,7 +153,7 @@ describe('すべての画面に札「デモ用の架空データ」が出る（A
     click('この内容で申し込む');
     expect(badge()).toBe(1);
     await closeGiftAfterFx();
-    click(/^次のアクション/);
+    openNextPage(); // ホームの主のボタンは行動そのもの。いまできること の一覧は、ストアの操作で開く
     expect(badge()).toBe(1);
     click('‹ ホーム');
     click('メニュー');
@@ -215,8 +216,7 @@ describe('共有（A-29〜A-32・I-29）', () => {
     mountFan('?p=4');
     passStart();
     await closeGiftAfterFx();
-    click(/^次のアクション/);
-    click(/^SNSで広める/);
+    click(/^SNSに投稿する（任意）/); // ホームの副のボタン
     return screen.getByRole('textbox') as HTMLTextAreaElement;
   }
 
@@ -269,21 +269,21 @@ describe('共有（A-29〜A-32・I-29）', () => {
   });
 
   it.each(['X', 'Instagram', 'Facebook'])(
-    '%s を押すと、共有した印が付いて特典 2/3 が開く。続けて 3 つのボタンを押しても、特典は増えない',
+    '%s を押すと、共有した印が付いて、称賛のあとに特典 2/3 が開く。続けて 3 つのボタンを押しても、特典は増えない',
     async (name) => {
       await toShare();
       fireEvent.click(btn(name));
-      await tick(400 + 2300);
+      await tick(2600 + 2300); // 短い称賛（2.6 秒）→ ごほうび → 絵
       expect(layer('gift')?.getAttribute('aria-label')).toBe('特典 2/3');
       fireEvent.click(within(layer('gift') as HTMLElement).getByRole('button', { name: '閉じる' }));
       for (const other of ['X', 'Instagram', 'Facebook']) fireEvent.click(btn(other));
-      await tick(400 + 2300 + 100);
+      await tick(2600 + 2300 + 100);
       expect(layer('gift')).toBeNull();
-      // 共有した印: シートを閉じると、次のアクションから「SNSで広める」が消える
+      // 共有した印: シートを閉じると、ホームの副のボタン「SNSに投稿する（任意）」が消える
       fireEvent.click(
         within(layer('share') as HTMLElement).getByRole('button', { name: '閉じる' }),
       );
-      expect(screen.queryByRole('button', { name: /^SNSで広める/ })).toBeNull();
+      expect(screen.queryByRole('button', { name: /^SNSに投稿する/ })).toBeNull();
     },
   );
 });
@@ -328,14 +328,14 @@ describe('特典の絵と感謝（I-28・I-117・I-118）', () => {
     mountFan('?p=4');
     passStart();
     await closeGiftAfterFx(); // 特典 1/3
-    click(/^次のアクション/);
-    click(/^SNSで広める/);
+    click(/^SNSに投稿する（任意）/);
     fireEvent.click(btn('X'));
     vi.spyOn(window, 'open').mockReturnValue(null);
-    await tick(400 + 2300); // 特典 2/3 の演出 → 絵
+    await tick(2600 + 2300); // 投稿の称賛 → 特典 2/3 の演出 → 絵
     fireEvent.click(within(layer('gift') as HTMLElement).getByRole('button', { name: '閉じる' })); // 特典 2/3 の絵
     fireEvent.click(within(layer('share') as HTMLElement).getByRole('button', { name: '閉じる' })); // 共有のシート
-    await tick(2000 + 700 + 2300);
+    click(/^仲間を呼ぶ/); // ホームの主のボタン
+    await tick(1200 + 2300);
     expect(screen.getByRole('heading', { name: '特典 3/3 が開きました' })).toBeTruthy();
     fireEvent.click(within(layer('gift') as HTMLElement).getByRole('button', { name: '閉じる' }));
     expect(layer('thanks')).not.toBeNull();
@@ -345,7 +345,6 @@ describe('特典の絵と感謝（I-28・I-117・I-118）', () => {
     fireEvent.click(within(layer('thanks') as HTMLElement).getByRole('button'));
     expect(layer('thanks')).toBeNull();
     // 貢献で読み返す
-    click('‹ ホーム');
     click('メニュー');
     await settle();
     click(/^貢献/);
@@ -357,14 +356,14 @@ describe('特典の絵と感謝（I-28・I-117・I-118）', () => {
     mountFan('?p=12');
     passStart();
     await closeGiftAfterFx();
-    click(/^次のアクション/);
-    click(/^SNSで広める/);
+    click(/^SNSに投稿する（任意）/);
     vi.spyOn(window, 'open').mockReturnValue(null);
     fireEvent.click(btn('X'));
-    await tick(400 + 2300);
+    await tick(2600 + 2300);
     fireEvent.click(within(layer('gift') as HTMLElement).getByRole('button', { name: '閉じる' }));
     fireEvent.click(within(layer('share') as HTMLElement).getByRole('button', { name: '閉じる' }));
-    await tick(2000 + 700 + 2300);
+    click(/^仲間を呼ぶ/);
+    await tick(1200 + 2300);
     fireEvent.click(within(layer('gift') as HTMLElement).getByRole('button', { name: '閉じる' }));
     const text = layer('thanks')?.textContent ?? '';
     expect(text).toContain('あれっす！特典を3つとも開けてくれて、ありがとうっす！');
@@ -483,12 +482,10 @@ describe('メーターに金額を出さない（A-69・SP-56）', () => {
     await closeGiftAfterFx();
     const gauge = screen.getByRole('img', { name: /^開催熱量。/ });
     expect(`${gauge.getAttribute('aria-label')}${gauge.textContent}`).not.toMatch(/[円万]/);
-    click(/^次のアクション/);
-    click(/^SNSで広める/);
+    click(/^SNSに投稿する（任意）/);
     const frame = within(layer('share') as HTMLElement).getByRole('img', { name: /^共有用の画像/ });
     expect(`${frame.getAttribute('aria-label')}${frame.textContent}`).not.toMatch(/[円万]/);
     click('閉じる');
-    click('‹ ホーム');
     click('メニュー');
     await settle();
     click(/^貢献/);

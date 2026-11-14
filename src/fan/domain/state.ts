@@ -24,7 +24,7 @@ export type Page =
   | 'opt'
   | 'priv';
 
-export type ShareMode = 'friend' | 'share' | 'notice';
+export type ShareMode = 'friend' | 'share';
 
 /** 端末の中の、ファン向けの進み（SP「端末の中の状態」）。 */
 export type Fan = {
@@ -73,9 +73,20 @@ export type StartSel = {
 /** 「推し・条件の変更」の、選んでいる最中の値。 */
 export type Pend = { oshiId: ArtistId; city: CityName; seat: CourseId };
 
+/**
+ * 演出の種類。称賛の演出（行動の直後）は、申し込み（join・stage）・投稿（share）・仲間に知らせる（notify）・仲間を呼ぶ（friend）・
+ * FEVER の瞬間（fever）。gift は特典が開いたときのごほうび。
+ */
+export type FxKind = 'join' | 'stage' | 'share' | 'notify' | 'friend' | 'fever' | 'gift';
+
 /** 80% の演出・特典の演出などの、全画面の演出。 */
 export type FxSpec = {
   id: number;
+  kind: FxKind;
+  /** 派手にするか（帯・揺れ。FEVER の瞬間だけ）。ほかは標準の強さ。 */
+  strong: boolean;
+  /** ホームの上で、ゲージの手前までを暗くするか（ゲージの伸びが見えるように。称賛の演出が true）。 */
+  overHome: boolean;
   title: string;
   small: string;
   sub: string;
@@ -106,6 +117,9 @@ export type AchSpec = {
   confetti: readonly Confetto[];
 };
 
+/** 仲間を呼んだあとの、ゲージの伸び（伸びる前の長さ → 満タンまで。終わりに近いほど速く伸びる）。 */
+export type GaugeRun = { from: number; to: number; ms: number; nonce: number };
+
 export type Layer =
   | { kind: 'fx'; fx: FxSpec }
   | { kind: 'gift'; replay: boolean }
@@ -132,6 +146,8 @@ export type FanState = Fan & {
   carry: CarrySnap | null;
   /** ✓ が付く動きを待たせる時間（秒）。達成のエフェクトを飛ばしたら 0。 */
   ckDelay: number;
+  /** 仲間を呼んでいる最中のゲージの伸び（無ければ null。人数の状態は、伸びたあとに変わる）。 */
+  gaugeRun: GaugeRun | null;
   /** 直前の達成の演出で新しく付いた ✓ と、全部そろった印。 */
   fresh: {
     ids: readonly string[];
@@ -196,6 +212,7 @@ export function initialState(personaNo: number): FanState {
     soundOn: true,
     carry: null,
     ckDelay: 1,
+    gaugeRun: null,
     fresh: null,
   };
 }

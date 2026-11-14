@@ -20,7 +20,6 @@ import {
   screen,
   setupFanTest,
   tick,
-  within,
 } from './helpers';
 
 setupFanTest();
@@ -54,26 +53,27 @@ describe('ひとり体験（既定）', () => {
     expect(supporters()).toBe(75);
     expect(meter().getAttribute('aria-label')).toBe('開催熱量。FEVER 目前。あと一歩');
     await closeGiftAfterFx();
-    click(/^次のアクション/);
-    fireEvent.click(screen.getByRole('button', { name: /^仲間を呼ぶ/ }));
-    fireEvent.click(within(layer('share') as HTMLElement).getByRole('button', { name: '閉じる' }));
-    await tick(2000 + 700);
-    // 成立の演出
+    fireEvent.click(screen.getByRole('button', { name: /^仲間を呼ぶ/ })); // ホームの主のボタン
+    expect(layer('share')).toBeNull(); // 共有のシートは経由しない
+    expect(layer('fx')?.textContent).toContain('届いた！');
+    expect(supporters()).toBe(75); // ゲージが伸びきるまで、人数（内部）は変わらない
+    await tick(2600);
+    // 成立の演出（FEVER の瞬間）
     expect(layer('fx')?.textContent).toContain('FEVER！');
     expect(layer('fx')?.textContent).toContain('あなたの声が届いて、開催が決まりました');
-    await tick(2500 + 10 + 2200 + 10);
+    await tick(3600 + 10 + 2200 + 10);
     click('閉じる'); // 特典の絵
     expect(supporters()).toBe(93);
     expect(getAppStore().view().status.established).toBe(true);
     expect(api.fetch).not.toHaveBeenCalled();
   });
 
-  it('次のアクションの予告が、仲間を呼ぶと開催が決まる、になっている（あと N 人が 1 減る、ではない）', async () => {
+  it('主のボタンの予告が、仲間を呼ぶと開催が決まる、になっている（あと N 人が 1 減る、ではない）', async () => {
     mountFan('?p=4');
     passStart();
     await closeGiftAfterFx();
-    expect(screen.getByRole('button', { name: /^次のアクション/ }).textContent).toContain(
-      '仲間を呼ぶ → FEVER（開催決定）へ',
+    expect(screen.getByRole('button', { name: /^仲間を呼ぶ/ }).textContent).toContain(
+      '→ FEVER（開催決定）へ',
     );
   });
 
@@ -129,8 +129,7 @@ describe('ひとり体験（既定）', () => {
     mountFan('?p=4');
     passStart();
     await closeGiftAfterFx();
-    click(/^次のアクション/);
-    fireEvent.click(screen.getByRole('button', { name: /^SNSで広める/ }));
+    click(/^SNSに投稿する（任意）/);
     expect(layer('share')).not.toBeNull();
     await tick(IDLE_MS);
     expect(shell()).toBe('start');

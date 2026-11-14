@@ -1,6 +1,6 @@
 // 重ねる層のうち、主な流れで使うもの: 80% の演出・ごほうびの演出（FxLayer）、条件の達成のエフェクト（AchLayer）、
 // 特典の絵（GiftLayer）、感謝のメッセージ（ThanksLayer）、共有のシート（ShareSheet）。主な流れなので、最初に読む側に入れる（設計 D-40）。
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { DEMO_NOTICE_TEXT, DemoBadge } from '../../shared/components/DemoBadge';
 import { artistView } from '../art/registry';
@@ -33,20 +33,81 @@ function Confetti({ list }: { list: FxSpec['confetti'] }) {
   );
 }
 
-/** 80% の演出・ごほうびの演出。押す・Esc で飛ばせる。 */
+/** FEVER の瞬間（派手）にだけ出す、画面を横切る帯。 */
+const BAND_TEXT = 'FEVER FEVER FEVER FEVER FEVER FEVER FEVER FEVER ';
+function Bands() {
+  return (
+    <div className={styles.fxBands} aria-hidden="true">
+      {[0, 1, 2].map((n) => (
+        <div key={n} className={styles.fxBand}>
+          <span className={styles.ttlBand}>{BAND_TEXT + BAND_TEXT}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * 称賛の演出・ごほうびの演出。押す・Esc で飛ばせる。
+ * 光 → 放射の光 → 大きい文字 → 紙ふぶき → 褒めことばのカード（あなたがしたこと → それで何が進んだか）→ 推しのひとこと。
+ * ホームの上では、暗くするのをゲージの手前までにして、ゲージの伸びが見えるようにする。大きい文字は、画面の幅に収める。
+ */
 export function FxLayer({ fx, inert }: { fx: FxSpec; inert: boolean }) {
   const { state, actions } = useFan();
   const o = artistView(state.oshiId);
+  const root = useRef<HTMLDivElement>(null);
+  const title = useRef<HTMLElement>(null);
+  const [size, setSize] = useState(fx.size);
+  const sizeNow = useRef(fx.size);
   useReturnFocus();
+  useLayoutEffect(() => {
+    const el = root.current;
+    const shell = el?.parentElement;
+    if (!el || !shell) return undefined;
+    let alive = true;
+    const fit = (): void => {
+      if (!alive) return;
+      const box = shell.getBoundingClientRect();
+      if (box.height <= 0) return; // 測れない環境（試験の画面）では、何もしない
+      // 暗くする範囲は、ゲージの手前まで（ホームの上の称賛だけ）
+      const gauge = fx.overHome ? shell.querySelector('[data-heat]') : null;
+      const cut = gauge ? gauge.getBoundingClientRect().top - box.top - 6 : box.height;
+      el.style.setProperty('--fx-cut', `${Math.max(120, Math.round(cut))}px`);
+      el.style.setProperty('--fx-cy', gauge ? `${Math.round(cut * 0.34)}px` : '42%');
+      // 大きい文字は、画面の幅からはみ出さない（左右の余白と、縁取りの分を引いた幅に収める）
+      const t = title.current;
+      if (!t || t.offsetWidth <= 0) return;
+      const natural = (t.offsetWidth * fx.size) / sizeNow.current; // 決めた大きさのときの幅
+      const room = box.width - 32 - fx.stroke * 2;
+      const next = natural > room ? Math.max(24, Math.floor((fx.size * room) / natural)) : fx.size;
+      if (next !== sizeNow.current) {
+        sizeNow.current = next;
+        setSize(next);
+      }
+    };
+    fit();
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(fit);
+    ro?.observe(shell);
+    // 書体が届いて、文字の幅が変わったときも、収め直す（最初に測った幅は、代わりの書体のことがある）
+    if (title.current) ro?.observe(title.current);
+    void document.fonts?.ready.then(fit);
+    return () => {
+      alive = false;
+      ro?.disconnect();
+    };
+  }, [fx.overHome, fx.size, fx.stroke, fx.title]);
+  const cls = fx.strong ? `${styles.fx} ${styles.fxStrong}` : styles.fx;
   return (
     <div
-      className={styles.fx}
+      ref={root}
+      className={cls}
       data-layer="fx"
+      data-kind={fx.kind}
       aria-hidden="true"
       inert={inert}
       style={vars({
-        '--fx-size': `${fx.size}px`,
-        '--fx-stroke': `${fx.stroke}px`,
+        '--fx-size': `${size}px`,
+        '--fx-stroke': `${Math.max(5, Math.round((fx.stroke * size) / fx.size))}px`,
         '--fx-sub': `${fx.subSize}px`,
       })}
       onClick={() => actions.hideFx(fx.id)}
@@ -54,22 +115,26 @@ export function FxLayer({ fx, inert }: { fx: FxSpec; inert: boolean }) {
       <div className={styles.dim} />
       <div className={styles.lines} />
       <Confetti list={fx.confetti} />
+      {fx.strong ? <Bands /> : null}
       <div className={styles.flash} />
-      <div className={styles.ttl}>
-        <b>{fx.title}</b>
-        <small>{fx.small}</small>
-      </div>
-      <div className={styles.fxSub}>
-        <span>{fx.sub}</span>
-      </div>
-      {fx.say ? (
-        <div className={styles.fxSay}>
-          <Av a={o} className={styles.sayAv} />
-          <span>{fx.say}</span>
+      <div className={styles.fxStage}>
+        <div className={styles.ttl}>
+          <b ref={title}>{fx.title}</b>
         </div>
-      ) : null}
+        <p className={styles.fxSub}>
+          <span className={styles.fxSubA}>{fx.small}</span>
+          <span className={styles.fxSubB}>{fx.sub}</span>
+        </p>
+        {fx.say ? (
+          <div className={styles.fxSay}>
+            <Av a={o} className={styles.sayAv} />
+            <span>{fx.say}</span>
+          </div>
+        ) : null}
+      </div>
       <span className={`${styles.chip} ${styles.fxNotice}`}>{DEMO_NOTICE_TEXT}</span>
       <span className={`${styles.chip} ${styles.fxChip}`}>デモ用の架空データ</span>
+      <span className={styles.fxHint}>タップで閉じます</span>
     </div>
   );
 }
@@ -216,8 +281,7 @@ export function ThanksLayer({ inert }: { inert: boolean }) {
 }
 
 const SHARE_TITLE: Record<ShareMode, string> = {
-  share: 'SNSで広める',
-  notice: '仲間に知らせる',
+  share: 'SNSに投稿する',
   friend: '仲間を呼ぶ',
 };
 

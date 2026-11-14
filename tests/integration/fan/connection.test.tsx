@@ -68,7 +68,7 @@ describe('サーバーが止まっている・遅いとき（N-09・N-21・N-23�
 });
 
 describe('遅れて読む塊がすべて読めなくても、主な流れは最後まで通る（I-120）', () => {
-  it('はじめの画面 → ホーム → 次のアクション → SNSで広める → 特典 3/3 → 感謝が出る', async () => {
+  it('はじめの画面 → ホーム → SNSに投稿する → 仲間を呼ぶ → 特典 3/3 → 感謝が出る', async () => {
     configurePrefetch({
       images: PREFETCH_IMAGES,
       plan: PREFETCH_PLAN,
@@ -80,14 +80,14 @@ describe('遅れて読む塊がすべて読めなくても、主な流れは最�
     mountFan('?p=4');
     passStart();
     await closeGiftAfterFx();
-    click(/^次のアクション/);
-    click(/^SNSで広める/);
+    click(/^SNSに投稿する（任意）/);
     const open = vi.spyOn(window, 'open').mockReturnValue(null);
     fireEvent.click(btn('X'));
-    await tick(400 + 2300);
+    await tick(2600 + 2300);
     fireEvent.click(within(layer('gift') as HTMLElement).getByRole('button', { name: '閉じる' }));
     fireEvent.click(within(layer('share') as HTMLElement).getByRole('button', { name: '閉じる' }));
-    await tick(2000 + 700 + 2300);
+    click(/^仲間を呼ぶ/);
+    await tick(1200 + 2300);
     fireEvent.click(within(layer('gift') as HTMLElement).getByRole('button', { name: '閉じる' }));
     expect(layer('thanks')).not.toBeNull();
     expect(open).not.toHaveBeenCalled(); // 共有で、外のサイトは開かない

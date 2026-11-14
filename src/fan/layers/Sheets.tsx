@@ -142,8 +142,8 @@ export function DepositBody() {
   const { actions } = useFan();
   return (
     <>
-      <DepositCard title="預金を積み増す" desc="積み増す額を決めます。" primary />
-      <div className={fan.sheetBtns}>
+      <DepositCard title="預金を積み増す" desc="積み増す額を決めます。" primary compact />
+      <div className={`${fan.sheetBtns} ${fan.sheetBtnsStick}`}>
         <button
           type="button"
           className={`${fan.btn} ${fan.btnFull}`}

@@ -1577,6 +1577,15 @@ button.rcard:hover {
   gap: var(--s2);
   margin-top: var(--s3);
 }
+/* 縦が足りない画面（幅 320 など）でも、「閉じる」がスクロールの外へ出ないよう、シートの下端に貼る（シートの下の余白 --s4 の分まで寄せる） */
+.sheetBtnsStick {
+  position: sticky;
+  bottom: calc(var(--s4) * -1);
+  margin-bottom: calc(var(--s4) * -1);
+  margin-top: var(--s2);
+  padding: var(--s2) 0 var(--s4);
+  background: var(--surface);
+}
 
 /* 演出（称賛・ごほうび・感謝）。装飾なので、読み上げは別の領域で伝える */
 .fx {

@@ -22,6 +22,18 @@ export function NextAction() {
     if (nonce === null) return;
     (first.current ?? head.current)?.focus({ preventScroll: true });
   }, [nonce]);
+  // 条件がそろったエフェクトを押して飛ばしたとき（nonce が変わる）、待たせていたポップの動きを頭から始め直す。
+  // 先頭の行（「申し込む」）は作り直さない。押した瞬間（pointerdown）に入れ替わると、離したとき（pointerup）に
+  // 押した先の要素が無く、マウスのクリックが届かない（C-04）。作り直す代わりに、動きだけ巻き戻す
+  const popNonce = fresh?.all ? fresh.nonce : 0;
+  useEffect(() => {
+    first.current?.getAnimations?.().forEach((animation) => {
+      if (animation instanceof CSSAnimation) {
+        animation.cancel();
+        animation.play();
+      }
+    });
+  }, [popNonce]);
 
   const run = (row: NextRow): void => {
     if (row.id === 'apply' && view.target) actions.applyCourse(view.target.id);
@@ -105,7 +117,7 @@ export function NextAction() {
         <div className={styles.nxList}>
           {next.rows.map((row, i) => (
             <button
-              key={`${row.id}-${i === 0 && fresh?.all ? fresh.nonce : 0}`}
+              key={row.id}
               ref={i === 0 ? first : undefined}
               type="button"
               className={[

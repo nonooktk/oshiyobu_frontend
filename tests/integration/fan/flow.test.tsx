@@ -161,6 +161,27 @@ describe('前方の席を目指す流れ（人物 4。A-24〜A-27・I-23）', ()
     expect(layer('ach')?.textContent).toContain('前方の席に申し込めます');
   });
 
+  it('C-04 条件がそろったエフェクトの最中に「申し込む」を押すと、押した瞬間にエフェクトが消え、押した先のボタンは入れ替わらず、そのクリックで申し込める', () => {
+    mountFan('?p=4');
+    click('次へ');
+    click('次へ');
+    fireEvent.click(seatCard('前方の席'));
+    click('このコースを目指して始める');
+    click(/^次のアクション/);
+    fireEvent.click(screen.getByRole('button', { name: /^メイン口座にする/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^預金を積み増す/ })); // 条件がそろう（2.0 秒のエフェクト）
+    expect(layer('ach')?.textContent).toContain('そろいました！');
+
+    const apply = screen.getByRole('button', { name: /^前方の席に申し込む/ });
+    fireEvent.pointerDown(apply); // マウスは、押す（pointerdown）と離す（pointerup）のあいだに、押した先が同じ要素のままでないと、クリックにならない
+    expect(layer('ach')).toBeNull(); // 押した次の描画で、エフェクトは消える（F-21）
+    expect(apply.isConnected).toBe(true);
+    expect(screen.getByRole('button', { name: /^前方の席に申し込む/ })).toBe(apply);
+    fireEvent.pointerUp(apply);
+    fireEvent.click(apply);
+    expect(meter().getAttribute('aria-label')).toContain('支援者75人');
+  });
+
   it('動きを減らす設定では、紙吹雪と閃光を出さず、短いフェードだけ（N-04）', async () => {
     vi.stubGlobal('matchMedia', (q: string) => ({ matches: /reduce/.test(q), media: q }));
     try {

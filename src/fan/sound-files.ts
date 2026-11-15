@@ -5,7 +5,7 @@
 // 賭けを連想させる音は、合成にも、ファイルにも入れない（G-04。語の一覧は tests/guard/helpers.ts）。
 // ファイルは、画面と同じ配信元から読む（外部の配信元は使わない。API でもない。CSP の connect-src 'self' の中）。
 //
-// 音を足すとき（C）: ① ファイルを public/sounds/ に置く ② 台帳に 1 行 ③ 下の対応表に 1 行。ほかは、変えない（B もこの 3 つで足した）。
+// 音を足すとき: ① ファイルを public/sounds/ に置く ② 台帳に 1 行 ③ 下の対応表に 1 行。ほかは、変えない（A・B・C は、この 3 つで足した。3 場面とも、ファイルになった）。
 
 /** 音源ファイルに差し替えてよい場面（G-04）。この 3 つだけ */
 export type FileCue = 'join' | 'friend' | 'fever';
@@ -26,13 +26,16 @@ export interface SoundFile {
 export type SoundFileMap = Readonly<Partial<Record<FileCue, SoundFile>>>;
 
 /**
- * 場面 → 音源ファイルの対応表。ここに無い場面は、合成の音を鳴らす（ファイルが届くまで、そのまま）。
- * join は A-join.mp3、friend は B-friend.mp3（台帳 public/sounds/ledger.md）。fever（C）は、ファイルが届いたら、1 行足す。
+ * 場面 → 音源ファイルの対応表。ここに無い場面は、合成の音を鳴らす（ファイルが読めないときも、合成の音）。
+ * join は A-join.mp3、friend は B-friend.mp3、fever は C-fever.mp3（台帳 public/sounds/ledger.md）。
  * B は拍手で、ピークが同じでも平均（RMS）が大きいので、A より小さい 0.095 にした。
+ * C（最後の演出）は、いちばん派手な場面なので、A・B より出力の RMS を 2.44 dB 大きくした。+2.5 dB にすると 0.121 で、
+ * gain の上限の検査（0.12）を超えるため、上限の 0.12 にした。
  */
 export const SOUND_FILES: SoundFileMap = {
   join: { url: '/sounds/A-join.mp3', gain: 0.11 },
   friend: { url: '/sounds/B-friend.mp3', gain: 0.095 },
+  fever: { url: '/sounds/C-fever.mp3', gain: 0.12 },
 };
 
 /**

@@ -15,7 +15,8 @@ import {
   text,
   verdictText,
 } from './text/labels';
-import { viewOf } from './view';
+import { changedKeys, snapshotOf, viewOf } from './view';
+import type { ChangeKey, Snapshot } from './view';
 
 // 事務所向けの状態（メモリだけ。再読み込みで初めに戻る。設計 D-10）。
 // 計算は core の純関数（view.ts）。ここでは、選択と入力の流れだけを持つ。
@@ -48,7 +49,20 @@ export interface OfficeState {
   venueFocus: number;
   /** 4 象限の区切り（要件 R-12）。推し・市を切り替えても残す。「最初に戻す」で初めの位置に戻る */
   quadLine: QuadLine;
+  /** 直前の操作で変わった数字と、その前の値（要件 R-14）。次に数字が変わるまで残す */
+  changes: Changes;
 }
+
+export interface Changes {
+  /** 変わった数字の名前。空なら、強調しない */
+  readonly keys: readonly ChangeKey[];
+  /** 変わる前の値（keys が空のときは null） */
+  readonly prev: Snapshot | null;
+  /** 変わるたびに 1 増える。部品が、薄れていく動きを最初からやり直す合図に使う */
+  readonly seq: number;
+}
+
+const NO_CHANGES: Changes = { keys: [], prev: null, seq: 0 };
 
 const EMPTY_COSTS: CostValues = { venue: 0, prod: 0, fee: 0, travel: 0, profit: 0 };
 
@@ -69,6 +83,7 @@ export const initialOfficeState = (): OfficeState => ({
   band: '',
   venueFocus: 0,
   quadLine: INITIAL_QUAD_LINE,
+  changes: NO_CHANGES,
 });
 
 interface OfficeActions {
@@ -278,6 +293,31 @@ export const officeStore = createStore<OfficeState & OfficeActions>()((set, get)
       announce(text.resetAllDone);
     },
   };
+});
+
+/** いまの状態での、強調の対象の数字（判定が出ていなければ null） */
+export function snapshotOfState(state: OfficeState): Snapshot | null {
+  const view = viewOf(state);
+  if (view === null || state.city === null) return null;
+  return snapshotOf(view, quadPeopleAt(state.artistId, state.city, state.quadLine).people);
+}
+
+// 状態が変わるたびに、⑤ ⑥ の数字を前と比べる（要件 R-14）。
+// - 変わった数字があれば、その名前と前の値を changes に入れる（次に数字が変わるまで残す）
+// - 判定が消えた（市を変えた・最初に戻した）ときは、強調を消す。初めて判定が出たときは、強調しない
+// - 数字が変わらない操作（枠を開く・指標を替えるなど）は、changes をそのままにする
+let lastSnapshot: Snapshot | null = snapshotOfState(officeStore.getState());
+officeStore.subscribe((state) => {
+  const next = snapshotOfState(state);
+  const prev = lastSnapshot;
+  lastSnapshot = next;
+  if (next === null) {
+    if (state.changes.keys.length > 0) officeStore.setState({ changes: NO_CHANGES });
+    return;
+  }
+  const keys = changedKeys(prev, next);
+  if (keys.length === 0) return;
+  officeStore.setState({ changes: { keys, prev, seq: state.changes.seq + 1 } });
 });
 
 export function useOffice<T>(selector: (state: OfficeState & OfficeActions) => T): T {

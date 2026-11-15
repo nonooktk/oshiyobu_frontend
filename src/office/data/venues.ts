@@ -6,10 +6,25 @@
 // 載っていることを確かめた行だけを置いた。名前は、出典のページに載っている書き方に合わせた。
 // 置いていない会場:
 // - Ohana Cafe（NGS-001）: 出典（eplus）のページが開けず（503）、確かめられなかった
-// - music hall fragile（FUK-020）: 出典のページに載っているのが旧名（SQUARE GARDEN）だけで、今の名前を確かめられていない
+// Music hall Fragile（FUK-020）は、収容人数の出典（RAG MusicSpot）に旧名 SQUARE GARDEN で載っている。
+// 公式サイト（https://www.music-hall-fragile.com/）のお知らせに「2026年1月、SQUARE GARDEN（スクエアガーデン）から」
+// 「名称変更いたしました」とあることを、2026-11-15 に確かめて置いた。
 import type { VenueRecord } from './types';
 
 export const VENUE_RECORDS: readonly VenueRecord[] = [
+  {
+    id: 'FUK-020',
+    name: 'Music hall Fragile',
+    pref: '福岡県',
+    city: '福岡市中央区',
+    capacity: 50,
+    capacityBasis:
+      'テーブル席 50名（RAG MusicSpot の、旧名 SQUARE GARDEN のときの掲載値。二次情報。2026年1月に名称変更（公式サイト））',
+    type: 'ライブハウス',
+    sourceUrl: 'https://www.ragnet.co.jp/fukuoka-live-house/9',
+    checkedOn: '2026-11-15',
+    coreVenueId: 'FUK-020',
+  },
   {
     id: 'FUK-012',
     name: 'DRUM Be-1',

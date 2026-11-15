@@ -401,8 +401,8 @@ function Certainty({ view }: { readonly view: OfficeView }) {
 export function Judge({ view }: { readonly view: OfficeView }) {
   return (
     <div data-testid="judge" className={styles.judge}>
-      <Summary view={view} />
       <Certainty view={view} />
+      <Summary view={view} />
     </div>
   );
 }

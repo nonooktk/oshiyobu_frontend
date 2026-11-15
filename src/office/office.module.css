@@ -169,19 +169,56 @@
   transform-origin: var(--org, 50% 50%);
 }
 
-/* 地図と会場 */
-.top {
+/* 盤面（仕様 1.2 の案 B）: 左で選ぶ（① 地図・③ 会場）、右で結果を見る（⑥ 満たせるか・⑤ 開催条件） */
+.board {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
-.mapCol {
-  padding: var(--s4);
+.leftCol {
+  display: flex;
+  flex-direction: column;
   border-right: 1px solid var(--line);
 }
-.sideCol {
+.rightCol {
   display: flex;
   flex-direction: column;
   padding: var(--s4);
+}
+.mapCol {
+  padding: var(--s4) var(--s4) var(--s3);
+}
+/* 地図は高さ 400 px まで（1280 × 800 で、③ の見出しまで見えるように） */
+.mapCol .mapWrap svg {
+  max-height: 400px;
+}
+.sideCol {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: start;
+  column-gap: var(--s2);
+  flex: 1;
+  padding: var(--s3) var(--s4) var(--s4);
+  border-top: 1px solid var(--line);
+}
+.sideCol > * {
+  grid-column: 1 / -1;
+}
+.sideCol > .sideNum,
+.sideCol > .sideH {
+  grid-column: auto;
+  align-self: center;
+}
+.sideNum {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-bottom: var(--s3);
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
 }
 .segRow {
   display: flex;
@@ -391,10 +428,8 @@
 /* 判定 */
 .judge {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-  gap: var(--s4);
-  padding: var(--s4);
-  border-top: 1px solid var(--line);
+  align-content: start;
+  gap: var(--s3);
 }
 /* ⑥ の中の、熱量と資金（4 象限）。満たせるかの下に、細い線で分けて続ける */
 .quad {
@@ -1119,11 +1154,10 @@
 }
 
 @media (max-width: 980px) {
-  .top,
-  .judge {
+  .board {
     grid-template-columns: minmax(0, 1fr);
   }
-  .mapCol {
+  .leftCol {
     border-right: 0;
     border-bottom: 1px solid var(--line);
   }
@@ -1133,7 +1167,7 @@
   .artistBar,
   .mapCol,
   .sideCol,
-  .judge {
+  .rightCol {
     padding-right: var(--s3);
     padding-left: var(--s3);
   }

@@ -26,6 +26,10 @@ export const text = {
   legendTitle: '面積＝登録者数',
   emptyHead: '市を選ぶ',
   emptyBody: '地図の丸を押す',
+  /** ① の見出し（すでに使っている「地図」だけ） */
+  mapHead: '地図',
+  /** 会場を選ぶ前の、右の列の案内（判定は会場を選ぶまで出ない。I-01） */
+  pickVenue: '会場を選ぶ',
   simulator: '収支シミュレーター',
   simulatorNone: 'この会場は、収支シミュレーターにありません',
   privacy: '情報の扱い',

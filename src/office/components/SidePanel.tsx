@@ -41,6 +41,10 @@ export function SidePanel() {
   const [first, second] = sideNote(city === HOME_CITY, reach);
   return (
     <div className={styles.sideCol}>
+      {/* 番号の印は、見出しの外（同じ親の中）に置く。見出しの名前は「<市>の会場」のまま（I-03・C-05 が、見出しの親の中の会場を探す） */}
+      <span className={styles.sideNum} aria-hidden="true">
+        3
+      </span>
       <h3 className={styles.sideH}>{city}の会場</h3>
       <ul className={styles.venues} ref={venueList}>
         {list.map((venue) => (

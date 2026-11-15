@@ -26,6 +26,12 @@
       }
     },
     {
+      "route": "/sounds/*",
+      "headers": {
+        "cache-control": "public, max-age=3600"
+      }
+    },
+    {
       "route": "/index.html",
       "headers": {
         "cache-control": "no-cache"

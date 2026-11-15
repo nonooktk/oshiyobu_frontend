@@ -104,7 +104,7 @@ afterEach(() => {
 /** 読み込みと復号の約束事（Promise）が終わるまで待つ。 */
 const flush = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0));
 const bytes = (): Promise<ArrayBuffer> => Promise.resolve(new ArrayBuffer(8));
-/** join だけ、ファイルがある（いまの対応表と同じ形）。 */
+/** join だけ、ファイルがある（ファイルが 1 つだけの対応表の検査に使う。B が届く前の対応表と同じ形）。 */
 const JOIN_ONLY: SoundFileMap = { join: { url: '/sounds/A-join.mp3', gain: 0.11 } };
 
 /** unlock して、ファイルの読み込みを終わらせた状態の音。 */
@@ -160,7 +160,7 @@ describe('ファイルが読めたとき、その場面はファイルの音を�
 });
 
 describe('ファイルが使えないときは、いまの合成の音を鳴らす（無音にしない。例外を出さない）', () => {
-  it('ファイルを持たない場面（B・C がまだ無い間の friend・fever、ファイルの対象ではない stage・share）は、合成のまま', async () => {
+  it('ファイルを持たない場面（join だけの対応表での friend・fever、ファイルの対象ではない stage・share）は、合成のまま', async () => {
     const { sound } = await ready();
     for (const cue of ['friend', 'fever', 'stage', 'share'] as const) {
       const before = oscillators;
@@ -349,7 +349,7 @@ describe('ファイルの音が鳴っている間は、合成の stage・share �
     expect(oscillators).toBeGreaterThan(before);
   });
 
-  it('ファイルの音が鳴っている間でも、FEVER・friend の音（合成。ファイルが無い場面）は鳴らす', async () => {
+  it('join のファイルの音が鳴っている間でも、FEVER・friend の音（join だけの対応表では合成）は鳴らす', async () => {
     const { sound } = await ready();
     sound.play('join');
     now = 1.8;
@@ -372,9 +372,11 @@ describe('ファイルの音が鳴っている間は、合成の stage・share �
 });
 
 describe('対応表（SOUND_FILES）', () => {
-  it('いまは join（A）だけ。friend・fever（B・C）は、ファイルが届くまで、ない', () => {
-    expect(Object.keys(SOUND_FILES)).toEqual(['join']);
+  it('いまは join（A）と friend（B）。fever（C）は、ファイルが届くまで、ない（合成のまま）', () => {
+    expect(Object.keys(SOUND_FILES)).toEqual(['join', 'friend']);
     expect(SOUND_FILES.join?.url).toBe('/sounds/A-join.mp3');
+    expect(SOUND_FILES.friend?.url).toBe('/sounds/B-friend.mp3');
+    expect(SOUND_FILES.fever).toBeUndefined();
   });
 
   it('音量は、ほかの合成の音と大きく違わない（変換のとき、ピークを -1 dBFS 前後にそろえてあるので、音量の値が、そのまま出力のピーク。合成の音の上限 0.1 と同じ程度）', () => {

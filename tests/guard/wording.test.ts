@@ -2,37 +2,26 @@
 // ファン向けの、ことば・絵・動きの検査。
 //   G-04: 演出とことばが褒めるのは、利用者の行動だけ。運・勝ち負け・得を褒めない（銀行に出す企画のため）
 //   G-05: 急がせる促し（点滅・残り時間・「いますぐ」）を入れない
-//   G-04（音）: 称賛の音に、スロット・硬貨・くじを連想させる語・音声ファイル・素材の再生を入れない。音のボタンを消さない
+//   G-04（音）: 称賛の音に、スロット・硬貨・くじを連想させる語・<audio> などの書き方を入れない。ファイルの復号・再生は sound.ts だけ。音のボタンを消さない
+//     （音声ファイルの置き場と台帳は tests/guard/sound-files.test.ts が見る）
 // 検査の範囲は、ファン向け（src/fan/ と fan/index.html）の、コード・CSS・文言と、絵のファイル名。
 // 限界: 語の一覧に無い言い換えと、動きそのもの（点滅の見た目）・音の聞こえ方は、見つけられない。PR のレビューで見る。
 // 起動条件: 検査の対象が見つかり、中身を読めていること（0 件で通る空振りの防止）。
 import { describe, expect, it } from 'vitest';
-import { guardMessage, read, stripComments, walk, withExt } from './helpers';
+import {
+  LUCK_WORDS,
+  SOUND_WORDS,
+  guardMessage,
+  read,
+  stripComments,
+  walk,
+  withExt,
+} from './helpers';
 
 const TEXT_EXTS = ['.ts', '.tsx', '.css', '.json', '.svg', '.html'];
 const files = [...withExt(walk('src/fan'), TEXT_EXTS), 'fan/index.html'];
 const sources = files.map((path) => ({ path, text: read(path) }));
 
-/** 運・勝ち負け・得を褒める語（G-04）。一覧の外の言い換えは見つけられない */
-const LUCK_WORDS = [
-  '大当たり',
-  '当たり',
-  '確変',
-  'ラッキー',
-  '獲得',
-  'お得',
-  'ボーナス',
-  'ガチャ',
-  'ジャックポット',
-  '当選',
-  '抽選',
-  '勝ち',
-  '負け',
-  'コイン',
-  '札束',
-  'くじ',
-  'スロット',
-];
 /** コイン・札束・くじ・スロットの絵に当たる絵文字（G-04） */
 const LUCK_EMOJI = ['🪙', '💰', '💴', '💵', '💶', '💷', '💸', '🎰', '🎲', '🎟'];
 /** 絵のファイル名（G-04）。コイン・札束・くじ・スロットの絵を、置かない */
@@ -95,6 +84,7 @@ describe('ファン向けの、ことば・絵・動き（G-04・G-05）', () =>
       ...walk('src/assets'),
       ...walk('assets-src'),
       ...walk('public/assets'),
+      ...walk('public/sounds'),
       ...walk('src/fan'),
     ].filter((path) => LUCK_FILE_NAME.test(path.split('/').at(-1) ?? ''));
     expect(
@@ -141,28 +131,11 @@ describe('ファン向けの、ことば・絵・動き（G-04・G-05）', () =>
   });
 });
 
-/** 音のことば（G-04）。スロット・硬貨・くじを連想させる音を表す語。一覧の外の言い換えと、音の聞こえ方は見つけられない */
-const SOUND_WORDS = [
-  'チャリン',
-  'ジャラジャラ',
-  'ルーレット',
-  'ドラムロール',
-  'スロットの音',
-  'コインの音',
-  'くじの音',
-  '金属音',
-  '硬貨',
-];
-/** 音声ファイルの拡張子（G-04）。称賛の音は Web Audio の合成だけで、素材を置かない */
-const AUDIO_EXTS = ['.mp3', '.wav', '.ogg', '.oga', '.m4a', '.aac', '.flac', '.opus', '.weba'];
-/** 素材を読んで鳴らす書き方（G-04）。合成（createOscillator）だけにする */
-const AUDIO_SAMPLE_PLAYBACK = [
-  /new\s+Audio\s*\(/,
-  /<audio\b/i,
-  /decodeAudioData/,
-  /createMediaElementSource/,
-  /createBufferSource/,
-];
+/** 使わない書き方（G-04）。<audio> 要素・new Audio()・MediaElementSource は使わない（音のオフで、鳴っている音も予約した音も止められる AudioContext だけで鳴らす） */
+const AUDIO_ELEMENT_PLAYBACK = [/new\s+Audio\s*\(/, /<audio\b/i, /createMediaElementSource/];
+/** 音源ファイルを AudioContext で鳴らす書き方（復号・再生）。src/fan/sound.ts の 1 か所だけに置く */
+const AUDIO_BUFFER_PLAYBACK = [/decodeAudioData/, /createBufferSource/];
+const SOUND_TS = 'src/fan/sound.ts';
 
 describe('称賛の音（G-04）', () => {
   it('音を連想させる語（スロット・硬貨・くじなど）が、ファン向けに 0 件', () => {
@@ -172,30 +145,27 @@ describe('称賛の音（G-04）', () => {
     ).toEqual([]);
   });
 
-  it('音声ファイル（mp3・wav・ogg など）が、リポジトリに 0 件', () => {
-    const hits = [...walk('src'), ...walk('public'), ...walk('assets-src')].filter((path) =>
-      AUDIO_EXTS.some((ext) => path.toLowerCase().endsWith(ext)),
-    );
-    expect(
-      hits,
-      guardMessage('G-04', '音声ファイルを置いています（称賛の音は、合成だけで鳴らす）'),
-    ).toEqual([]);
-  });
-
-  it('音は合成だけ。素材を読んで鳴らす書き方が、ファン向けのコードに 0 件。合成の部品（createOscillator）を使っている', () => {
+  it('<audio>・new Audio()・MediaElementSource が、ファン向けのコードに 0 件。ファイルの復号・再生（decodeAudioData・createBufferSource）は src/fan/sound.ts だけ。合成の部品（createOscillator）も使っている', () => {
     const code = sources
       .filter(({ path }) => path.endsWith('.ts') || path.endsWith('.tsx'))
       .map(({ path, text }) => ({ path, text: stripComments(text) }));
-    const hits = code.flatMap(({ path, text }) =>
-      AUDIO_SAMPLE_PLAYBACK.filter((re) => re.test(text)).map((re) => `${path}: ${re.source}`),
+    const message = guardMessage(
+      'G-04',
+      '音源の鳴らし方が決まりと違います（<audio> などは使わない。ファイルの復号・再生は src/fan/sound.ts の 1 か所だけ）',
     );
-    expect(
-      hits,
-      guardMessage('G-04', '素材を読んで鳴らす書き方があります（称賛の音は、合成だけ）'),
-    ).toEqual([]);
-    expect(code.find(({ path }) => path === 'src/fan/sound.ts')?.text).toContain(
-      'createOscillator',
+    const elementHits = code.flatMap(({ path, text }) =>
+      AUDIO_ELEMENT_PLAYBACK.filter((re) => re.test(text)).map((re) => `${path}: ${re.source}`),
     );
+    expect(elementHits, message).toEqual([]);
+    const bufferHits = code
+      .filter(({ path }) => path !== SOUND_TS)
+      .flatMap(({ path, text }) =>
+        AUDIO_BUFFER_PLAYBACK.filter((re) => re.test(text)).map((re) => `${path}: ${re.source}`),
+      );
+    expect(bufferHits, message).toEqual([]);
+    const sound = code.find(({ path }) => path === SOUND_TS)?.text ?? '';
+    expect(sound, message).toContain('createOscillator');
+    for (const re of AUDIO_BUFFER_PLAYBACK) expect(re.test(sound), message).toBe(true);
   });
 
   it('音のオン・オフのボタンが、ある（SoundToggle を作り、画面の枠が使っている）', () => {
@@ -215,7 +185,12 @@ describe('称賛の音（G-04）', () => {
       'チャリン',
       'ジャラジャラ',
     ]);
-    expect(AUDIO_SAMPLE_PLAYBACK.some((re) => re.test('const a = new Audio("x.mp3");'))).toBe(true);
-    expect(AUDIO_EXTS.some((ext) => 'coin.MP3'.toLowerCase().endsWith(ext))).toBe(true);
+    expect(AUDIO_ELEMENT_PLAYBACK.some((re) => re.test('const a = new Audio("x.mp3");'))).toBe(
+      true,
+    );
+    expect(AUDIO_ELEMENT_PLAYBACK.some((re) => re.test('<audio src="x.mp3" />'))).toBe(true);
+    expect(AUDIO_BUFFER_PLAYBACK.some((re) => re.test('await ctx.decodeAudioData(bytes)'))).toBe(
+      true,
+    );
   });
 });

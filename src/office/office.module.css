@@ -312,12 +312,12 @@
   display: inline;
 }
 .cityLabel {
-  font-size: 12px;
+  font-size: 18px;
   font-weight: 700;
   fill: var(--ink);
   paint-order: stroke;
   stroke: var(--surface);
-  stroke-width: 4px;
+  stroke-width: 5px;
   stroke-linejoin: round;
   pointer-events: none;
 }
@@ -334,7 +334,7 @@
   stroke-width: 1;
 }
 .legT {
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 700;
   fill: var(--ink-soft);
 }
@@ -708,6 +708,7 @@
 .quad svg {
   display: block;
   width: 100%;
+  max-width: 400px;
   height: auto;
 }
 .qHot {
@@ -731,7 +732,7 @@
   stroke-width: 1;
 }
 .qT {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
   fill: var(--ink-soft);
 }
@@ -774,7 +775,7 @@
   font-size: 12px;
 }
 .qLineT {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
   fill: var(--ink);
 }
@@ -1185,6 +1186,13 @@
     border-bottom: 1px solid var(--line);
   }
 }
+/* 2 列の盤面のまま右の列が狭くなる幅（981〜1199 px）では、⑥ の中を 1 列にする（スライダーが潰れず、名前が切れないように） */
+@media (min-width: 981px) and (max-width: 1199px) {
+  .quadBody,
+  .qLines {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 @media (max-width: 640px) {
   .bar,
   .artistBar,
@@ -1195,6 +1203,11 @@
     padding-left: var(--s3);
   }
   .condIn {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* ⑥ の中の 2 列（図とカード・スライダー 2 本）も、狭い画面では 1 列に落とす（スライダーが潰れないように） */
+  .quadBody,
+  .qLines {
     grid-template-columns: minmax(0, 1fr);
   }
   .ppGrid {

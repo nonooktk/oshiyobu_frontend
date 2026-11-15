@@ -96,7 +96,7 @@ function Scatter({ view }: { readonly view: OfficeView }) {
       {/* 図（左）と、象限の名前と人数・初めの位置に戻す（右）を横に並べる */}
       <div className={styles.quadBody}>
         <div className={styles.quadFig}>
-          <svg viewBox={`0 0 520 ${y1 + 44}`} role="img" aria-label={label}>
+          <svg viewBox={`0 0 520 ${y1 + 56}`} role="img" aria-label={label}>
             <rect
               className={styles.qHot}
               x={lx}
@@ -118,16 +118,16 @@ function Scatter({ view }: { readonly view: OfficeView }) {
                 r={6}
               />
             ))}
-            <text className={styles.qT} x={x0} y={y1 + 18}>
+            <text className={styles.qT} x={x0} y={y1 + 24}>
               0
             </text>
-            <text className={styles.qT} x={xm} y={y1 + 18} textAnchor="middle">
+            <text className={styles.qT} x={xm} y={y1 + 24} textAnchor="middle">
               15万円
             </text>
-            <text className={styles.qT} x={x1} y={y1 + 18} textAnchor="end">
+            <text className={styles.qT} x={x1} y={y1 + 24} textAnchor="end">
               60万円〜
             </text>
-            <text className={styles.qT} x={(x0 + x1) / 2} y={y1 + 36} textAnchor="middle">
+            <text className={styles.qT} x={(x0 + x1) / 2} y={y1 + 50} textAnchor="middle">
               預金額 →
             </text>
             <text className={styles.qT} x={x0 - 8} y={y0 + 10} textAnchor="end">

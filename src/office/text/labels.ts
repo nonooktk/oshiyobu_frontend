@@ -1,5 +1,6 @@
 import { MAX_COST_YEN } from '../../core';
 import type { CostItemId, ParseResult } from '../../core';
+import type { ChangeKey, Snapshot } from '../view';
 
 // 事務所向けの画面の文言（出典: モック index.html と 文言の校正.md。決まった言い方は仕様の「文言」）。
 // 決まった言い方・使わない語は、仕様 SP-81。ここを直すときは、tests/unit/forbidden-words.test.ts の語を使わない
@@ -128,6 +129,38 @@ export function diffText(prev: number | string, now: number | string): string {
   if (typeof prev !== 'number' || typeof now !== 'number') return '';
   const diff = now - prev;
   return `${diff > 0 ? '+' : '−'}${Math.abs(diff).toLocaleString('ja-JP')}`;
+}
+
+/** 変わった数字の読み上げで使う名前と単位（画面の見出しと同じ語） */
+const CHANGE_LABELS: Readonly<Record<ChangeKey, readonly [string, '' | '人' | '円']>> = {
+  expected: ['見込み', '人'],
+  level: ['成立の見込み', ''],
+  shortfall: ['足りない人数', '人'],
+  line: [text.lineLabel, '円'],
+  need: ['必要人数', '人'],
+  price: ['通常の席の価格', '円'],
+  upliftTotal: [text.upliftLabel, '円'],
+  quadHotRich: [QUAD_NAMES.hotRich, '人'],
+  quadHotPoor: [QUAD_NAMES.hotPoor, '人'],
+  quadCoolRich: [QUAD_NAMES.coolRich, '人'],
+  quadCoolPoor: [QUAD_NAMES.coolPoor, '人'],
+};
+
+/** 変わった数字の読み上げ（要件 R-14。仕様 2.2）。例: 「見込み 187人から 120人。成立の見込み 高から中。」 */
+export function changeLiveText(
+  keys: readonly ChangeKey[],
+  prev: Snapshot | null,
+  now: Snapshot | null,
+): string {
+  if (prev === null || now === null) return '';
+  const fmt = (v: number | string, unit: string) =>
+    typeof v === 'number' ? `${v.toLocaleString('ja-JP')}${unit}` : v;
+  return keys
+    .map((key) => {
+      const [label, unit] = CHANGE_LABELS[key];
+      return `${label} ${fmt(prev[key], unit)}から ${fmt(now[key], unit)}。`;
+    })
+    .join('');
 }
 
 export const capChip = (need: number, cap: number, unit: string): string =>

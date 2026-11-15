@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import styles from '../office.module.css';
-import { useOffice } from '../store';
-import { diffText, prevText } from '../text/labels';
+import { snapshotOfState, useOffice } from '../store';
+import { changeLiveText, diffText, prevText } from '../text/labels';
 import type { ChangeKey } from '../view';
 
 // 変わった数字の強調（要件 R-14。仕様 2.2）。
@@ -21,6 +21,21 @@ interface Props {
   /** 中身が段落など（ブロック）のときは div で包む */
   readonly block?: boolean;
   readonly children: ReactNode;
+}
+
+/**
+ * 変わった数字の読み上げ（画面には出さない）。操作ごとの知らせ（store.ts の live）とは別の枠で、
+ * 「見込み 187人から 120人。」のように、前の値と今の値を伝える。変わった数字が無いときは空
+ */
+export function ChangeLive() {
+  // 状態そのもの（変わるまで同じ参照）を受け取り、今の数字は描くときに出す（選ぶ関数で新しい物を作らない）
+  const state = useOffice((s) => s);
+  const { changes } = state;
+  return (
+    <p className="sr-only" aria-live="polite" data-testid="change-live">
+      {changeLiveText(changes.keys, changes.prev, snapshotOfState(state))}
+    </p>
+  );
 }
 
 export function Changed({ k, now, unit = '', short = false, block = false, children }: Props) {

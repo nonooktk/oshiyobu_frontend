@@ -69,6 +69,15 @@ export interface Changes {
 
 const NO_CHANGES: Changes = { keys: [], prev: null, seq: 0, byLine: false };
 
+/**
+ * この操作で、強調の読み上げ（ChangeLive）が読む数字の名前。操作の前の seq と比べ、この操作で記録が
+ * 入れ替わったときだけ返す（前の操作の記録が残っているだけなら、空）。線を動かした変化は読まないので、空
+ */
+function announcedKeys(changes: Changes, seqBefore: number): readonly ChangeKey[] {
+  if (changes.seq === seqBefore || changes.prev === null || changes.byLine) return [];
+  return changes.keys;
+}
+
 const EMPTY_COSTS: CostValues = { venue: 0, prod: 0, fee: 0, travel: 0, profit: 0 };
 
 export const initialOfficeState = (): OfficeState => ({
@@ -135,15 +144,21 @@ export const officeStore = createStore<OfficeState & OfficeActions>()((set, get)
 
     setArtist(id) {
       if (id === get().artistId) return;
+      const seq = get().changes.seq;
       set({ artistId: id });
       const view = viewOf(get());
       const name = ARTIST_TEXT[id].name;
+      // 強調の読み上げ（ChangeLive）が「見込み 187人から 120人」などを読むときは、ここでは同じ数字を読まない
+      const said = announcedKeys(get().changes, seq);
       set({
         live:
           `${name}に切り替えました。` +
           (view === null
             ? ''
-            : `${get().city}の払える熱いファンの見込みは${view.expected}人。${verdictText(view.level)}。`),
+            : (said.includes('expected')
+                ? ''
+                : `${get().city}の払える熱いファンの見込みは${view.expected}人。`) +
+              (said.includes('level') ? '' : `${verdictText(view.level)}。`)),
       });
     },
 
@@ -174,6 +189,7 @@ export const officeStore = createStore<OfficeState & OfficeActions>()((set, get)
 
     pickVenue(id) {
       const venue = venueById(id);
+      const seq = get().changes.seq;
       // 会場を選び直したら、費用は会場の区分の値、最低人数は必要人数から始める
       set({
         venueId: id,
@@ -185,7 +201,15 @@ export const officeStore = createStore<OfficeState & OfficeActions>()((set, get)
         minError: null,
       });
       const view = viewOf(get());
-      if (view !== null) set({ live: `${venue.name}を選びました。${verdictText(view.level)}。` });
+      if (view !== null) {
+        // 強調の読み上げが「成立の見込み 高から 中」を読むときは、ここでは読まない
+        const said = announcedKeys(get().changes, seq);
+        set({
+          live:
+            `${venue.name}を選びました。` +
+            (said.includes('level') ? '' : `${verdictText(view.level)}。`),
+        });
+      }
     },
 
     setAdjustOpen(open) {

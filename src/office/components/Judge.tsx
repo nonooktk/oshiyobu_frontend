@@ -23,7 +23,7 @@ import {
   minResetLabel,
   needText,
   QUAD_NAMES,
-  QUAD_ORDER,
+  QUAD_STACK,
   ruleText,
   shortText,
   text,
@@ -32,7 +32,7 @@ import {
   yen,
 } from '../text/labels';
 import type { OfficeView } from '../view';
-import { QuadControls } from './QuadControls';
+import { QuadControls, QuadReset } from './QuadControls';
 
 export function UpRows({ view }: { readonly view: OfficeView }) {
   const { condition, uplift } = view;
@@ -78,7 +78,12 @@ function Scatter({ view }: { readonly view: OfficeView }) {
         <p className={styles.jlabel} id="j6q" style={{ margin: 0 }}>
           {text.judge3}
         </p>
-        <div>
+        {estimate && (
+          <p className={styles.qEstimate} data-testid="quad-estimate">
+            <span className={styles.qEstimateChip}>{quadLineText.estimate}</span>
+          </p>
+        )}
+        <div className={styles.quadBigWrap}>
           <p className={styles.quadBig} data-testid="expected">
             <span className={styles.hl}>
               {view.expected}
@@ -88,93 +93,96 @@ function Scatter({ view }: { readonly view: OfficeView }) {
           <div className={styles.quadBigLabel}>{text.hotRichLabel}</div>
         </div>
       </div>
-      <svg viewBox={`0 0 520 ${y1 + 44}`} role="img" aria-label={label}>
-        <rect
-          className={styles.qHot}
-          x={lx}
-          y={y0}
-          width={Math.max(0, x1 - lx)}
-          height={Math.max(0, ly - y0)}
-          rx={8}
-        />
-        <line className={styles.qMid} x1={lx} y1={y0} x2={lx} y2={y1} />
-        <line className={styles.qMid} x1={x0} y1={ly} x2={x1} y2={ly} />
-        <line className={styles.qAxis} x1={x0} y1={y1} x2={x1} y2={y1} />
-        <line className={styles.qAxis} x1={x0} y1={y0} x2={x0} y2={y1} />
-        {dots.map((dot, i) => (
-          <circle
-            key={i}
-            className={`${styles.qDot} ${quadOfDot(dot, line) === 'hotRich' ? styles.hot : ''}`}
-            cx={dot.x.toFixed(1)}
-            cy={dot.y.toFixed(1)}
-            r={4.2}
-          />
-        ))}
-        <text className={styles.qT} x={x0} y={y1 + 18}>
-          0
-        </text>
-        <text className={styles.qT} x={xm} y={y1 + 18} textAnchor="middle">
-          15万円
-        </text>
-        <text className={styles.qT} x={x1} y={y1 + 18} textAnchor="end">
-          60万円〜
-        </text>
-        <text className={styles.qT} x={(x0 + x1) / 2} y={y1 + 36} textAnchor="middle">
-          預金額 →
-        </text>
-        <text className={styles.qT} x={x0 - 8} y={y0 + 10} textAnchor="end">
-          5
-        </text>
-        <text className={styles.qT} x={x0 - 8} y={ym + 4} textAnchor="end">
-          3
-        </text>
-        <text className={styles.qT} x={x0 - 8} y={y1} textAnchor="end">
-          1
-        </text>
-        <text
-          className={styles.qT}
-          x={16}
-          y={ym}
-          textAnchor="middle"
-          transform={`rotate(-90 16 ${ym})`}
-        >
-          熱量 →
-        </text>
-        {estimate && (
-          <>
+      {/* 図（左）と、象限の名前と人数・初めの位置に戻す（右）を横に並べる */}
+      <div className={styles.quadBody}>
+        <div className={styles.quadFig}>
+          <svg viewBox={`0 0 520 ${y1 + 44}`} role="img" aria-label={label}>
+            <rect
+              className={styles.qHot}
+              x={lx}
+              y={y0}
+              width={Math.max(0, x1 - lx)}
+              height={Math.max(0, ly - y0)}
+              rx={8}
+            />
+            <line className={styles.qMid} x1={lx} y1={y0} x2={lx} y2={y1} />
+            <line className={styles.qMid} x1={x0} y1={ly} x2={x1} y2={ly} />
+            <line className={styles.qAxis} x1={x0} y1={y1} x2={x1} y2={y1} />
+            <line className={styles.qAxis} x1={x0} y1={y0} x2={x0} y2={y1} />
+            {dots.map((dot, i) => (
+              <circle
+                key={i}
+                className={`${styles.qDot} ${quadOfDot(dot, line) === 'hotRich' ? styles.hot : ''}`}
+                cx={dot.x.toFixed(1)}
+                cy={dot.y.toFixed(1)}
+                r={6}
+              />
+            ))}
+            <text className={styles.qT} x={x0} y={y1 + 18}>
+              0
+            </text>
+            <text className={styles.qT} x={xm} y={y1 + 18} textAnchor="middle">
+              15万円
+            </text>
+            <text className={styles.qT} x={x1} y={y1 + 18} textAnchor="end">
+              60万円〜
+            </text>
+            <text className={styles.qT} x={(x0 + x1) / 2} y={y1 + 36} textAnchor="middle">
+              預金額 →
+            </text>
+            <text className={styles.qT} x={x0 - 8} y={y0 + 10} textAnchor="end">
+              5
+            </text>
+            <text className={styles.qT} x={x0 - 8} y={ym + 4} textAnchor="end">
+              3
+            </text>
+            <text className={styles.qT} x={x0 - 8} y={y1} textAnchor="end">
+              1
+            </text>
             <text
-              className={styles.qLineT}
-              x={Math.min(lx + 4, x1 - 4)}
-              y={y1 - 6}
-              textAnchor={lx + 60 > x1 ? 'end' : 'start'}
+              className={styles.qT}
+              x={16}
+              y={ym}
+              textAnchor="middle"
+              transform={`rotate(-90 16 ${ym})`}
             >
-              {depositText(line.deposit)}
+              熱量 →
             </text>
-            <text className={styles.qLineT} x={x0 + 4} y={ly > y0 + 16 ? ly - 5 : ly + 14}>
-              {heatText(line.heat)}
-            </text>
-          </>
-        )}
-      </svg>
-      {estimate && (
-        <p className={styles.qEstimate} data-testid="quad-estimate">
-          <span className={styles.qEstimateChip}>{quadLineText.estimate}</span>
-        </p>
-      )}
-      <ul className={styles.qNames} aria-hidden="true">
-        {QUAD_ORDER.map((key) => (
-          <li key={key} className={key === 'hotRich' ? styles.hot : undefined}>
-            <span className={styles.qName}>{QUAD_NAMES[key]}</span>
-            <span className={styles.qNum} data-testid={`quad-${key}`}>
-              {about}
-              {key === 'hotRich' && !estimate ? view.expected : people[key]}
-              <small>人</small>
-            </span>
-          </li>
-        ))}
-      </ul>
+            {estimate && (
+              <>
+                <text
+                  className={styles.qLineT}
+                  x={Math.min(lx + 4, x1 - 4)}
+                  y={y1 - 6}
+                  textAnchor={lx + 60 > x1 ? 'end' : 'start'}
+                >
+                  {depositText(line.deposit)}
+                </text>
+                <text className={styles.qLineT} x={x0 + 4} y={ly > y0 + 16 ? ly - 5 : ly + 14}>
+                  {heatText(line.heat)}
+                </text>
+              </>
+            )}
+          </svg>
+          <p className={styles.qUnit}>● 1点 ≒ {demand.perDot}人</p>
+        </div>
+        <div className={styles.quadSide}>
+          <ul className={styles.qNames} aria-hidden="true">
+            {QUAD_STACK.map((key) => (
+              <li key={key} className={key === 'hotRich' ? styles.hot : undefined}>
+                <span className={styles.qName}>{QUAD_NAMES[key]}</span>
+                <span className={styles.qNum} data-testid={`quad-${key}`}>
+                  {about}
+                  {key === 'hotRich' && !estimate ? view.expected : people[key]}
+                  <small>人</small>
+                </span>
+              </li>
+            ))}
+          </ul>
+          <QuadReset />
+        </div>
+      </div>
       <QuadControls />
-      <p className={styles.qUnit}>● 1点 ≒ {demand.perDot}人</p>
     </section>
   );
 }

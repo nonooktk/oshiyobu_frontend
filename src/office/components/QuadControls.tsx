@@ -51,30 +51,37 @@ function LineField({ what }: { readonly what: keyof QuadLine }) {
               if (event.key === 'Enter') commit();
             }}
           />
-          {unit !== '' && <span>{unit}</span>}
+          {/* 単位の幅は、2 本とも同じにする（熱量は単位が無いが、欄の位置をそろえる） */}
+          <span className={styles.qLineUnit}>{unit}</span>
         </div>
       </div>
     </div>
   );
 }
 
+/** 預金額と熱量の 2 本を、横 1 列に並べる */
 export function QuadControls() {
-  const line = useOffice((s) => s.quadLine);
-  const resetQuadLine = useOffice((s) => s.resetQuadLine);
-  const initial = isInitialLine(line);
   return (
     // 見出しの語は足さない。まとまりの名前は、⑥の中の見出し（「熱量と資金」。id="j6q"）を読ませる
     <div className={styles.qLines} role="group" aria-labelledby="j6q">
       <LineField what="deposit" />
       <LineField what="heat" />
-      <button
-        type="button"
-        className={`${styles.btn} ${styles.secondary} ${styles.sm}`}
-        disabled={initial}
-        onClick={resetQuadLine}
-      >
-        {quadLineText.reset}
-      </button>
     </div>
+  );
+}
+
+/** 初めの位置に戻す（図の横、象限の人数の下に置く） */
+export function QuadReset() {
+  const line = useOffice((s) => s.quadLine);
+  const resetQuadLine = useOffice((s) => s.resetQuadLine);
+  return (
+    <button
+      type="button"
+      className={`${styles.btn} ${styles.secondary} ${styles.sm}`}
+      disabled={isInitialLine(line)}
+      onClick={resetQuadLine}
+    >
+      {quadLineText.reset}
+    </button>
   );
 }

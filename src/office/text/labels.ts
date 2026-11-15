@@ -76,6 +76,8 @@ export const text = {
 
 /** 4 象限の名前（要件 R-11。仕様 3.2 の案）。並びは、図の左上・右上・左下・右下 */
 export const QUAD_ORDER = ['hotPoor', 'hotRich', 'coolPoor', 'coolRich'] as const;
+/** 図の横に縦 1 列で並べるときの順（いま呼べる → 熱いが資金が足りない → 資金はあるが熱が低い → どちらも低い） */
+export const QUAD_STACK = ['hotRich', 'hotPoor', 'coolRich', 'coolPoor'] as const;
 export const QUAD_NAMES: Readonly<Record<(typeof QUAD_ORDER)[number], string>> = {
   hotRich: 'いま呼べる',
   hotPoor: '熱いが資金が足りない',

@@ -82,7 +82,7 @@ export interface Sound {
 
 /** 鳴っている最中・予約した音（オフにしたとき、その場で止めるために覚える）。 */
 interface Playing {
-  readonly osc: OscillatorNode;
+  readonly source: AudioScheduledSourceNode;
   readonly amp: GainNode;
   /** 鳴り終わる時刻（AudioContext の時計）。 */
   readonly end: number;
@@ -97,20 +97,41 @@ export function createSound(): Sound {
   const silence = (): void => {
     const items = playing;
     playing = [];
-    for (const { osc, amp } of items) {
+    for (const { source, amp } of items) {
       try {
-        osc.stop();
+        source.stop();
       } catch {
         // 止められなくても、切り離せば鳴らない
       }
       try {
         amp.disconnect();
-        osc.disconnect();
+        source.disconnect();
       } catch {
         // 切り離せない環境でも、先へ進む
       }
     }
   };
+
+  /** 合成の音を鳴らす（場面ごとの音列を、まとめて予約する）。 */
+  const playSynth = (audio: AudioContext, cue: SoundCue, t0: number): void => {
+    for (const note of CUES[cue]) {
+      const start = t0 + note.at;
+      const end = start + note.dur;
+      const source = audio.createOscillator();
+      const amp = audio.createGain();
+      source.type = 'triangle'; // やわらかい音
+      source.frequency.value = note.hz;
+      amp.gain.setValueAtTime(0.0001, start);
+      amp.gain.linearRampToValueAtTime(note.gain ?? VOLUME, start + 0.015);
+      amp.gain.exponentialRampToValueAtTime(0.0001, end);
+      source.connect(amp);
+      amp.connect(audio.destination);
+      source.start(start);
+      source.stop(end + 0.02);
+      playing.push({ source, amp, end: end + 0.02 });
+    }
+  };
+
   return {
     setOn(next) {
       on = next;
@@ -139,22 +160,7 @@ export function createSound(): Sound {
         if (audio.state === 'suspended') void audio.resume().catch(() => undefined);
         const t0 = audio.currentTime;
         playing = playing.filter((p) => p.end > t0); // もう鳴り終わった音は、覚えておかない
-        for (const note of CUES[cue]) {
-          const start = t0 + note.at;
-          const end = start + note.dur;
-          const osc = audio.createOscillator();
-          const amp = audio.createGain();
-          osc.type = 'triangle'; // やわらかい音
-          osc.frequency.value = note.hz;
-          amp.gain.setValueAtTime(0.0001, start);
-          amp.gain.linearRampToValueAtTime(note.gain ?? VOLUME, start + 0.015);
-          amp.gain.exponentialRampToValueAtTime(0.0001, end);
-          osc.connect(amp);
-          amp.connect(audio.destination);
-          osc.start(start);
-          osc.stop(end + 0.02);
-          playing.push({ osc, amp, end: end + 0.02 });
-        }
+        playSynth(audio, cue, t0);
       } catch {
         // 音が出せなくても、画面は何事もなく進む
       }

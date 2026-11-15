@@ -29,13 +29,12 @@ export type SoundFileMap = Readonly<Partial<Record<FileCue, SoundFile>>>;
  * 場面 → 音源ファイルの対応表。ここに無い場面は、合成の音を鳴らす（ファイルが読めないときも、合成の音）。
  * join は A-join.mp3、friend は B-friend.mp3、fever は C-fever.mp3（台帳 public/sounds/ledger.md）。
  * B は拍手で、ピークが同じでも平均（RMS）が大きいので、A より小さい 0.095 にした。
- * C（最後の演出）は、いちばん派手な場面なので、A・B より出力の RMS を 2.44 dB 大きくした。+2.5 dB にすると 0.121 で、
- * gain の上限の検査（0.12）を超えるため、上限の 0.12 にした。
+ * C（最後の演出）は、いちばん派手な場面なので、A・B より出力の RMS を 2.53 dB 大きくした（+2.5 dB の 0.115。gain の上限の検査 0.12 の内側）。
  */
 export const SOUND_FILES: SoundFileMap = {
   join: { url: '/sounds/A-join.mp3', gain: 0.11 },
   friend: { url: '/sounds/B-friend.mp3', gain: 0.095 },
-  fever: { url: '/sounds/C-fever.mp3', gain: 0.12 },
+  fever: { url: '/sounds/C-fever.mp3', gain: 0.115 },
 };
 
 /**

@@ -396,10 +396,11 @@
   padding: var(--s4);
   border-top: 1px solid var(--line);
 }
-.leftStack {
-  display: grid;
-  align-content: start;
-  gap: var(--s3);
+/* ⑥ の中の、熱量と資金（4 象限）。満たせるかの下に、細い線で分けて続ける */
+.quad {
+  margin-top: var(--s3);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--line);
 }
 .jcard {
   padding: var(--s3) var(--s4);
@@ -791,13 +792,16 @@
 }
 
 /* 条件を調整・足 */
+/* ⑤ の中の足（条件を調整・収支シミュレーター・提案を見る） */
 .judgeFoot {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: var(--s3);
-  padding: 0 var(--s4) var(--s4);
+  margin-top: var(--s3);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--line);
 }
 .adjust {
   flex: 1;
@@ -1130,10 +1134,6 @@
   .mapCol,
   .sideCol,
   .judge {
-    padding-right: var(--s3);
-    padding-left: var(--s3);
-  }
-  .judgeFoot {
     padding-right: var(--s3);
     padding-left: var(--s3);
   }

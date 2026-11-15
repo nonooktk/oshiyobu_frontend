@@ -73,10 +73,9 @@ function Scatter({ view }: { readonly view: OfficeView }) {
     (estimate ? `${quadLineValues(line.deposit, line.heat)}（${quadLineText.estimate}）。` : '') +
     `熱量が高く資金もあるファンは${about}${estimate ? people.hotRich : view.expected}人、熱量は高いが資金が少ないのは${about}${people.hotPoor}人、熱量は低いが資金があるのは${about}${people.coolRich}人、熱量が低く資金も少ないのは${about}${people.coolPoor}人。`;
   return (
-    <section className={`${styles.jcard} ${styles.quad}`} aria-labelledby="j3">
+    <section className={styles.quad} aria-labelledby="j6q">
       <div className={styles.quadHead}>
-        <p className={styles.jlabel} id="j3" style={{ margin: 0 }}>
-          <i>3</i>
+        <p className={styles.jlabel} id="j6q" style={{ margin: 0 }}>
           {text.judge3}
         </p>
         <div>
@@ -267,108 +266,56 @@ function Adjust({ view }: { readonly view: OfficeView }) {
   );
 }
 
-/** 判定（会場を選ぶと出る）: 開催条件・満たせるか・熱量と資金、条件を調整、提案を見る */
-export function Judge({ view }: { readonly view: OfficeView }) {
+/** ⑤ 開催条件（損益の要約）: 到達ライン・成立の条件・上乗せ、条件を調整、収支シミュレーター・提案を見る */
+function Summary({ view }: { readonly view: OfficeView }) {
   const openModal = useOffice((s) => s.openModal);
-  const { condition, expected, level, low } = view;
+  const { condition, low } = view;
   const { cap, unit } = condition.venue;
-  const max = Math.max(expected, condition.need) * 1.12;
   const rule = ruleText(condition.line, condition.min);
-  const verdictClass = level === '高' ? '' : level === '中' ? styles.mid : styles.low;
   return (
-    <div data-testid="judge">
-      <div className={styles.judge}>
-        <div className={styles.leftStack}>
-          <section className={styles.jcard} aria-labelledby="j1">
-            <p className={styles.jlabel} id="j1">
-              <i>1</i>
-              {text.judge1}
-            </p>
-            <p className={styles.condLine}>
-              <span className={styles.k}>{text.lineLabel}</span>
-              <span className={styles.res} data-testid="line">
-                {yen(condition.line)}
-              </span>
-              <span className={styles.sub}>
-                <span data-testid="need">{condition.need}人</span>
-                <span className={styles.op}>×</span>
-                <span data-testid="price">{yen(condition.price)}</span>
-              </span>
-            </p>
-            <span className={`${styles.capChip} ${view.overCapacity ? styles.over : ''}`}>
-              {capChip(condition.need, cap, unit)}
-            </span>
-            <p className={styles.condMore}>
-              <span className={styles.k}>{text.ruleLabel}</span>
-              <span data-testid="rule">
-                {rule.before}
-                <b>{rule.line}</b>
-                {rule.middle}
-                <b>{rule.min}</b>
-                {rule.after}
-              </span>
-            </p>
-            <p className={styles.condNote}>{text.minNote}</p>
-            {view.gapYen !== null && (
-              <p className={styles.condWarn} role="status">
-                {warnText(view.gapYen)}
-              </p>
-            )}
-            <div className={styles.upSum}>
-              <p className={styles.condMore} style={{ marginTop: 0 }}>
-                <span className={styles.k}>{text.upliftLabel}</span>
-                <span className={styles.upTot} data-testid="uplift-total">
-                  +{yen(view.uplift.total)}
-                </span>
-              </p>
-              <UpRows view={view} />
-            </div>
-          </section>
-          <section className={styles.jcard} aria-labelledby="j2">
-            <div className={styles.meetTop}>
-              <p className={styles.jlabel} id="j2" style={{ margin: 0 }}>
-                <i>2</i>
-                {text.judge2}
-              </p>
-              <span className={`${styles.verdict} ${verdictClass}`} data-testid="verdict">
-                {verdictText(level)}
-              </span>
-            </div>
-            <div
-              className={styles.meet}
-              role="img"
-              aria-label={`払える熱いファンの見込みは${expected}人、必要なのは${condition.need}人。${verdictText(level)}`}
-            >
-              <span
-                className={styles.needMark}
-                style={{ left: `${(condition.need / max) * 100}%` }}
-              >
-                <span>{needText(condition.need)}</span>
-              </span>
-              <div className={styles.track}>
-                <i style={{ width: `${(expected / max) * 100}%` }} />
-              </div>
-              <span
-                className={styles.expMark}
-                style={{ left: `max(7.5em, ${(expected / max) * 100}%)` }}
-              >
-                {expectedText(expected)}
-              </span>
-            </div>
-            <p className={styles.meetLegend} aria-hidden="true">
-              <span>
-                <i style={{ background: 'var(--primary)' }} />
-                {text.legendExpected}
-              </span>
-              <span>
-                <i style={{ background: 'var(--ink)', width: 3 }} />
-                {text.legendNeed}
-              </span>
-            </p>
-            {low && <p className={styles.meetShort}>{shortText(condition.need, view.shortfall)}</p>}
-          </section>
-        </div>
-        <Scatter view={view} />
+    <section className={styles.jcard} aria-labelledby="j5">
+      <p className={styles.jlabel} id="j5">
+        <i>5</i>
+        {text.judge1}
+      </p>
+      <p className={styles.condLine}>
+        <span className={styles.k}>{text.lineLabel}</span>
+        <span className={styles.res} data-testid="line">
+          {yen(condition.line)}
+        </span>
+        <span className={styles.sub}>
+          <span data-testid="need">{condition.need}人</span>
+          <span className={styles.op}>×</span>
+          <span data-testid="price">{yen(condition.price)}</span>
+        </span>
+      </p>
+      <span className={`${styles.capChip} ${view.overCapacity ? styles.over : ''}`}>
+        {capChip(condition.need, cap, unit)}
+      </span>
+      <p className={styles.condMore}>
+        <span className={styles.k}>{text.ruleLabel}</span>
+        <span data-testid="rule">
+          {rule.before}
+          <b>{rule.line}</b>
+          {rule.middle}
+          <b>{rule.min}</b>
+          {rule.after}
+        </span>
+      </p>
+      <p className={styles.condNote}>{text.minNote}</p>
+      {view.gapYen !== null && (
+        <p className={styles.condWarn} role="status">
+          {warnText(view.gapYen)}
+        </p>
+      )}
+      <div className={styles.upSum}>
+        <p className={styles.condMore} style={{ marginTop: 0 }}>
+          <span className={styles.k}>{text.upliftLabel}</span>
+          <span className={styles.upTot} data-testid="uplift-total">
+            +{yen(view.uplift.total)}
+          </span>
+        </p>
+        <UpRows view={view} />
       </div>
       <div className={styles.judgeFoot}>
         <Adjust view={view} />
@@ -399,6 +346,63 @@ export function Judge({ view }: { readonly view: OfficeView }) {
           )}
         </div>
       </div>
+    </section>
+  );
+}
+
+/** ⑥ 確度: 満たせるか（札・横棒）と、熱量と資金（4 象限・線を動かす操作） */
+function Certainty({ view }: { readonly view: OfficeView }) {
+  const { condition, expected, level, low } = view;
+  const max = Math.max(expected, condition.need) * 1.12;
+  const verdictClass = level === '高' ? '' : level === '中' ? styles.mid : styles.low;
+  return (
+    <section className={styles.jcard} aria-labelledby="j6">
+      <div className={styles.meetTop}>
+        <p className={styles.jlabel} id="j6" style={{ margin: 0 }}>
+          <i>6</i>
+          {text.judge2}
+        </p>
+        <span className={`${styles.verdict} ${verdictClass}`} data-testid="verdict">
+          {verdictText(level)}
+        </span>
+      </div>
+      <div
+        className={styles.meet}
+        role="img"
+        aria-label={`払える熱いファンの見込みは${expected}人、必要なのは${condition.need}人。${verdictText(level)}`}
+      >
+        <span className={styles.needMark} style={{ left: `${(condition.need / max) * 100}%` }}>
+          <span>{needText(condition.need)}</span>
+        </span>
+        <div className={styles.track}>
+          <i style={{ width: `${(expected / max) * 100}%` }} />
+        </div>
+        <span className={styles.expMark} style={{ left: `max(7.5em, ${(expected / max) * 100}%)` }}>
+          {expectedText(expected)}
+        </span>
+      </div>
+      <p className={styles.meetLegend} aria-hidden="true">
+        <span>
+          <i style={{ background: 'var(--primary)' }} />
+          {text.legendExpected}
+        </span>
+        <span>
+          <i style={{ background: 'var(--ink)', width: 3 }} />
+          {text.legendNeed}
+        </span>
+      </p>
+      {low && <p className={styles.meetShort}>{shortText(condition.need, view.shortfall)}</p>}
+      <Scatter view={view} />
+    </section>
+  );
+}
+
+/** 判定（会場を選ぶと出る）: ⑥ 確度 と ⑤ 開催条件。会場を選ぶまでは出さない（I-01） */
+export function Judge({ view }: { readonly view: OfficeView }) {
+  return (
+    <div data-testid="judge" className={styles.judge}>
+      <Summary view={view} />
+      <Certainty view={view} />
     </div>
   );
 }

@@ -63,8 +63,8 @@ export function QuadControls() {
   const resetQuadLine = useOffice((s) => s.resetQuadLine);
   const initial = isInitialLine(line);
   return (
-    // 見出しの語は足さない。まとまりの名前は、⑥の見出し（「熱量と資金」。id="j3"）を読ませる
-    <div className={styles.qLines} role="group" aria-labelledby="j3">
+    // 見出しの語は足さない。まとまりの名前は、⑥の中の見出し（「熱量と資金」。id="j6q"）を読ませる
+    <div className={styles.qLines} role="group" aria-labelledby="j6q">
       <LineField what="deposit" />
       <LineField what="heat" />
       <button

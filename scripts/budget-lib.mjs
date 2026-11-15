@@ -9,6 +9,10 @@ export const FAN_WARN_LIMIT = 170_000;
 export const FONT_LIMIT = 400_000;
 /** シミュレーターだけが読む追加の WOFF2（*-sim.woff2）の合計の上限（バイト。仮の線） */
 export const FONT_SIM_LIMIT = 400_000;
+/** 音源ファイル（MP3。dist/sounds/）1 本の上限（バイト。G-04。変換の目安は 60 KB） */
+export const SOUND_FILE_LIMIT = 60_000;
+/** 音源ファイルの合計の上限（バイト。音源を使う 3 場面 × 60 KB） */
+export const SOUND_LIMIT = 180_000;
 /** シミュレーター用の追加の WOFF2 の名前の末尾 */
 const FONT_SIM_SUFFIX = '-sim.woff2';
 /** 遅れて読む塊（最初に読む側に入ってはいけない） */
@@ -46,6 +50,7 @@ export const gzipBytes = (buffer) => gzipSync(buffer).length;
  * 検査する。manifest は dist/.vite/manifest.json の中身、read(path) は dist からの相対パスで中身（Buffer）を返す、
  * images は scripts/images-config.mjs の一覧、listBundle() は dist/bundle のファイル名の一覧を返す。
  * fonts は dist/fonts の中のファイル（{ name, bytes }）の一覧（無ければ検査しない）。
+ * sounds は dist/sounds の中の音声ファイル（{ name, bytes }）の一覧（無ければ検査しない）。
  * strictImages が真のとき、元絵の形式（jpg・png）のまま配っていることをエラーにする（deploy.yml と npm run verify）。
  * 偽のとき（check:budget を単独で実行したとき）は警告。
  */
@@ -56,6 +61,7 @@ export function evaluate({
   listBundle,
   searchText,
   fonts = [],
+  sounds = [],
   strictImages = false,
 }) {
   const errors = [];
@@ -130,7 +136,17 @@ export function evaluate({
       errors.push(`${font.name}: 元のフォントを配ろうとしています（WOFF2 に絞ったものだけを配る）`);
     }
   }
+  // 音源（dist/sounds/ の音声ファイル）: 1 本ずつと、合計。置いていなければ検査しない
+  const soundReport = { files: sounds.length, total: sounds.reduce((sum, s) => sum + s.bytes, 0) };
+  for (const sound of sounds) {
+    if (sound.bytes > SOUND_FILE_LIMIT) {
+      errors.push(`音源 ${sound.name}: ${sound.bytes} B（上限 ${SOUND_FILE_LIMIT} B）`);
+    }
+  }
+  if (soundReport.total > SOUND_LIMIT) {
+    errors.push(`音源: 合計 ${soundReport.total} B（上限 ${SOUND_LIMIT} B）`);
+  }
   // 元絵（assets-src/）を参照していないこと
   if (searchText('assets-src')) errors.push('配るファイルが assets-src/ を参照しています');
-  return { errors, warnings, report, fontReport };
+  return { errors, warnings, report, fontReport, soundReport };
 }

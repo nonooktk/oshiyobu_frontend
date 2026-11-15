@@ -2,7 +2,8 @@
 // ファン向けの、ことば・絵・動きの検査。
 //   G-04: 演出とことばが褒めるのは、利用者の行動だけ。運・勝ち負け・得を褒めない（銀行に出す企画のため）
 //   G-05: 急がせる促し（点滅・残り時間・「いますぐ」）を入れない
-//   G-04（音）: 称賛の音に、スロット・硬貨・くじを連想させる語・音声ファイル・素材の再生を入れない。音のボタンを消さない
+//   G-04（音）: 称賛の音に、スロット・硬貨・くじを連想させる語・素材の再生の書き方を入れない。音のボタンを消さない
+//     （音声ファイルの置き場と台帳は tests/guard/sound-files.test.ts が見る）
 // 検査の範囲は、ファン向け（src/fan/ と fan/index.html）の、コード・CSS・文言と、絵のファイル名。
 // 限界: 語の一覧に無い言い換えと、動きそのもの（点滅の見た目）・音の聞こえ方は、見つけられない。PR のレビューで見る。
 // 起動条件: 検査の対象が見つかり、中身を読めていること（0 件で通る空振りの防止）。
@@ -83,6 +84,7 @@ describe('ファン向けの、ことば・絵・動き（G-04・G-05）', () =>
       ...walk('src/assets'),
       ...walk('assets-src'),
       ...walk('public/assets'),
+      ...walk('public/sounds'),
       ...walk('src/fan'),
     ].filter((path) => LUCK_FILE_NAME.test(path.split('/').at(-1) ?? ''));
     expect(
@@ -129,8 +131,6 @@ describe('ファン向けの、ことば・絵・動き（G-04・G-05）', () =>
   });
 });
 
-/** 音声ファイルの拡張子（G-04）。称賛の音は Web Audio の合成だけで、素材を置かない */
-const AUDIO_EXTS = ['.mp3', '.wav', '.ogg', '.oga', '.m4a', '.aac', '.flac', '.opus', '.weba'];
 /** 素材を読んで鳴らす書き方（G-04）。合成（createOscillator）だけにする */
 const AUDIO_SAMPLE_PLAYBACK = [
   /new\s+Audio\s*\(/,
@@ -145,16 +145,6 @@ describe('称賛の音（G-04）', () => {
     expect(
       hitsOf(SOUND_WORDS),
       guardMessage('G-04', 'スロット・硬貨・くじを連想させる音を表す語が入っています'),
-    ).toEqual([]);
-  });
-
-  it('音声ファイル（mp3・wav・ogg など）が、リポジトリに 0 件', () => {
-    const hits = [...walk('src'), ...walk('public'), ...walk('assets-src')].filter((path) =>
-      AUDIO_EXTS.some((ext) => path.toLowerCase().endsWith(ext)),
-    );
-    expect(
-      hits,
-      guardMessage('G-04', '音声ファイルを置いています（称賛の音は、合成だけで鳴らす）'),
     ).toEqual([]);
   });
 
@@ -192,6 +182,5 @@ describe('称賛の音（G-04）', () => {
       'ジャラジャラ',
     ]);
     expect(AUDIO_SAMPLE_PLAYBACK.some((re) => re.test('const a = new Audio("x.mp3");'))).toBe(true);
-    expect(AUDIO_EXTS.some((ext) => 'coin.MP3'.toLowerCase().endsWith(ext))).toBe(true);
   });
 });

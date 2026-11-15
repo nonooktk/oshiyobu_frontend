@@ -20,6 +20,8 @@ const TYPES = {
   // 書体（/fonts/*.woff2）と、収録した字の一覧（glyphs.txt）。種類が無いと application/octet-stream で配られていた
   '.woff2': 'font/woff2',
   '.txt': 'text/plain; charset=utf-8',
+  // 音源（/sounds/*.mp3。G-04）
+  '.mp3': 'audio/mpeg',
 };
 const COMPRESSIBLE = new Set(['.html', '.js', '.css', '.json', '.svg']);
 

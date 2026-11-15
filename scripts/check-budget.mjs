@@ -2,6 +2,7 @@
 //   npm run build の後に、npm run check:budget
 //   --strict-images: 元絵の形式（jpg・png）のまま配っていたら、エラーにする（deploy.yml と npm run verify〈CI も呼ぶ〉が付ける。単独で実行するときは警告だけ）
 // 書体（dist/fonts/）: 核の WOFF2 の合計と、シミュレーター用の追加の合計を、別の枠で検査する（budget-lib.mjs の FONT_LIMIT・FONT_SIM_LIMIT）
+// 音源（dist/sounds/）: 音声ファイル 1 本ずつと、合計を検査する（SOUND_FILE_LIMIT・SOUND_LIMIT。G-04）
 // 最初の画面に出る絵の合計（300 KB 以下）は、実ブラウザの通信の記録で測る（e2e/perf.spec.ts。I-87）
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -29,12 +30,27 @@ const fonts = existsSync(fontDir)
       .map((entry) => ({ name: entry.name, bytes: readFileSync(join(fontDir, entry.name)).length }))
   : [];
 
-const { errors, warnings, report, fontReport } = evaluate({
+// dist/sounds の音声ファイル（無ければ空。台帳 ledger.md など、音声ではないファイルは数えない）
+const soundDir = join(dist, 'sounds');
+const sounds = existsSync(soundDir)
+  ? readdirSync(soundDir, { withFileTypes: true })
+      .filter(
+        (entry) =>
+          entry.isFile() && /\.(mp3|wav|ogg|oga|m4a|aac|flac|opus|weba)$/i.test(entry.name),
+      )
+      .map((entry) => ({
+        name: entry.name,
+        bytes: readFileSync(join(soundDir, entry.name)).length,
+      }))
+  : [];
+
+const { errors, warnings, report, fontReport, soundReport } = evaluate({
   strictImages:
     process.argv.includes('--strict-images') || process.env.BUDGET_STRICT_IMAGES === '1',
   manifest,
   read,
   fonts,
+  sounds,
   images: IMAGES,
   listBundle: () => readdirSync(join(dist, 'bundle')),
   searchText: (needle) =>
@@ -49,6 +65,9 @@ if (fonts.length > 0) {
   console.log(
     `書体（WOFF2）: 核 ${fontReport.core} B（全ページ）・シミュレーター用の追加 ${fontReport.sim} B`,
   );
+}
+if (sounds.length > 0) {
+  console.log(`音源（音声ファイル）: ${soundReport.files} 本・合計 ${soundReport.total} B`);
 }
 for (const warning of warnings) console.warn(`警告: ${warning}`);
 if (errors.length > 0) {

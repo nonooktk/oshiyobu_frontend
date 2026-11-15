@@ -18,7 +18,6 @@ import {
   heatText,
   quadLineText,
   quadLineValues,
-  expectedText,
   minHelp,
   minResetLabel,
   needText,
@@ -92,17 +91,20 @@ function Scatter({ view }: { readonly view: OfficeView }) {
             <span className={styles.qEstimateChip}>{quadLineText.estimate}</span>
           </p>
         )}
-        <div className={styles.quadBigWrap}>
-          <Changed k="expected" now={view.expected} unit="人" block>
-            <p className={styles.quadBig} data-testid="expected">
+        {/* 大きい数字（右上の人数）は、線が初めの位置のときだけ出す。線を動かしている間は、カードの
+            「いま呼べる 約N人」（目安）と食い違うので出さない（#24 の統括の指摘。案 2）。
+            core の見込みは、⑥ の横棒の「見込み」に、いつも出ている（data-testid="expected" と強調はそちら） */}
+        {!estimate && (
+          <div className={styles.quadBigWrap} data-testid="quad-big">
+            <p className={styles.quadBig}>
               <span className={styles.hl}>
                 {view.expected}
                 <small>人</small>
               </span>
             </p>
-          </Changed>
-          <div className={styles.quadBigLabel}>{text.hotRichLabel}</div>
-        </div>
+            <div className={styles.quadBigLabel}>{text.hotRichLabel}</div>
+          </div>
+        )}
       </div>
       {/* 図（左）と、象限の名前と人数・初めの位置に戻す（右）を横に並べる */}
       <div className={styles.quadBody}>
@@ -409,7 +411,11 @@ function Certainty({ view }: { readonly view: OfficeView }) {
           <i style={{ width: `${(expected / max) * 100}%` }} />
         </div>
         <span className={styles.expMark} style={{ left: `max(7.5em, ${(expected / max) * 100}%)` }}>
-          {expectedText(expected)}
+          {/* core の見込み。線を動かしても変わらない（札の元） */}
+          見込み{' '}
+          <Changed k="expected" now={expected} unit="人">
+            <span data-testid="expected">{expected}人</span>
+          </Changed>
         </span>
       </div>
       <p className={styles.meetLegend} aria-hidden="true">

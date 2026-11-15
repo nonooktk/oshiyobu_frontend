@@ -42,7 +42,8 @@ export function Changed({ k, now, unit = '', short = false, block = false, child
   const changes = useOffice((s) => s.changes);
   const prev = changes.prev;
   const Tag = block ? 'div' : 'span';
-  if (prev === null || !changes.keys.includes(k)) return <Tag>{children}</Tag>;
+  // 変わっていないときは包まない（数字の要素の親を、変える前と同じに保つ。#24 の office-quad-big のテスト）
+  if (prev === null || !changes.keys.includes(k)) return <>{children}</>;
   const before = prev[k];
   return (
     <Tag key={changes.seq} className={styles.chg} data-changed="true">

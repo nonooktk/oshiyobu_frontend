@@ -215,13 +215,16 @@ export const shortText = (need: number, shortfall: number): string =>
 export const expectedText = (n: number): string => `見込み ${n}人`;
 export const needText = (n: number): string => `必要 ${n}人`;
 
-export function sideNote(isHome: boolean, reach: boolean): readonly [string, string] {
+/**
+ * ③ 会場の候補の下の注記。2 文目は、推しに関係なく正しい固定の文にする。
+ * 会場の候補は、core のデータで市ごとに決まった固定の一覧で、推しによって絞り込んでいない。
+ * 推しの名前や、特定の推しの見込みで「届く会場だけ」とは書かない（届くかは、会場を選ぶと「満たせるか」に出る）
+ */
+export function sideNote(isHome: boolean): readonly [string, string] {
   return [
     isHome
       ? '空き日は架空です。料金は公式サイトの公開情報にもとづく目安です（2026-11-12 確認）。'
       : '空き日は架空です。会場名・キャパは会場データ（実在・公演の記録あり）にもとづきます。',
-    reach
-      ? '候補は最大3件です。Tech0サステナアイドルの見込みが必要人数に届く会場だけを出しています。'
-      : 'この市には、見込みが必要人数に届く会場がありません。必要人数が見込みに最も近い1件だけを出しています。',
+    '候補は、この市の会場から最大3件です。必要人数に届くかは、会場を選ぶと「満たせるか」に出ます。',
   ];
 }

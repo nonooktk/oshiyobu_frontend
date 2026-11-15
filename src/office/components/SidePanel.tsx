@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { conditionOf, demandOf, venuesOf } from '../../core';
+import { venuesOf } from '../../core';
 import { HOME_CITY } from '../../core';
 import styles from '../office.module.css';
 import { useOffice } from '../store';
@@ -36,9 +36,7 @@ export function SidePanel() {
     );
   }
   const list = venuesOf(city);
-  const expected = demandOf('tech0', city).expected;
-  const reach = list.some((venue) => conditionOf(venue.id).need <= expected);
-  const [first, second] = sideNote(city === HOME_CITY, reach);
+  const [first, second] = sideNote(city === HOME_CITY);
   return (
     <div className={styles.sideCol}>
       {/* 番号の印は、見出しの外（同じ親の中）に置く。見出しの名前は「<市>の会場」のまま（I-03・C-05 が、見出しの親の中の会場を探す） */}

@@ -109,6 +109,21 @@ const settle = async (): Promise<void> => {
 };
 const toggle = (): HTMLElement =>
   screen.getAllByRole('button', { name: '称賛の音' })[0] as HTMLElement;
+/** 申し込んで、特典の絵を閉じて、「仲間を呼ぶ」を押せる状態にする（音源の読み込みは終わっている）。 */
+async function readyToCallFriends(): Promise<void> {
+  mountFan('?p=4');
+  fireEvent.pointerDown(document.body);
+  await settle();
+  passStartOnly();
+  fundAndApply();
+  await tick(700 + 2600);
+  fireEvent.click(screen.getByRole('button', { name: '閉じる' }));
+}
+/** 「仲間を呼ぶ」を押す。 */
+const callFriends = (): Promise<void> =>
+  act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: /^仲間を呼ぶ/ }));
+  });
 
 describe('申し込んだ瞬間（join）は、音源ファイルの音', () => {
   it('最初の操作のあとに /sounds/A-join.mp3 と /sounds/B-friend.mp3 を 1 回ずつ読む。申し込むと join のファイルが鳴り、FEVER 目前の合成の stage は重ねない。API は呼ばない', async () => {
@@ -197,5 +212,32 @@ describe('仲間を呼んだ瞬間（friend）は B のファイルの音。ほ�
     await tick(2600);
     expect(oscillators).toBeGreaterThan(before); // fever は合成の音（止めない）
     expect(sources).toHaveLength(2); // ファイルの音は増えない
+  });
+
+  it('「動きを減らす」設定でも、仲間を呼ぶと B のファイルが鳴り、1.8 秒後に fever の合成が鳴る（B が鳴っている間でも、止めない）', async () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: /reduce/.test(q), media: q }));
+    await readyToCallFriends();
+    await callFriends();
+    const afterCall = oscillators;
+    expect(sources).toHaveLength(2); // friend は B のファイルの音
+    await tick(1799);
+    expect(oscillators).toBe(afterCall); // fever の前
+    await tick(1);
+    expect(oscillators).toBeGreaterThan(afterCall); // fever（合成）
+    expect(sources).toHaveLength(2);
+  });
+
+  it('仲間を呼んだ直後（演出の最中）に、音のボタンでオフにすると、鳴っている B のファイルの音も止まる', async () => {
+    await readyToCallFriends();
+    await callFriends();
+    expect(sources).toHaveLength(2);
+    expect(sources[1]?.stops).not.toContain(undefined);
+    // 層の下の画面は押せない。押せる音のボタン（層の上に出る）を押す
+    const pressable = screen
+      .getAllByRole('button', { name: '称賛の音' })
+      .filter((el) => !el.closest('[inert]'));
+    expect(pressable).toHaveLength(1);
+    fireEvent.click(pressable[0] as HTMLElement);
+    expect(sources[1]?.stops).toContain(undefined);
   });
 });

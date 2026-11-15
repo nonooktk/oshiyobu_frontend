@@ -60,9 +60,14 @@ export interface Changes {
   readonly prev: Snapshot | null;
   /** 変わるたびに 1 増える。部品が、薄れていく動きを最初からやり直す合図に使う */
   readonly seq: number;
+  /**
+   * 4 象限の線を動かして変わったか。線は数字を見比べながら動かすので、強調・「前」・読み上げを出さない
+   * （記録は残す。#26 の統括の指摘 ②）。推し・会場・費用を替えたときは、線の位置に関係なく出す
+   */
+  readonly byLine: boolean;
 }
 
-const NO_CHANGES: Changes = { keys: [], prev: null, seq: 0 };
+const NO_CHANGES: Changes = { keys: [], prev: null, seq: 0, byLine: false };
 
 const EMPTY_COSTS: CostValues = { venue: 0, prod: 0, fee: 0, travel: 0, profit: 0 };
 
@@ -308,14 +313,19 @@ export function snapshotOfState(state: OfficeState): Snapshot | null {
 // - 数字が変わらない操作（枠を開く・指標を替えるなど）は、changes をそのままにする
 // - ただし、会場を替えて数字が変わらなかったときは、強調と前の値を消す（前の会場のときの「前」を、
 //   今の会場の数字と比べたように見せない。#26 の統括の指摘）
+// - 4 象限の線を動かして変わったときは、byLine の印を付ける（画面には出さない。記録は残す）
 let lastSnapshot: Snapshot | null = snapshotOfState(officeStore.getState());
 let lastVenueId: VenueId | null = officeStore.getState().venueId;
+let lastLine: QuadLine = officeStore.getState().quadLine;
 officeStore.subscribe((state) => {
   const next = snapshotOfState(state);
   const prev = lastSnapshot;
   const venueChanged = state.venueId !== lastVenueId;
+  const byLine =
+    state.quadLine.deposit !== lastLine.deposit || state.quadLine.heat !== lastLine.heat;
   lastSnapshot = next;
   lastVenueId = state.venueId;
+  lastLine = state.quadLine;
   if (next === null) {
     if (state.changes.keys.length > 0) officeStore.setState({ changes: NO_CHANGES });
     return;
@@ -326,7 +336,7 @@ officeStore.subscribe((state) => {
       officeStore.setState({ changes: NO_CHANGES });
     return;
   }
-  officeStore.setState({ changes: { keys, prev, seq: state.changes.seq + 1 } });
+  officeStore.setState({ changes: { keys, prev, seq: state.changes.seq + 1, byLine } });
 });
 
 export function useOffice<T>(selector: (state: OfficeState & OfficeActions) => T): T {

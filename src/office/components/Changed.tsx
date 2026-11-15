@@ -33,7 +33,8 @@ export function ChangeLive() {
   const { changes } = state;
   return (
     <p className="sr-only" aria-live="polite" data-testid="change-live">
-      {changeLiveText(changes.keys, changes.prev, snapshotOfState(state))}
+      {/* 線を動かした変化は読み上げない（線の値と「いま呼べる」は、操作の知らせ（store の live）で伝える） */}
+      {changes.byLine ? '' : changeLiveText(changes.keys, changes.prev, snapshotOfState(state))}
     </p>
   );
 }
@@ -43,7 +44,8 @@ export function Changed({ k, now, unit = '', short = false, block = false, child
   const prev = changes.prev;
   const Tag = block ? 'div' : 'span';
   // 変わっていないときは包まない（数字の要素の親を、変える前と同じに保つ。#24 の office-quad-big のテスト）
-  if (prev === null || !changes.keys.includes(k)) return <>{children}</>;
+  // 線を動かした変化は、強調も「前」も出さない（4 枚のカードとも。#26 の統括の指摘 ②）
+  if (prev === null || changes.byLine || !changes.keys.includes(k)) return <>{children}</>;
   const before = prev[k];
   return (
     <Tag key={changes.seq} className={styles.chg} data-changed="true">

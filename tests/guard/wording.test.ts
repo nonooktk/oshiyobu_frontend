@@ -7,32 +7,20 @@
 // 限界: 語の一覧に無い言い換えと、動きそのもの（点滅の見た目）・音の聞こえ方は、見つけられない。PR のレビューで見る。
 // 起動条件: 検査の対象が見つかり、中身を読めていること（0 件で通る空振りの防止）。
 import { describe, expect, it } from 'vitest';
-import { guardMessage, read, stripComments, walk, withExt } from './helpers';
+import {
+  LUCK_WORDS,
+  SOUND_WORDS,
+  guardMessage,
+  read,
+  stripComments,
+  walk,
+  withExt,
+} from './helpers';
 
 const TEXT_EXTS = ['.ts', '.tsx', '.css', '.json', '.svg', '.html'];
 const files = [...withExt(walk('src/fan'), TEXT_EXTS), 'fan/index.html'];
 const sources = files.map((path) => ({ path, text: read(path) }));
 
-/** 運・勝ち負け・得を褒める語（G-04）。一覧の外の言い換えは見つけられない */
-const LUCK_WORDS = [
-  '大当たり',
-  '当たり',
-  '確変',
-  'ラッキー',
-  '獲得',
-  'お得',
-  'ボーナス',
-  'ガチャ',
-  'ジャックポット',
-  '当選',
-  '抽選',
-  '勝ち',
-  '負け',
-  'コイン',
-  '札束',
-  'くじ',
-  'スロット',
-];
 /** コイン・札束・くじ・スロットの絵に当たる絵文字（G-04） */
 const LUCK_EMOJI = ['🪙', '💰', '💴', '💵', '💶', '💷', '💸', '🎰', '🎲', '🎟'];
 /** 絵のファイル名（G-04）。コイン・札束・くじ・スロットの絵を、置かない */
@@ -141,18 +129,6 @@ describe('ファン向けの、ことば・絵・動き（G-04・G-05）', () =>
   });
 });
 
-/** 音のことば（G-04）。スロット・硬貨・くじを連想させる音を表す語。一覧の外の言い換えと、音の聞こえ方は見つけられない */
-const SOUND_WORDS = [
-  'チャリン',
-  'ジャラジャラ',
-  'ルーレット',
-  'ドラムロール',
-  'スロットの音',
-  'コインの音',
-  'くじの音',
-  '金属音',
-  '硬貨',
-];
 /** 音声ファイルの拡張子（G-04）。称賛の音は Web Audio の合成だけで、素材を置かない */
 const AUDIO_EXTS = ['.mp3', '.wav', '.ogg', '.oga', '.m4a', '.aac', '.flac', '.opus', '.weba'];
 /** 素材を読んで鳴らす書き方（G-04）。合成（createOscillator）だけにする */

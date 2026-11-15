@@ -109,6 +109,27 @@ export const quadLineValues = (deposit: number, heat: number): string =>
 export const privQuadLine = (deposit: number, heat: number): string =>
   `${text.judge3}: ${quadLineValues(deposit, heat)}`;
 
+/**
+ * 変わった数字の、前の値（要件 R-14。仕様 2.2）。例: 「前 187人（−67）」「前 650,000円（+50,000）」「前 高」。
+ * 増えたか減ったかは、色に頼らず、「+」「−」付きの差で示す（「▲」「▼」「減」は 3 ページの書体に無い。G-11）
+ */
+export function prevText(
+  prev: number | string,
+  now: number | string,
+  unit: '' | '人' | '円',
+): string {
+  if (typeof prev !== 'number' || typeof now !== 'number') return `前 ${prev}`;
+  const diff = now - prev;
+  const sign = diff > 0 ? '+' : '−';
+  return `前 ${prev.toLocaleString('ja-JP')}${unit}（${sign}${Math.abs(diff).toLocaleString('ja-JP')}）`;
+}
+/** 4 象限のカードに出す、短い差（例: 「−49」）。カードの幅が狭いので、前の値は読み上げにだけ入れる */
+export function diffText(prev: number | string, now: number | string): string {
+  if (typeof prev !== 'number' || typeof now !== 'number') return '';
+  const diff = now - prev;
+  return `${diff > 0 ? '+' : '−'}${Math.abs(diff).toLocaleString('ja-JP')}`;
+}
+
 export const capChip = (need: number, cap: number, unit: string): string =>
   need <= cap ? `キャパ ${cap}${unit}に収まる` : `キャパ ${cap}${unit}を超える`;
 

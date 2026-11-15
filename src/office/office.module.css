@@ -820,7 +820,8 @@
   flex: 1;
   min-width: 0;
   min-height: var(--tap);
-  accent-color: var(--heat-4);
+  /* ほかの操作部品（ボタン）と同じ青にそろえる（#24 の統括の指摘） */
+  accent-color: var(--primary);
 }
 .qLineNum {
   display: flex;

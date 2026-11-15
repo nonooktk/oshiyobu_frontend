@@ -306,17 +306,26 @@ export function snapshotOfState(state: OfficeState): Snapshot | null {
 // - 変わった数字があれば、その名前と前の値を changes に入れる（次に数字が変わるまで残す）
 // - 判定が消えた（市を変えた・最初に戻した）ときは、強調を消す。初めて判定が出たときは、強調しない
 // - 数字が変わらない操作（枠を開く・指標を替えるなど）は、changes をそのままにする
+// - ただし、会場を替えて数字が変わらなかったときは、強調と前の値を消す（前の会場のときの「前」を、
+//   今の会場の数字と比べたように見せない。#26 の統括の指摘）
 let lastSnapshot: Snapshot | null = snapshotOfState(officeStore.getState());
+let lastVenueId: VenueId | null = officeStore.getState().venueId;
 officeStore.subscribe((state) => {
   const next = snapshotOfState(state);
   const prev = lastSnapshot;
+  const venueChanged = state.venueId !== lastVenueId;
   lastSnapshot = next;
+  lastVenueId = state.venueId;
   if (next === null) {
     if (state.changes.keys.length > 0) officeStore.setState({ changes: NO_CHANGES });
     return;
   }
   const keys = changedKeys(prev, next);
-  if (keys.length === 0) return;
+  if (keys.length === 0) {
+    if (venueChanged && state.changes.keys.length > 0)
+      officeStore.setState({ changes: NO_CHANGES });
+    return;
+  }
   officeStore.setState({ changes: { keys, prev, seq: state.changes.seq + 1 } });
 });
 

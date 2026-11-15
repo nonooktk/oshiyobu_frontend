@@ -1,5 +1,5 @@
 // 称賛の音の、音源ファイル（G-04）を、画面（本物のストア・本物の音の部品）で確かめる。
-// 申し込んだ瞬間（join）と、仲間を呼んだ瞬間（friend）はファイルの音。ほかの場面（最後の演出 fever など）は合成のまま。ファイルが読めなければ、合成の音。
+// 申し込んだ瞬間（join）・仲間を呼んだ瞬間（friend）・最後の演出（fever）はファイルの音。ほかの場面（段階が上がる音・SNS 投稿など）は合成のまま。ファイルが読めなければ、合成の音。
 // 本物の音は出さず、AudioContext の代わり（記録するだけの偽物）と、配信の代わり（/sounds/ の要求だけ受ける偽の fetch）を渡す。
 // ひとり体験は、API を 1 回も呼ばない（音源の読み込みは、画面と同じ配信元の /sounds/ で、API ではない）。
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -29,8 +29,10 @@ let oscillators = 0;
 let soundRequests: string[] = [];
 /** 音源の配信の応答（既定は 200）。 */
 let soundStatus = 200;
-/** 最初の操作のあとに読む音源（対応表の順。join が A、friend が B。fever は合成のまま） */
-const FILES_READ = ['/sounds/A-join.mp3', '/sounds/B-friend.mp3'];
+/** 404 にする音源（URL）。ここに入れたファイルだけ、読めない（それ以外は soundStatus）。 */
+let soundMissing: string[] = [];
+/** 最初の操作のあとに読む音源（対応表の順。join が A、friend が B、fever が C） */
+const FILES_READ = ['/sounds/A-join.mp3', '/sounds/B-friend.mp3', '/sounds/C-fever.mp3'];
 
 class FakeAudioContext {
   state = 'running';
@@ -87,6 +89,7 @@ beforeEach(() => {
   oscillators = 0;
   soundRequests = [];
   soundStatus = 200;
+  soundMissing = [];
   vi.stubGlobal('AudioContext', FakeAudioContext);
   // /sounds/ への要求だけ受ける。それ以外（API）は、偽のサーバーへ回して、呼ばれたことが分かるようにする
   vi.stubGlobal(
@@ -95,7 +98,8 @@ beforeEach(() => {
       const url = String(input);
       if (url.startsWith('/sounds/')) {
         soundRequests.push(url);
-        return Promise.resolve(new Response(new ArrayBuffer(8), { status: soundStatus }));
+        const status = soundMissing.includes(url) ? 404 : soundStatus;
+        return Promise.resolve(new Response(new ArrayBuffer(8), { status }));
       }
       return api.fetch(input, init);
     }),
@@ -192,30 +196,64 @@ describe('ファイルが読めないときは、いまの合成の音（画面�
   });
 });
 
-describe('仲間を呼んだ瞬間（friend）は B のファイルの音。ほかの場面（成立の fever・SNS 投稿・段階が上がる音）は、合成のまま（C が届くまで）', () => {
-  it('仲間を呼ぶ（friend）は B のファイルが鳴り、成立（fever）は、ファイルが無いので、合成の音で鳴る', async () => {
+describe('仲間を呼んだ瞬間（friend）は B のファイル、続く成立（fever）は C のファイルの音。ほかの場面（SNS 投稿・段階が上がる音）は、合成のまま', () => {
+  // 変更（2026-11-15。C を足した）: 以前は「成立（fever）は、ファイルが無いので、合成の音で鳴る」だった。C が届いたので、ファイルの音にした
+  it('仲間を呼ぶ（friend）は B のファイルが鳴り、成立（fever）は C のファイルが鳴る。合成の音は、どちらも鳴らさない（二重にしない）', async () => {
     await readyToCallFriends();
     const before = oscillators;
     expect(sources).toHaveLength(1); // ここまでのファイルの音は、join の 1 回だけ
     await callFriends();
     expect(sources).toHaveLength(2); // friend は B のファイルの音
     expect(oscillators).toBe(before); // 合成の friend は鳴らさない（二重にしない）
-    await tick(2600);
-    expect(oscillators).toBeGreaterThan(before); // fever は合成の音（止めない）
-    expect(sources).toHaveLength(2); // ファイルの音は増えない
+    await tick(2599);
+    expect(sources).toHaveLength(2); // fever の前（ゲージが伸びている間は、鳴らさない）
+    await tick(1);
+    expect(sources).toHaveLength(3); // fever は C のファイルの音
+    expect(oscillators).toBe(before); // 合成の fever は鳴らさない（二重にしない）
+    await tick(30_000);
+    expect(sources).toHaveLength(3); // そのあと待っても、追加では鳴らない
+    expect(oscillators).toBe(before);
+    expect(api.fetch).not.toHaveBeenCalled(); // ひとり体験は、API を呼ばない（C の読み込みも、同じ配信元の /sounds/）
   });
 
-  it('「動きを減らす」設定でも、仲間を呼ぶと B のファイルが鳴り、1.8 秒後に fever の合成が鳴る（B が鳴っている間でも、止めない）', async () => {
+  it('「動きを減らす」設定でも、仲間を呼ぶと B のファイルが鳴り、1.8 秒後に C のファイルが鳴る（B が鳴っている間でも、止めない・遅らせない）', async () => {
     vi.stubGlobal('matchMedia', (q: string) => ({ matches: /reduce/.test(q), media: q }));
     await readyToCallFriends();
     await callFriends();
     const afterCall = oscillators;
     expect(sources).toHaveLength(2); // friend は B のファイルの音
     await tick(1799);
-    expect(oscillators).toBe(afterCall); // fever の前
+    expect(sources).toHaveLength(2); // fever の前
     await tick(1);
-    expect(oscillators).toBeGreaterThan(afterCall); // fever（合成）
-    expect(sources).toHaveLength(2);
+    expect(sources).toHaveLength(3); // fever は C のファイルの音
+    expect(oscillators).toBe(afterCall); // 合成の fever は重ねない
+    expect(sources[1]?.stops).not.toContain(undefined); // B は止めない
+  });
+
+  it('C だけ読めないとき（A・B は読めた）、成立（fever）は合成の音に切り替わる（最後の演出を無音にしない）。friend は B のファイルのまま', async () => {
+    soundMissing = ['/sounds/C-fever.mp3'];
+    await readyToCallFriends();
+    const before = oscillators;
+    await callFriends();
+    expect(sources).toHaveLength(2); // friend は B のファイルの音
+    expect(oscillators).toBe(before);
+    await tick(2600);
+    expect(sources).toHaveLength(2); // C は鳴らない
+    expect(oscillators).toBeGreaterThan(before); // fever は合成の音
+  });
+
+  it('成立の演出の最中（C が鳴っている間）に、音のボタンでオフにすると、C の音も止まる', async () => {
+    await readyToCallFriends();
+    await callFriends();
+    await tick(2600);
+    expect(sources).toHaveLength(3); // C が鳴っている
+    expect(sources[2]?.stops).not.toContain(undefined);
+    const pressable = screen
+      .getAllByRole('button', { name: '称賛の音' })
+      .filter((el) => !el.closest('[inert]'));
+    expect(pressable).toHaveLength(1);
+    fireEvent.click(pressable[0] as HTMLElement);
+    expect(sources[2]?.stops).toContain(undefined);
   });
 
   it('仲間を呼んだ直後（演出の最中）に、音のボタンでオフにすると、鳴っている B のファイルの音も止まる', async () => {

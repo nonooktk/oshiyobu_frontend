@@ -108,7 +108,10 @@ const bytes = (): Promise<ArrayBuffer> => Promise.resolve(new ArrayBuffer(8));
 const JOIN_ONLY: SoundFileMap = { join: { url: '/sounds/A-join.mp3', gain: 0.11 } };
 
 /** unlock して、ファイルの読み込みを終わらせた状態の音。 */
-async function ready(files: SoundFileMap = JOIN_ONLY, loadBytes = vi.fn(bytes)) {
+async function ready(
+  files: SoundFileMap = JOIN_ONLY,
+  loadBytes: (url: string) => Promise<ArrayBuffer> = vi.fn(bytes),
+) {
   const sound = createSound({ files, loadBytes });
   sound.unlock();
   await flush();
@@ -372,7 +375,7 @@ describe('ファイルの音が鳴っている間は、合成の stage・share �
 });
 
 // 場面 B（仲間を呼んだ瞬間 friend）。ここは、join だけの対応表（JOIN_ONLY）ではなく、実際の対応表（SOUND_FILES）で確かめる。
-// 重なり: friend のあと、fever（合成）が、通常は 2.6 秒後・「動きを減らす」設定では 1.8 秒後に鳴る（store.ts の callFriends）。B の長さは 2.5 秒。
+// 重なり: friend のあと、fever（C のファイル）が、通常は 2.6 秒後・「動きを減らす」設定では 1.8 秒後に鳴る（store.ts の callFriends）。B の長さは 2.5 秒。
 describe('仲間を呼んだ瞬間（friend）は、B のファイルの音（実際の対応表 SOUND_FILES を使う）', () => {
   const B_FILE_SECONDS = 2.5;
   beforeEach(() => {
@@ -404,30 +407,31 @@ describe('仲間を呼んだ瞬間（friend）は、B のファイルの音（�
     expect(sources).toHaveLength(1);
   });
 
-  it('fever は、ファイルが無いので、合成の音のまま（B のファイルは鳴らさない）', async () => {
-    const { sound } = await ready(SOUND_FILES);
-    sound.play('fever');
-    expect(oscillators).toBeGreaterThan(0);
-    expect(sources).toHaveLength(0);
-  });
+  // 変更（2026-11-15。C を足した）: ここにあった「fever は、ファイルが無いので、合成の音のまま」は、C のファイルが届いたので、下の「最後の演出（fever）は C のファイルの音」に置き換えた
 
   it.each([
     ['動きを減らす設定の 1.8 秒後（B はまだ鳴っている）', 1.8, true],
     ['通常の 2.6 秒後（B は 2.5 秒で鳴り終わっている）', 2.6, false],
-  ])('B のあとの fever（合成）は止めない: %s', async (_name, at, bStillPlaying) => {
-    const { sound } = await ready(SOUND_FILES);
-    sound.play('friend');
-    expect(sources).toHaveLength(1); // B のファイルが鳴った
-    now = at;
-    // 前提の確認: B が鳴っている間は、合成の stage を重ねない。鳴り終わっていれば、鳴る
-    const beforeStage = oscillators;
-    sound.play('stage');
-    expect(oscillators > beforeStage).toBe(!bStillPlaying);
-    // fever は、B が鳴っていても、止めない（最後の演出を無音にしない）
-    const before = oscillators;
-    sound.play('fever');
-    expect(oscillators).toBeGreaterThan(before);
-  });
+  ])(
+    'B のあとの fever（C のファイル）は、止めない・遅らせない: %s',
+    async (_name, at, bStillPlaying) => {
+      const { sound } = await ready(SOUND_FILES);
+      sound.play('friend');
+      expect(sources).toHaveLength(1); // B のファイルが鳴った
+      now = at;
+      // 前提の確認: B が鳴っている間は、合成の stage を重ねない。鳴り終わっていれば、鳴る
+      const beforeStage = oscillators;
+      sound.play('stage');
+      expect(oscillators > beforeStage).toBe(!bStillPlaying);
+      // fever は、B が鳴っていても、止めない・遅らせない（最後の演出を無音にしない）。C のファイルを、いまの時刻から鳴らす。合成の fever は重ねない
+      const beforeFever = oscillators;
+      sound.play('fever');
+      expect(sources).toHaveLength(2);
+      expect(sources[1]?.starts).toEqual([at]);
+      expect(oscillators).toBe(beforeFever);
+      expect(sources[0]?.stops).not.toContain(undefined); // B も止めない（自分のフェードアウトのまま、鳴り終わる）
+    },
+  );
 
   it('B が鳴っている間は、合成の stage・share を重ねない（join のファイルと同じ決まり）。鳴り終わったあとは鳴る', async () => {
     const { sound } = await ready(SOUND_FILES);
@@ -450,12 +454,107 @@ describe('仲間を呼んだ瞬間（friend）は、B のファイルの音（�
   });
 });
 
+// 場面 C（最後の演出 fever）。実際の対応表（SOUND_FILES）で確かめる。C は 3.6 秒（FEVER の演出 3.6 秒と同じ）。
+// 読み込みの結果は、URL ごとに変える: loadBytes が返すバイト列の長さ（バイト）に、鳴る長さ（0.1 秒単位）を入れて、decode が読み取る。
+describe('最後の演出（fever）は C のファイルの音（実際の対応表 SOUND_FILES を使う）', () => {
+  const SECONDS: Readonly<Record<string, number>> = {
+    '/sounds/A-join.mp3': 2.2,
+    '/sounds/B-friend.mp3': 2.5,
+    '/sounds/C-fever.mp3': 3.6,
+  };
+  const loadByUrl = (failing: readonly string[] = []) =>
+    vi.fn((url: string) =>
+      failing.includes(url)
+        ? Promise.reject(new Error('読めない'))
+        : Promise.resolve(new ArrayBuffer(Math.round((SECONDS[url] ?? 1) * 10))),
+    );
+  beforeEach(() => {
+    decode = (data) => Promise.resolve(new FakeBuffer(data.byteLength / 10, 'decoded'));
+  });
+
+  it('ファイルが読めたら、fever は C のファイルを鳴らす。合成の fever（オシレーター 8 個）は重ねない。音量は対応表の値', async () => {
+    const { sound, loadBytes } = await ready(SOUND_FILES, loadByUrl());
+    expect(loadBytes).toHaveBeenCalledWith('/sounds/C-fever.mp3');
+    now = 4;
+    sound.play('fever');
+    expect(sources).toHaveLength(1);
+    expect(sources[0]?.buffer?.duration).toBe(3.6);
+    expect(sources[0]?.starts).toEqual([4]);
+    expect(oscillators).toBe(0);
+    expect(fileGains).toEqual([SOUND_FILES.fever?.gain]);
+  });
+
+  it('C のファイルが読めないとき（A・B は読めた）、fever は合成の音に切り替わる。join・friend はファイルのまま。例外を出さない', async () => {
+    const { sound, loadBytes } = await ready(SOUND_FILES, loadByUrl(['/sounds/C-fever.mp3']));
+    expect(loadBytes).toHaveBeenCalledWith('/sounds/C-fever.mp3'); // C を読もうとして、失敗した
+    expect(() => sound.play('fever')).not.toThrow();
+    expect(oscillators).toBeGreaterThan(0); // 合成の fever（最後の演出を無音にしない）
+    expect(sources).toHaveLength(0);
+    const synth = oscillators;
+    sound.play('join');
+    sound.play('friend');
+    expect(sources).toHaveLength(2);
+    expect(oscillators).toBe(synth);
+  });
+
+  it('C が復号できないときも、fever は合成の音', async () => {
+    decode = (data) =>
+      data.byteLength === 36
+        ? Promise.reject(new Error('復号できない'))
+        : Promise.resolve(new FakeBuffer(data.byteLength / 10, 'decoded'));
+    const { sound, loadBytes } = await ready(SOUND_FILES, loadByUrl());
+    expect(loadBytes).toHaveBeenCalledWith('/sounds/C-fever.mp3');
+    expect(() => sound.play('fever')).not.toThrow();
+    expect(oscillators).toBeGreaterThan(0);
+    expect(sources).toHaveLength(0);
+  });
+
+  it('音をオフにしたら、鳴っている C の音も、その場で止まる（止めて、出力から切り離す）。オフのあとは鳴らず、オンに戻すとまた鳴る', async () => {
+    const { sound } = await ready(SOUND_FILES, loadByUrl());
+    sound.play('fever');
+    sound.setOn(false);
+    expect(sources[0]?.stops).toContain(undefined);
+    expect(sources[0]?.disconnected).toBeGreaterThan(0);
+    sound.play('fever');
+    expect(sources).toHaveLength(1);
+    expect(oscillators).toBe(0);
+    sound.setOn(true);
+    sound.play('fever');
+    expect(sources).toHaveLength(2);
+  });
+
+  it('C が鳴っている間（3.6 秒）は、合成の stage・share を重ねない。鳴り終わったあとは鳴る', async () => {
+    const { sound } = await ready(SOUND_FILES, loadByUrl());
+    sound.play('fever');
+    now = 3.5;
+    sound.play('stage');
+    sound.play('share');
+    expect(oscillators).toBe(0);
+    now = 3.7;
+    sound.play('stage');
+    expect(oscillators).toBeGreaterThan(0);
+  });
+
+  it('B の末尾（動きを減らす設定の 1.8 秒後）に C が重なっても、C は 1.8 秒ちょうどから鳴る（遅らせない）。B も止めない', async () => {
+    const { sound } = await ready(SOUND_FILES, loadByUrl());
+    sound.play('friend'); // 0 秒から 2.5 秒
+    now = 1.8;
+    sound.play('fever'); // 1.8 秒から 5.4 秒
+    expect(sources).toHaveLength(2);
+    expect(sources[0]?.buffer?.duration).toBe(2.5);
+    expect(sources[1]?.buffer?.duration).toBe(3.6);
+    expect(sources[1]?.starts).toEqual([1.8]);
+    expect(sources[0]?.stops).not.toContain(undefined);
+    expect(oscillators).toBe(0);
+  });
+});
+
 describe('対応表（SOUND_FILES）', () => {
-  it('いまは join（A）と friend（B）。fever（C）は、ファイルが届くまで、ない（合成のまま）', () => {
-    expect(Object.keys(SOUND_FILES)).toEqual(['join', 'friend']);
+  it('join（A）・friend（B）・fever（C）の 3 場面（G-04）。fever は C-fever.mp3', () => {
+    expect(Object.keys(SOUND_FILES)).toEqual(['join', 'friend', 'fever']);
     expect(SOUND_FILES.join?.url).toBe('/sounds/A-join.mp3');
     expect(SOUND_FILES.friend?.url).toBe('/sounds/B-friend.mp3');
-    expect(SOUND_FILES.fever).toBeUndefined();
+    expect(SOUND_FILES.fever?.url).toBe('/sounds/C-fever.mp3');
   });
 
   it('音量は、ほかの合成の音と大きく違わない（変換のとき、ピークを -1 dBFS 前後にそろえてあるので、音量の値が、そのまま出力のピーク。合成の音の上限 0.1 と同じ程度）', () => {

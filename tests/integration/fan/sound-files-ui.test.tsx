@@ -194,19 +194,10 @@ describe('ファイルが読めないときは、いまの合成の音（画面�
 
 describe('仲間を呼んだ瞬間（friend）は B のファイルの音。ほかの場面（成立の fever・SNS 投稿・段階が上がる音）は、合成のまま（C が届くまで）', () => {
   it('仲間を呼ぶ（friend）は B のファイルが鳴り、成立（fever）は、ファイルが無いので、合成の音で鳴る', async () => {
-    mountFan('?p=4');
-    fireEvent.pointerDown(document.body);
-    await settle();
-    passStartOnly();
-    fundAndApply();
-    await tick(700 + 2600);
-    const closeGift = screen.getByRole('button', { name: '閉じる' });
-    fireEvent.click(closeGift);
+    await readyToCallFriends();
     const before = oscillators;
     expect(sources).toHaveLength(1); // ここまでのファイルの音は、join の 1 回だけ
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /^仲間を呼ぶ/ }));
-    });
+    await callFriends();
     expect(sources).toHaveLength(2); // friend は B のファイルの音
     expect(oscillators).toBe(before); // 合成の friend は鳴らさない（二重にしない）
     await tick(2600);

@@ -72,8 +72,7 @@ export const CUES: Record<SoundCue, readonly Note[]> = {
  * join のファイルは、C の全音音階の駆け上がり（C・D・E・F#・G#・A#）が C 長調の和音（E・G・C）に解決し、残響に G#・A# が残る（変換のとき、周波数を測った）。
  * 0.65 秒後の合成の stage（E・G・C の分散和音）は、残響の G# と半音でぶつかり、にごりうる。そのため、ファイルがある場面では重ねない。
  * FEVER の音（合成）は、ファイルの音が鳴っていても止めない（FEVER の瞬間を、無音にしない）。ファイルが読めないときの join・friend の合成も、同じ。
- * friend のファイル（B。2.5 秒）のあと、FEVER は、通常は 2.6 秒後（B は鳴り終わっている）・「動きを減らす」設定では 1.8 秒後（B の末尾と 0.7 秒重なる）に鳴る。
- * 拍手には音程が無く、重なっても、にごりにくい（重なりの数値は、台帳 public/sounds/ledger.md）。
+ * friend のファイル（B）は、FEVER の合成と重なることがある（「動きを減らす」設定）。拍手には音程が無く、にごりにくい。重なる長さ・音量の数値は、台帳 public/sounds/ledger.md。
  */
 const HELD_BACK_BY_FILE: readonly SoundCue[] = ['stage', 'share'];
 

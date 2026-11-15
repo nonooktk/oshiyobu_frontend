@@ -7,7 +7,7 @@
 // 置いていない公演（確かめられなかったもの）:
 // - 久留米シティプラザ Cボックス・メディキット県民文化センター イベントホールの公演: 出典が PDF で、中の字を読めなかった
 // - DRUM Be-1 の 2026-11-07: 出典のページの字（Shift_JIS）を読めず、出演者を確かめられなかった
-// - ブリックブロックの 2026-08-08: 出典がお知らせで、年の記載が無く、開かれたかどうかも書かれていなかった
+// - BRICK BLOCK の 2026-08-08: 出典がお知らせで、年の記載が無く、開かれたかどうかも書かれていなかった
 // - Event Space R BASE の 2026-09-27: 出典の会場の欄が「RAG.G / R BASE」の 2 会場で、R BASE の公演と言い切れなかった
 // 公演の日程表のページ（DRUM・WHIPPING POST・CIB の月ごとの表など）は、時がたつと中身が入れ替わることがある。
 // 出典が開けなくなった・値が違っていた行は、外す（README.md の 7）。
@@ -221,7 +221,7 @@ export const PAST_EVENTS: readonly PastEvent[] = [
     sourceUrl: 'https://cib-co.jp/eventcalendar/?ym=202610',
     checkedOn: CHECKED,
   },
-  // ブリックブロック（OIT-004）
+  // BRICK BLOCK（OIT-004）
   {
     venueId: 'OIT-004',
     artist: 'Trio The Glory',

@@ -9,6 +9,14 @@
 // Music hall Fragile（FUK-020）は、収容人数の出典（RAG MusicSpot）に旧名 SQUARE GARDEN で載っている。
 // 公式サイト（https://www.music-hall-fragile.com/）のお知らせに「2026年1月、SQUARE GARDEN（スクエアガーデン）から」
 // 「名称変更いたしました」とあることを、2026-11-15 に確かめて置いた。
+//
+// 2026-11-16 に直した 2 件:
+// - BRICK BLOCK（OIT-004）: 名前はトップページ（https://www.b-block.net/）のお知らせの表記に合わせた。
+//   サイト内の書き方はそろっていない（題名・ロゴは「ブリックブロック Brickblock」、メニューと著作権の表示は
+//   「BRICKBLOCK」）。収容人数の出典（貸しホールのページ）は、そのまま
+// - 久留米シティプラザ Cボックス（FUK-019）: 収容人数の出典を、Wikipedia から公式サイトのページに差し替えた。
+//   公式のページの部屋の名前は「Cボックス」。どの市の会場か分かるよう、施設名を前に付けた書き方（core と同じ）のまま。
+//   公式は「小ホール」と表記しているが、種類は core に合わせて「多目的」のまま
 import type { VenueRecord } from './types';
 
 export const VENUE_RECORDS: readonly VenueRecord[] = [
@@ -67,11 +75,10 @@ export const VENUE_RECORDS: readonly VenueRecord[] = [
     pref: '福岡県',
     city: '久留米市',
     capacity: 144,
-    capacityBasis: '144席（Wikipedia の掲載値。二次情報）',
+    capacityBasis: '144席（公式サイト。車椅子席2席を含む）',
     type: '多目的',
-    sourceUrl:
-      'https://ja.wikipedia.org/wiki/%E4%B9%85%E7%95%99%E7%B1%B3%E3%82%B7%E3%83%86%E3%82%A3%E3%83%97%E3%83%A9%E3%82%B6',
-    checkedOn: '2026-11-15',
+    sourceUrl: 'https://kurumecityplaza.jp/pages/facilities/c_box',
+    checkedOn: '2026-11-16',
     coreVenueId: 'cbox',
   },
   {
@@ -112,14 +119,14 @@ export const VENUE_RECORDS: readonly VenueRecord[] = [
   },
   {
     id: 'OIT-004',
-    name: 'ブリックブロック（Brickblock）',
+    name: 'BRICK BLOCK',
     pref: '大分県',
     city: '大分市',
     capacity: 100,
     capacityBasis: 'テーブル席 100名（公式サイト）',
     type: 'ライブハウス',
     sourceUrl: 'https://www.b-block.net/rent_hall/',
-    checkedOn: '2026-11-15',
+    checkedOn: '2026-11-16',
     coreVenueId: 'OIT-004',
   },
   {

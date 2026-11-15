@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { ArtistBar } from './components/ArtistBar';
+import { ChangeLive } from './components/Changed';
 import { Header } from './components/Header';
 import { Judge } from './components/Judge';
 import { MapPanel } from './components/MapPanel';
@@ -38,6 +39,7 @@ export function App() {
           <p className="sr-only" aria-live="polite">
             {live}
           </p>
+          <ChangeLive />
           {/* 左で選び（① 地図・③ 会場）、右で結果を見る（⑥ 満たせるか・⑤ 開催条件）。仕様 1.2 の案 B */}
           <main className={styles.board}>
             <div className={styles.leftCol}>

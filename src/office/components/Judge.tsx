@@ -31,7 +31,16 @@ import {
   yen,
 } from '../text/labels';
 import type { OfficeView } from '../view';
+import { Changed } from './Changed';
 import { QuadControls, QuadReset } from './QuadControls';
+
+/** 4 象限の名前 → 強調の対象の数字の名前（view.ts の CHANGE_KEYS） */
+const QUAD_CHANGE_KEY = {
+  hotRich: 'quadHotRich',
+  hotPoor: 'quadHotPoor',
+  coolRich: 'quadCoolRich',
+  coolPoor: 'quadCoolPoor',
+} as const;
 
 export function UpRows({ view }: { readonly view: OfficeView }) {
   const { condition, uplift } = view;
@@ -84,7 +93,7 @@ function Scatter({ view }: { readonly view: OfficeView }) {
         )}
         {/* 大きい数字（右上の人数）は、線が初めの位置のときだけ出す。線を動かしている間は、カードの
             「いま呼べる 約N人」（目安）と食い違うので出さない（#24 の統括の指摘。案 2）。
-            core の見込みは、⑥ の横棒の「見込み」に、いつも出ている（data-testid="expected" はそちら） */}
+            core の見込みは、⑥ の横棒の「見込み」に、いつも出ている（data-testid="expected" と強調はそちら） */}
         {!estimate && (
           <div className={styles.quadBigWrap} data-testid="quad-big">
             <p className={styles.quadBig}>
@@ -175,11 +184,13 @@ function Scatter({ view }: { readonly view: OfficeView }) {
             {QUAD_STACK.map((key) => (
               <li key={key} className={key === 'hotRich' ? styles.hot : undefined}>
                 <span className={styles.qName}>{QUAD_NAMES[key]}</span>
-                <span className={styles.qNum} data-testid={`quad-${key}`}>
-                  {about}
-                  {key === 'hotRich' && !estimate ? view.expected : people[key]}
-                  <small>人</small>
-                </span>
+                <Changed k={QUAD_CHANGE_KEY[key]} now={people[key]} short>
+                  <span className={styles.qNum} data-testid={`quad-${key}`}>
+                    {about}
+                    {key === 'hotRich' && !estimate ? view.expected : people[key]}
+                    <small>人</small>
+                  </span>
+                </Changed>
               </li>
             ))}
           </ul>
@@ -292,13 +303,19 @@ function Summary({ view }: { readonly view: OfficeView }) {
       </p>
       <p className={styles.condLine}>
         <span className={styles.k}>{text.lineLabel}</span>
-        <span className={styles.res} data-testid="line">
-          {yen(condition.line)}
-        </span>
+        <Changed k="line" now={condition.line} unit="円">
+          <span className={styles.res} data-testid="line">
+            {yen(condition.line)}
+          </span>
+        </Changed>
         <span className={styles.sub}>
-          <span data-testid="need">{condition.need}人</span>
+          <Changed k="need" now={condition.need} unit="人">
+            <span data-testid="need">{condition.need}人</span>
+          </Changed>
           <span className={styles.op}>×</span>
-          <span data-testid="price">{yen(condition.price)}</span>
+          <Changed k="price" now={condition.price} unit="円">
+            <span data-testid="price">{yen(condition.price)}</span>
+          </Changed>
         </span>
       </p>
       <span className={`${styles.capChip} ${view.overCapacity ? styles.over : ''}`}>
@@ -323,9 +340,11 @@ function Summary({ view }: { readonly view: OfficeView }) {
       <div className={styles.upSum}>
         <p className={styles.condMore} style={{ marginTop: 0 }}>
           <span className={styles.k}>{text.upliftLabel}</span>
-          <span className={styles.upTot} data-testid="uplift-total">
-            +{yen(view.uplift.total)}
-          </span>
+          <Changed k="upliftTotal" now={view.uplift.total} unit="円">
+            <span className={styles.upTot} data-testid="uplift-total">
+              +{yen(view.uplift.total)}
+            </span>
+          </Changed>
         </p>
         <UpRows view={view} />
       </div>
@@ -374,9 +393,11 @@ function Certainty({ view }: { readonly view: OfficeView }) {
           <i>6</i>
           {text.judge2}
         </p>
-        <span className={`${styles.verdict} ${verdictClass}`} data-testid="verdict">
-          {verdictText(level)}
-        </span>
+        <Changed k="level" now={level}>
+          <span className={`${styles.verdict} ${verdictClass}`} data-testid="verdict">
+            {verdictText(level)}
+          </span>
+        </Changed>
       </div>
       <div
         className={styles.meet}
@@ -391,7 +412,10 @@ function Certainty({ view }: { readonly view: OfficeView }) {
         </div>
         <span className={styles.expMark} style={{ left: `max(7.5em, ${(expected / max) * 100}%)` }}>
           {/* core の見込み。線を動かしても変わらない（札の元） */}
-          見込み <span data-testid="expected">{expected}人</span>
+          見込み{' '}
+          <Changed k="expected" now={expected} unit="人">
+            <span data-testid="expected">{expected}人</span>
+          </Changed>
         </span>
       </div>
       <p className={styles.meetLegend} aria-hidden="true">
@@ -404,7 +428,13 @@ function Certainty({ view }: { readonly view: OfficeView }) {
           {text.legendNeed}
         </span>
       </p>
-      {low && <p className={styles.meetShort}>{shortText(condition.need, view.shortfall)}</p>}
+      {low && (
+        <p className={styles.meetShort}>
+          <Changed k="shortfall" now={view.shortfall} unit="人">
+            {shortText(condition.need, view.shortfall)}
+          </Changed>
+        </p>
+      )}
       <Scatter view={view} />
     </section>
   );

@@ -2,7 +2,8 @@
 // 音源ファイルの検査（G-04）。称賛の音のうち、申し込んだ瞬間（join）・仲間を呼んだ瞬間（friend）・最後の演出（fever）の 3 場面だけ、
 // 音源ファイルに差し替えてよい。置き場は public/sounds/ だけで、同じ場所の台帳（ledger.md）に、出どころ・作者・ライセンス・確認日を書く。
 //   ① 台帳に無い音声ファイルがある ② 台帳にあるのにファイルが無い ③ ライセンスが CC0・自作以外 ④ 置き場の外に音声ファイルがある
-//   ⑤ 場面が join・friend・fever 以外／1 つの場面に 2 つ ⑥ 出どころ・確認日などの欄が欠けている ⑦ 賭けを連想させる語（ファイル名・どんな音）
+//   ⑤ 場面が join・friend・fever 以外／1 つの場面に 2 つ ⑥ 出どころ・確認日などの欄が欠けている（出どころを複数書く行は、どれも URL と作者がそろう）
+//   ⑦ 賭けを連想させる語（ファイル名・どんな音）
 // のどれかで落ちる。落ちたら、直さずに、管理者（統括）へ。
 // 限界: 音の聞こえ方は見つけられない（ファイルの中身は、機械では判断できない）。PR のレビューで、耳で確かめる。
 import { describe, expect, it } from 'vitest';
@@ -76,10 +77,19 @@ interface LedgerRow {
   cue: string;
   sound: string;
   source: string;
+  author: string;
   license: string;
   checked: string;
   processing: string;
 }
+
+/**
+ * 1 つの欄（出どころ・作者）に、複数書くときは <br> で区切る（1 つのファイルを、2 つの素材を混ぜて作ったとき。C がそう）。
+ * 区切った 1 つずつが、出どころ 1 か所・作者 1 人分。前に「ファンファーレ: 」のような名札を付けてよい。
+ */
+const parts = (cell: string): string[] => cell.split(/<br\s*\/?>/i).map((part) => part.trim());
+/** 出どころ 1 か所（CC0 のとき）。名札（任意）のあとに、公開のページの URL（https://）だけ */
+const SOURCE_PART = /^(?:[^\s:：]+[:：]\s*)?https:\/\/\S+$/;
 
 /** 台帳の表（印 ledger:start〜ledger:end の間）を読む。読めない行・印が無いときは、problems に書く */
 function parseLedger(text: string): { rows: LedgerRow[]; problems: string[] } {
@@ -108,13 +118,13 @@ function parseLedger(text: string): { rows: LedgerRow[]; problems: string[] } {
       cue = '',
       sound = '',
       source = '',
-      ,
+      author = '',
       license = '',
       checked = '',
       ,
       processing = '',
     ] = cells;
-    rows.push({ file, cue, sound, source, license, checked, processing });
+    rows.push({ file, cue, sound, source, author, license, checked, processing });
   }
   return { rows, problems };
 }
@@ -168,8 +178,16 @@ function inspectSounds(
         `${row.file}: ライセンス「${row.license}」は使えません（${ALLOWED_LICENSES.join('・')} だけ）`,
       );
     }
-    if (row.license === 'CC0' && !/^https:\/\/\S+$/.test(row.source)) {
+    // 出どころが複数（<br> 区切り）のときは、どれも URL でなければならない。作者も、出どころと同じ数（1 か所ごとに 1 人分）、空でなく書く
+    const sources = parts(row.source);
+    const authors = parts(row.author);
+    if (row.license === 'CC0' && !sources.every((part) => SOURCE_PART.test(part))) {
       problems.push(`${row.file}: 出どころは、公開のページの URL（https://）で書きます`);
+    }
+    if (sources.length !== authors.length || authors.some((part) => part === '')) {
+      problems.push(
+        `${row.file}: 出どころ ${sources.length} か所に対して、作者が ${authors.length} 人分です（出どころごとに、作者を書きます）`,
+      );
     }
     if (!isRealDate(row.checked)) {
       problems.push(`${row.file}: 確認日「${row.checked}」を、YYYY-MM-DD の実在の日で書きます`);
@@ -388,6 +406,61 @@ describe('この検査は、決まりに反する置き方を見つけられる�
     expect(
       inspectSounds(ledgerOf(ledgerRow({ 出どころ: 'http://example.test/' })), placed).join('\n'),
     ).toContain('https://');
+  });
+
+  // 1 つのファイルを、2 つの素材を混ぜて作ったとき（C）。出どころ・作者の欄に、<br> で区切って 2 つ書く。2 つとも、URL と作者が要る
+  describe('⑥ 出どころが 2 つの行（<br> 区切り）は、2 つとも URL（https://）と作者が要る', () => {
+    const two = (over: Partial<Record<(typeof COLUMNS)[number], string>> = {}): string =>
+      ledgerOf(
+        ledgerRow({
+          出どころ:
+            'ファンファーレ: https://example.test/sounds/1/<br>観客: https://example.test/sounds/2/',
+          作者: 'ファンファーレ: 作者 A<br>観客: 作者 B',
+          ...over,
+        }),
+      );
+
+    it('2 つとも URL と作者があれば、問題なし（名札なしでも、<br/> でも）', () => {
+      expect(inspectSounds(two(), placed)).toEqual([]);
+      expect(
+        inspectSounds(
+          two({
+            出どころ: 'https://example.test/sounds/1/<br/>https://example.test/sounds/2/',
+            作者: '作者 A<br />作者 B',
+          }),
+          placed,
+        ),
+      ).toEqual([]);
+    });
+
+    it.each([
+      ['2 つめが URL でない', 'https://example.test/sounds/1/<br>どこかのサイト'],
+      ['2 つめが http://', 'https://example.test/sounds/1/<br>観客: http://example.test/sounds/2/'],
+      ['1 つめが URL でない（名札だけ）', 'ファンファーレ: 不明<br>https://example.test/sounds/2/'],
+      [
+        'URL のあとに、余計な語がある',
+        'https://example.test/sounds/1/ と https://example.test/sounds/2/',
+      ],
+    ])('出どころの %s と、落ちる', (_name, source) => {
+      expect(inspectSounds(two({ 出どころ: source }), placed).join('\n')).toContain('https://');
+    });
+
+    it.each([
+      ['作者が 1 人分しかない', '作者 A'],
+      ['作者が 3 人分ある', '作者 A<br>作者 B<br>作者 C'],
+      ['2 人めの作者が空', '作者 A<br>'],
+    ])('%s と、落ちる（出どころごとに、作者を書く）', (_name, author) => {
+      expect(inspectSounds(two({ 作者: author }), placed).join('\n')).toContain(
+        '出どころごとに、作者を書きます',
+      );
+    });
+
+    it('1 か所だけの行（A・B）は、いままでどおり。作者の欄が空なら、落ちる', () => {
+      expect(inspectSounds(ok, placed)).toEqual([]);
+      expect(inspectSounds(ledgerOf(ledgerRow({ 作者: '' })), placed).join('\n')).toContain(
+        'すべて埋まっていません',
+      );
+    });
   });
 
   it.each([

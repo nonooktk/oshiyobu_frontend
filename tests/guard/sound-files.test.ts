@@ -6,7 +6,18 @@
 // のどれかで落ちる。落ちたら、直さずに、管理者（統括）へ。
 // 限界: 音の聞こえ方は見つけられない（ファイルの中身は、機械では判断できない）。PR のレビューで、耳で確かめる。
 import { describe, expect, it } from 'vitest';
-import { LUCK_WORDS, SOUND_WORDS, between, exists, guardMessage, read, walk } from './helpers';
+import { FILE_CUES, SOUND_FILES } from '../../src/fan/sound-files';
+import {
+  LUCK_WORDS,
+  SOUND_WORDS,
+  between,
+  exists,
+  guardMessage,
+  read,
+  stripComments,
+  walk,
+  withExt,
+} from './helpers';
 
 /** 音声ファイルの置き場（唯一） */
 const SOUNDS_DIR = 'public/sounds';
@@ -117,8 +128,13 @@ const isRealDate = (text: string): boolean => {
 /**
  * 台帳と、リポジトリの音声ファイルを突き合わせて、問題の一覧を返す（空なら問題なし）。
  * audioPaths は、リポジトリの中の音声ファイルの、一番上からのパス（/ 区切り）。
+ * mapped は、コード（src/fan/sound-files.ts の対応表）の、場面 → 読む先（URL）。渡したときは、台帳と同じ内容かも見る。
  */
-function inspectSounds(ledgerText: string, audioPaths: readonly string[]): string[] {
+function inspectSounds(
+  ledgerText: string,
+  audioPaths: readonly string[],
+  mapped?: Readonly<Record<string, string>>,
+): string[] {
   const { rows, problems } = parseLedger(ledgerText);
   const inDir = (path: string): boolean => path.startsWith(`${SOUNDS_DIR}/`);
   const ledgerFiles = new Set(rows.map((row) => `${SOUNDS_DIR}/${row.file}`));
@@ -170,6 +186,29 @@ function inspectSounds(ledgerText: string, audioPaths: readonly string[]): strin
       );
     }
   }
+  if (mapped !== undefined) {
+    for (const [cue, url] of Object.entries(mapped)) {
+      const file = /^\/sounds\/([\w.-]+)$/.exec(url)?.[1];
+      if (file === undefined) {
+        problems.push(
+          `対応表の ${cue}: 読む先「${url}」は、同じ配信元の /sounds/ の下のファイルではありません`,
+        );
+        continue;
+      }
+      const row = rows.find((item) => item.file === file);
+      if (row === undefined) problems.push(`対応表の ${cue}: ${file} が、台帳にありません`);
+      else if (row.cue !== cue) {
+        problems.push(`対応表の ${cue}: ${file} の場面が、台帳では「${row.cue}」です（食い違い）`);
+      }
+    }
+    for (const row of rows) {
+      if (mapped[row.cue] !== `/sounds/${row.file}`) {
+        problems.push(
+          `${row.file}: 台帳にあるのに、対応表（src/fan/sound-files.ts）の ${row.cue} に書かれていません`,
+        );
+      }
+    }
+  }
   return problems;
 }
 
@@ -213,11 +252,52 @@ describe('音源ファイルの台帳と置き場（G-04）', () => {
 
   it('G-04: 音声ファイルは、置き場（public/sounds/）の、台帳に書いたものだけ。出どころ・作者・ライセンス（CC0 か自作）・確認日がそろい、場面は join・friend・fever だけ', () => {
     // 台帳が無いときも、読めないエラーではなく、どのファイルが台帳に無いかを出す
-    const problems = inspectSounds(exists(LEDGER_PATH) ? read(LEDGER_PATH) : '', actualPaths);
+    const mapped = Object.fromEntries(
+      Object.entries(SOUND_FILES).map(([cue, file]) => [cue, file.url]),
+    );
+    const problems = inspectSounds(
+      exists(LEDGER_PATH) ? read(LEDGER_PATH) : '',
+      actualPaths,
+      mapped,
+    );
     expect(
       problems,
       guardMessage('G-04', '音源ファイルの置き場・台帳の決まりに反しています'),
     ).toEqual([]);
+  });
+});
+
+describe('音源ファイルを読むコード（G-04）', () => {
+  it('音源ファイルに使える場面は、join・friend・fever だけ（コードの型と、この検査の一覧が同じ）', () => {
+    expect([...FILE_CUES]).toEqual(ALLOWED_CUES);
+    for (const cue of Object.keys(SOUND_FILES)) expect(ALLOWED_CUES, cue).toContain(cue);
+  });
+
+  it('fetch を直接呼ぶのは、API の通信（src/shared/meter/）と、音源を同じ配信元から読む 1 か所（src/fan/sound-files.ts）だけ', () => {
+    const FETCH_CALL = /(^|[^.\w$])fetch\s*\(/;
+    const allowed = (path: string): boolean =>
+      path.startsWith('src/shared/meter/') || path === 'src/fan/sound-files.ts';
+    const sources = withExt(walk('src', ['src/core']), ['.ts', '.tsx']);
+    expect(sources.length).toBeGreaterThan(50);
+    expect(sources).toContain('src/fan/sound-files.ts'); // 空振りの防止
+    const hits = sources.filter(
+      (path) => !allowed(path) && FETCH_CALL.test(stripComments(read(path))),
+    );
+    expect(
+      hits,
+      guardMessage(
+        'G-04',
+        'fetch を直接呼んでいます（API の通信は src/shared/meter/ の中だけ。音源の読み込みは src/fan/sound-files.ts だけ）',
+      ),
+    ).toEqual([]);
+    expect(FETCH_CALL.test('const r = await fetch(url);')).toBe(true);
+    expect(FETCH_CALL.test('requestMeterFetch(pid)')).toBe(false);
+  });
+
+  it('音源ファイルを読むのは、同じ配信元だけ。外部の URL・API には使わない（読む先は、/sounds/ の下だけ）', () => {
+    const urls = Object.values(SOUND_FILES).map((file) => file.url);
+    expect(urls.length).toBeGreaterThan(0);
+    for (const url of urls) expect(url).toMatch(/^\/sounds\/[\w.-]+\.mp3$/);
   });
 });
 
@@ -322,6 +402,24 @@ describe('この検査は、決まりに反する置き方を見つけられる�
       `${SOUNDS_DIR}/${file}`,
     ]);
     expect(problems.join('\n')).toContain('賭けを連想させる語');
+  });
+
+  it('対応表（コード）と台帳の食い違いで、落ちる（ファイルと台帳だけ足して対応表を忘れた・対応表だけ足して台帳を忘れた・場面が違う・外部の URL）', () => {
+    const map = { join: '/sounds/A-join.mp3' };
+    expect(inspectSounds(ok, placed, map)).toEqual([]);
+    expect(inspectSounds(ok, placed, {}).join('\n')).toContain('対応表');
+    expect(
+      inspectSounds(ok, placed, { ...map, friend: '/sounds/B-friend.mp3' }).join('\n'),
+    ).toContain('B-friend.mp3 が、台帳にありません');
+    expect(inspectSounds(ok, placed, { friend: '/sounds/A-join.mp3' }).join('\n')).toContain(
+      '食い違い',
+    );
+    expect(inspectSounds(ok, placed, { join: 'https://example.test/a.mp3' }).join('\n')).toContain(
+      '同じ配信元',
+    );
+    expect(inspectSounds(ok, placed, { join: '/assets/A-join.mp3' }).join('\n')).toContain(
+      '同じ配信元',
+    );
   });
 
   it('台帳の表の印が無いと、落ちる', () => {

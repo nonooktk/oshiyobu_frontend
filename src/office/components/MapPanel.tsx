@@ -50,6 +50,10 @@ export function MapPanel() {
   return (
     <div className={styles.mapCol}>
       <div className={styles.segRow}>
+        <p className={styles.jlabel} style={{ margin: 0 }}>
+          <i>1</i>
+          {text.mapHead}
+        </p>
         <div
           className={`${styles.seg} ${metric === 'hot' ? styles.segHot : ''}`}
           role="group"

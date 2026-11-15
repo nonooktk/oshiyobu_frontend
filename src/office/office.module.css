@@ -169,19 +169,56 @@
   transform-origin: var(--org, 50% 50%);
 }
 
-/* 地図と会場 */
-.top {
+/* 盤面（仕様 1.2 の案 B）: 左で選ぶ（① 地図・③ 会場）、右で結果を見る（⑥ 満たせるか・⑤ 開催条件） */
+.board {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
-.mapCol {
-  padding: var(--s4);
-  border-right: 1px solid var(--line);
-}
-.sideCol {
+.leftCol {
   display: flex;
   flex-direction: column;
-  padding: var(--s4);
+  border-right: 1px solid var(--line);
+}
+.rightCol {
+  display: flex;
+  flex-direction: column;
+  padding: var(--s3) var(--s4) var(--s4);
+}
+.mapCol {
+  padding: var(--s4) var(--s4) var(--s3);
+}
+/* 地図は高さ 400 px まで（1280 × 800 で、③ の見出しまで見えるように） */
+.mapCol .mapWrap svg {
+  max-height: 400px;
+}
+.sideCol {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: start;
+  column-gap: var(--s2);
+  flex: 1;
+  padding: var(--s3) var(--s4) var(--s4);
+  border-top: 1px solid var(--line);
+}
+.sideCol > * {
+  grid-column: 1 / -1;
+}
+.sideCol > .sideNum,
+.sideCol > .sideH {
+  grid-column: auto;
+  align-self: center;
+}
+.sideNum {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-bottom: var(--s3);
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
 }
 .segRow {
   display: flex;
@@ -275,12 +312,12 @@
   display: inline;
 }
 .cityLabel {
-  font-size: 12px;
+  font-size: 18px;
   font-weight: 700;
   fill: var(--ink);
   paint-order: stroke;
   stroke: var(--surface);
-  stroke-width: 4px;
+  stroke-width: 5px;
   stroke-linejoin: round;
   pointer-events: none;
 }
@@ -297,7 +334,7 @@
   stroke-width: 1;
 }
 .legT {
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 700;
   fill: var(--ink-soft);
 }
@@ -391,15 +428,14 @@
 /* 判定 */
 .judge {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-  gap: var(--s4);
-  padding: var(--s4);
-  border-top: 1px solid var(--line);
-}
-.leftStack {
-  display: grid;
   align-content: start;
   gap: var(--s3);
+}
+/* ⑥ の中の、熱量と資金（4 象限）。満たせるかの下に、細い線で分けて続ける */
+.quad {
+  margin-top: var(--s2);
+  padding-top: var(--s2);
+  border-top: 1px solid var(--line);
 }
 .jcard {
   padding: var(--s3) var(--s4);
@@ -623,13 +659,19 @@
 }
 .quadHead {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--s3);
+  align-items: center;
+  gap: var(--s2) var(--s3);
+  flex-wrap: wrap;
+}
+.quadBigWrap {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  margin-left: auto;
 }
 .quadBig {
   margin: 0;
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 700;
   line-height: 1.3;
 }
@@ -639,18 +681,35 @@
   background: var(--heat-1);
 }
 .quadBig small {
-  font-size: 16px;
+  font-size: 14px;
 }
 .quadBigLabel {
   font-size: 12px;
   color: var(--ink-soft);
   text-align: right;
 }
+.quadBody {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: var(--s3);
+  align-items: start;
+  margin-top: var(--s2);
+}
+.quadSide {
+  display: grid;
+  gap: var(--s2);
+}
+.quadSide > button {
+  justify-self: start;
+}
+.quadSide > button:disabled {
+  cursor: default;
+}
 .quad svg {
   display: block;
   width: 100%;
+  max-width: 400px;
   height: auto;
-  margin-top: var(--s2);
 }
 .qHot {
   fill: var(--heat-1);
@@ -673,9 +732,117 @@
   stroke-width: 1;
 }
 .qT {
-  font-size: 12px;
+  font-size: 24px;
   font-weight: 700;
   fill: var(--ink-soft);
+}
+.qNames {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.qNames li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s2);
+  padding: 2px var(--s2);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+.qNames li.hot {
+  border-color: var(--heat-4);
+  background: var(--heat-1);
+}
+.qName {
+  overflow: hidden;
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 700;
+  color: var(--ink);
+}
+.qNum {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.qNum small {
+  font-size: 12px;
+}
+.qLineT {
+  font-size: 22px;
+  font-weight: 700;
+  fill: var(--ink);
+}
+.qEstimate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.qEstimateChip {
+  padding: 2px var(--s2);
+  border: 1px solid var(--ink-soft);
+  border-radius: var(--r);
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--surface);
+}
+.qLines {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--s3);
+  margin: var(--s2) 0 0;
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+.qLineField label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.qLineRow {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.qLineRow input[type='range'] {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--tap);
+  /* ほかの操作部品（ボタン）と同じ青にそろえる（#24 の統括の指摘） */
+  accent-color: var(--primary);
+}
+.qLineNum {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  font-size: 13px;
+  color: var(--ink);
+}
+.qLineNum input {
+  width: 4.5em;
+  min-height: var(--tap);
+  padding: 0 var(--s2);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  font: inherit;
+  font-size: 16px;
+  color: var(--ink);
+  background: var(--surface);
+}
+.qLineUnit {
+  width: 2.2em;
 }
 .qUnit {
   margin: var(--s1) 0 0;
@@ -685,13 +852,16 @@
 }
 
 /* 条件を調整・足 */
+/* ⑤ の中の足（条件を調整・収支シミュレーター・提案を見る） */
 .judgeFoot {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: var(--s3);
-  padding: 0 var(--s4) var(--s4);
+  margin-top: var(--s3);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--line);
 }
 .adjust {
   flex: 1;
@@ -1009,13 +1179,19 @@
 }
 
 @media (max-width: 980px) {
-  .top,
-  .judge {
+  .board {
     grid-template-columns: minmax(0, 1fr);
   }
-  .mapCol {
+  .leftCol {
     border-right: 0;
     border-bottom: 1px solid var(--line);
+  }
+}
+/* 2 列の盤面のまま右の列が狭くなる幅（981〜1199 px）では、⑥ の中を 1 列にする（スライダーが潰れず、名前が切れないように） */
+@media (min-width: 981px) and (max-width: 1199px) {
+  .quadBody,
+  .qLines {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 @media (max-width: 640px) {
@@ -1023,15 +1199,16 @@
   .artistBar,
   .mapCol,
   .sideCol,
-  .judge {
-    padding-right: var(--s3);
-    padding-left: var(--s3);
-  }
-  .judgeFoot {
+  .rightCol {
     padding-right: var(--s3);
     padding-left: var(--s3);
   }
   .condIn {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* ⑥ の中の 2 列（図とカード・スライダー 2 本）も、狭い画面では 1 列に落とす（スライダーが潰れないように） */
+  .quadBody,
+  .qLines {
     grid-template-columns: minmax(0, 1fr);
   }
   .ppGrid {

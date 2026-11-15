@@ -26,6 +26,10 @@ export const text = {
   legendTitle: '面積＝登録者数',
   emptyHead: '市を選ぶ',
   emptyBody: '地図の丸を押す',
+  /** ① の見出し（すでに使っている「地図」だけ） */
+  mapHead: '地図',
+  /** 会場を選ぶ前の、右の列の案内（判定は会場を選ぶまで出ない。I-01） */
+  pickVenue: '会場を選ぶ',
   simulator: '収支シミュレーター',
   simulatorNone: 'この会場は、収支シミュレーターにありません',
   privacy: '情報の扱い',
@@ -69,6 +73,41 @@ export const text = {
   none: '（まだ選んでいません）',
   noneCost: '（会場を選ぶと入ります）',
 } as const;
+
+/** 4 象限の名前（要件 R-11。仕様 3.2 の案）。並びは、図の左上・右上・左下・右下 */
+export const QUAD_ORDER = ['hotPoor', 'hotRich', 'coolPoor', 'coolRich'] as const;
+/** 図の横に縦 1 列で並べるときの順（いま呼べる → 熱いが資金が足りない → 資金はあるが熱が低い → どちらも低い） */
+export const QUAD_STACK = ['hotRich', 'hotPoor', 'coolRich', 'coolPoor'] as const;
+export const QUAD_NAMES: Readonly<Record<(typeof QUAD_ORDER)[number], string>> = {
+  hotRich: 'いま呼べる',
+  hotPoor: '熱いが資金が足りない',
+  coolRich: '資金はあるが熱が低い',
+  coolPoor: 'どちらも低い',
+};
+
+/**
+ * 4 象限の線を動かす操作（要件 R-12）。画面には、すでに使っている語だけを出す（軸の名前・「初めの位置に戻す」・「目安（デモ）」）。
+ * 3 ページの書体に無い字（境・区・線・象・判・札など）を使わない（G-11・確認 5）。
+ */
+export const quadLineText = {
+  deposit: '預金額',
+  heat: '熱量',
+  reset: '初めの位置に戻す',
+  estimate: '目安（デモ）',
+} as const;
+
+export const depositText = (man: number): string => `${man}万円`;
+export const heatText = (heat: number): string => String(heat);
+const lineValueText = (what: 'deposit' | 'heat', value: number): string =>
+  what === 'deposit' ? depositText(value) : heatText(value);
+export const quadLineLive = (what: 'deposit' | 'heat', value: number, hotRich: number): string =>
+  `${quadLineText[what]}を ${lineValueText(what, value)}にしました。${QUAD_NAMES.hotRich}: 約 ${hotRich}人（${quadLineText.estimate}）。`;
+export const quadLineResetLive = '初めの位置に戻しました。';
+/** 図や情報の扱いに出す、いまの線の位置（例: 預金額 25万円・熱量 3.5） */
+export const quadLineValues = (deposit: number, heat: number): string =>
+  `${quadLineText.deposit} ${depositText(deposit)}・${quadLineText.heat} ${heatText(heat)}`;
+export const privQuadLine = (deposit: number, heat: number): string =>
+  `${text.judge3}: ${quadLineValues(deposit, heat)}`;
 
 export const capChip = (need: number, cap: number, unit: string): string =>
   need <= cap ? `キャパ ${cap}${unit}に収まる` : `キャパ ${cap}${unit}を超える`;

@@ -7,6 +7,7 @@ import { Privacy, Proposal } from './components/Modals';
 import { SidePanel } from './components/SidePanel';
 import styles from './office.module.css';
 import { useOffice } from './store';
+import { text } from './text/labels';
 import { viewOf } from './view';
 
 // 事務所向け（/）: アーティスト 5 組 → 地図の 9 市 → 会場 → 判定 3 点 → 提案の 1 枚（設計 D-34 の F-1）。
@@ -37,12 +38,23 @@ export function App() {
           <p className="sr-only" aria-live="polite">
             {live}
           </p>
-          <main>
-            <div className={styles.top}>
+          {/* 左で選び（① 地図・③ 会場）、右で結果を見る（⑥ 満たせるか・⑤ 開催条件）。仕様 1.2 の案 B */}
+          <main className={styles.board}>
+            <div className={styles.leftCol}>
               <MapPanel />
               <SidePanel />
             </div>
-            {view !== null && <Judge view={view} />}
+            <div className={styles.rightCol}>
+              {view !== null ? (
+                <Judge view={view} />
+              ) : (
+                <div className={styles.empty}>
+                  <p style={{ margin: 0 }}>
+                    <b>{text.pickVenue}</b>
+                  </p>
+                </div>
+              )}
+            </div>
           </main>
         </div>
       </div>

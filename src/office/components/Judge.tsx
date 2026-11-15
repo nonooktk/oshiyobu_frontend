@@ -1,15 +1,28 @@
 import { COST_ITEM_IDS, demandOf } from '../../core';
 import styles from '../office.module.css';
-import { quadDots, QUAD_BOX, QUAD_MID } from '../scatter';
+import {
+  quadDots,
+  quadOfDot,
+  quadPeopleAt,
+  QUAD_BOX,
+  QUAD_MID,
+  xOfDeposit,
+  yOfHeat,
+} from '../scatter';
 import { useOffice } from '../store';
 import { ARTIST_TEXT } from '../text/artists';
 import {
   capChip,
   COST_LABELS,
-  expectedText,
+  depositText,
+  heatText,
+  quadLineText,
+  quadLineValues,
   minHelp,
   minResetLabel,
   needText,
+  QUAD_NAMES,
+  QUAD_STACK,
   ruleText,
   shortText,
   text,
@@ -18,6 +31,7 @@ import {
   yen,
 } from '../text/labels';
 import type { OfficeView } from '../view';
+import { QuadControls, QuadReset } from './QuadControls';
 
 export function UpRows({ view }: { readonly view: OfficeView }) {
   const { condition, uplift } = view;
@@ -43,76 +57,136 @@ export function UpRows({ view }: { readonly view: OfficeView }) {
 function Scatter({ view }: { readonly view: OfficeView }) {
   const artistId = useOffice((s) => s.artistId);
   const city = useOffice((s) => s.city);
+  const line = useOffice((s) => s.quadLine);
   if (city === null) return null;
   const demand = demandOf(artistId, city);
   const dots = quadDots(artistId, city);
+  const { people, estimate } = quadPeopleAt(artistId, city, line);
   const { x0, x1, y0, y1 } = QUAD_BOX;
   const { x: xm, y: ym } = QUAD_MID;
-  const label = `${ARTIST_TEXT[artistId].name}の、${city}のファンの散布図。横軸が預金額、縦軸が熱量。1点は約${demand.perDot}人。熱量が高く資金もあるファンは${view.expected}人、熱量は高いが資金が少ないのは${demand.people.hotPoor}人、熱量は低いが資金があるのは${demand.people.coolRich}人、熱量が低く資金も少ないのは${demand.people.coolPoor}人。`;
+  const lx = xOfDeposit(line.deposit);
+  const ly = yOfHeat(line.heat);
+  const about = estimate ? '約' : '';
+  const label =
+    `${ARTIST_TEXT[artistId].name}の、${city}のファンの散布図。横軸が預金額、縦軸が熱量。1点は約${demand.perDot}人。` +
+    (estimate ? `${quadLineValues(line.deposit, line.heat)}（${quadLineText.estimate}）。` : '') +
+    `熱量が高く資金もあるファンは${about}${estimate ? people.hotRich : view.expected}人、熱量は高いが資金が少ないのは${about}${people.hotPoor}人、熱量は低いが資金があるのは${about}${people.coolRich}人、熱量が低く資金も少ないのは${about}${people.coolPoor}人。`;
   return (
-    <section className={`${styles.jcard} ${styles.quad}`} aria-labelledby="j3">
+    <section className={styles.quad} aria-labelledby="j6q">
       <div className={styles.quadHead}>
-        <p className={styles.jlabel} id="j3" style={{ margin: 0 }}>
-          <i>3</i>
+        <p className={styles.jlabel} id="j6q" style={{ margin: 0 }}>
           {text.judge3}
         </p>
-        <div>
-          <p className={styles.quadBig} data-testid="expected">
-            <span className={styles.hl}>
-              {view.expected}
-              <small>人</small>
-            </span>
+        {estimate && (
+          <p className={styles.qEstimate} data-testid="quad-estimate">
+            <span className={styles.qEstimateChip}>{quadLineText.estimate}</span>
           </p>
-          <div className={styles.quadBigLabel}>{text.hotRichLabel}</div>
+        )}
+        {/* 大きい数字（右上の人数）は、線が初めの位置のときだけ出す。線を動かしている間は、カードの
+            「いま呼べる 約N人」（目安）と食い違うので出さない（#24 の統括の指摘。案 2）。
+            core の見込みは、⑥ の横棒の「見込み」に、いつも出ている（data-testid="expected" はそちら） */}
+        {!estimate && (
+          <div className={styles.quadBigWrap} data-testid="quad-big">
+            <p className={styles.quadBig}>
+              <span className={styles.hl}>
+                {view.expected}
+                <small>人</small>
+              </span>
+            </p>
+            <div className={styles.quadBigLabel}>{text.hotRichLabel}</div>
+          </div>
+        )}
+      </div>
+      {/* 図（左）と、象限の名前と人数・初めの位置に戻す（右）を横に並べる */}
+      <div className={styles.quadBody}>
+        <div className={styles.quadFig}>
+          <svg viewBox={`0 0 520 ${y1 + 56}`} role="img" aria-label={label}>
+            <rect
+              className={styles.qHot}
+              x={lx}
+              y={y0}
+              width={Math.max(0, x1 - lx)}
+              height={Math.max(0, ly - y0)}
+              rx={8}
+            />
+            <line className={styles.qMid} x1={lx} y1={y0} x2={lx} y2={y1} />
+            <line className={styles.qMid} x1={x0} y1={ly} x2={x1} y2={ly} />
+            <line className={styles.qAxis} x1={x0} y1={y1} x2={x1} y2={y1} />
+            <line className={styles.qAxis} x1={x0} y1={y0} x2={x0} y2={y1} />
+            {dots.map((dot, i) => (
+              <circle
+                key={i}
+                className={`${styles.qDot} ${quadOfDot(dot, line) === 'hotRich' ? styles.hot : ''}`}
+                cx={dot.x.toFixed(1)}
+                cy={dot.y.toFixed(1)}
+                r={6}
+              />
+            ))}
+            <text className={styles.qT} x={x0} y={y1 + 24}>
+              0
+            </text>
+            <text className={styles.qT} x={xm} y={y1 + 24} textAnchor="middle">
+              15万円
+            </text>
+            <text className={styles.qT} x={x1} y={y1 + 24} textAnchor="end">
+              60万円〜
+            </text>
+            <text className={styles.qT} x={(x0 + x1) / 2} y={y1 + 50} textAnchor="middle">
+              預金額 →
+            </text>
+            <text className={styles.qT} x={x0 - 8} y={y0 + 10} textAnchor="end">
+              5
+            </text>
+            <text className={styles.qT} x={x0 - 8} y={ym + 4} textAnchor="end">
+              3
+            </text>
+            <text className={styles.qT} x={x0 - 8} y={y1} textAnchor="end">
+              1
+            </text>
+            <text
+              className={styles.qT}
+              x={16}
+              y={ym}
+              textAnchor="middle"
+              transform={`rotate(-90 16 ${ym})`}
+            >
+              熱量 →
+            </text>
+            {estimate && (
+              <>
+                <text
+                  className={styles.qLineT}
+                  x={Math.min(lx + 4, x1 - 4)}
+                  y={y1 - 6}
+                  textAnchor={lx + 60 > x1 ? 'end' : 'start'}
+                >
+                  {depositText(line.deposit)}
+                </text>
+                <text className={styles.qLineT} x={x0 + 4} y={ly > y0 + 16 ? ly - 5 : ly + 14}>
+                  {heatText(line.heat)}
+                </text>
+              </>
+            )}
+          </svg>
+          <p className={styles.qUnit}>● 1点 ≒ {demand.perDot}人</p>
+        </div>
+        <div className={styles.quadSide}>
+          <ul className={styles.qNames} aria-hidden="true">
+            {QUAD_STACK.map((key) => (
+              <li key={key} className={key === 'hotRich' ? styles.hot : undefined}>
+                <span className={styles.qName}>{QUAD_NAMES[key]}</span>
+                <span className={styles.qNum} data-testid={`quad-${key}`}>
+                  {about}
+                  {key === 'hotRich' && !estimate ? view.expected : people[key]}
+                  <small>人</small>
+                </span>
+              </li>
+            ))}
+          </ul>
+          <QuadReset />
         </div>
       </div>
-      <svg viewBox={`0 0 520 ${y1 + 44}`} role="img" aria-label={label}>
-        <rect className={styles.qHot} x={xm} y={y0} width={x1 - xm} height={ym - y0} rx={8} />
-        <line className={styles.qMid} x1={xm} y1={y0} x2={xm} y2={y1} />
-        <line className={styles.qMid} x1={x0} y1={ym} x2={x1} y2={ym} />
-        <line className={styles.qAxis} x1={x0} y1={y1} x2={x1} y2={y1} />
-        <line className={styles.qAxis} x1={x0} y1={y0} x2={x0} y2={y1} />
-        {dots.map((dot, i) => (
-          <circle
-            key={i}
-            className={`${styles.qDot} ${dot.hot ? styles.hot : ''}`}
-            cx={dot.x.toFixed(1)}
-            cy={dot.y.toFixed(1)}
-            r={4.2}
-          />
-        ))}
-        <text className={styles.qT} x={x0} y={y1 + 18}>
-          0
-        </text>
-        <text className={styles.qT} x={xm} y={y1 + 18} textAnchor="middle">
-          15万円
-        </text>
-        <text className={styles.qT} x={x1} y={y1 + 18} textAnchor="end">
-          60万円〜
-        </text>
-        <text className={styles.qT} x={(x0 + x1) / 2} y={y1 + 36} textAnchor="middle">
-          預金額 →
-        </text>
-        <text className={styles.qT} x={x0 - 8} y={y0 + 10} textAnchor="end">
-          5
-        </text>
-        <text className={styles.qT} x={x0 - 8} y={ym + 4} textAnchor="end">
-          3
-        </text>
-        <text className={styles.qT} x={x0 - 8} y={y1} textAnchor="end">
-          1
-        </text>
-        <text
-          className={styles.qT}
-          x={16}
-          y={ym}
-          textAnchor="middle"
-          transform={`rotate(-90 16 ${ym})`}
-        >
-          熱量 →
-        </text>
-      </svg>
-      <p className={styles.qUnit}>● 1点 ≒ {demand.perDot}人</p>
+      <QuadControls />
     </section>
   );
 }
@@ -204,108 +278,56 @@ function Adjust({ view }: { readonly view: OfficeView }) {
   );
 }
 
-/** 判定（会場を選ぶと出る）: 開催条件・満たせるか・熱量と資金、条件を調整、提案を見る */
-export function Judge({ view }: { readonly view: OfficeView }) {
+/** ⑤ 開催条件（損益の要約）: 到達ライン・成立の条件・上乗せ、条件を調整、収支シミュレーター・提案を見る */
+function Summary({ view }: { readonly view: OfficeView }) {
   const openModal = useOffice((s) => s.openModal);
-  const { condition, expected, level, low } = view;
+  const { condition, low } = view;
   const { cap, unit } = condition.venue;
-  const max = Math.max(expected, condition.need) * 1.12;
   const rule = ruleText(condition.line, condition.min);
-  const verdictClass = level === '高' ? '' : level === '中' ? styles.mid : styles.low;
   return (
-    <div data-testid="judge">
-      <div className={styles.judge}>
-        <div className={styles.leftStack}>
-          <section className={styles.jcard} aria-labelledby="j1">
-            <p className={styles.jlabel} id="j1">
-              <i>1</i>
-              {text.judge1}
-            </p>
-            <p className={styles.condLine}>
-              <span className={styles.k}>{text.lineLabel}</span>
-              <span className={styles.res} data-testid="line">
-                {yen(condition.line)}
-              </span>
-              <span className={styles.sub}>
-                <span data-testid="need">{condition.need}人</span>
-                <span className={styles.op}>×</span>
-                <span data-testid="price">{yen(condition.price)}</span>
-              </span>
-            </p>
-            <span className={`${styles.capChip} ${view.overCapacity ? styles.over : ''}`}>
-              {capChip(condition.need, cap, unit)}
-            </span>
-            <p className={styles.condMore}>
-              <span className={styles.k}>{text.ruleLabel}</span>
-              <span data-testid="rule">
-                {rule.before}
-                <b>{rule.line}</b>
-                {rule.middle}
-                <b>{rule.min}</b>
-                {rule.after}
-              </span>
-            </p>
-            <p className={styles.condNote}>{text.minNote}</p>
-            {view.gapYen !== null && (
-              <p className={styles.condWarn} role="status">
-                {warnText(view.gapYen)}
-              </p>
-            )}
-            <div className={styles.upSum}>
-              <p className={styles.condMore} style={{ marginTop: 0 }}>
-                <span className={styles.k}>{text.upliftLabel}</span>
-                <span className={styles.upTot} data-testid="uplift-total">
-                  +{yen(view.uplift.total)}
-                </span>
-              </p>
-              <UpRows view={view} />
-            </div>
-          </section>
-          <section className={styles.jcard} aria-labelledby="j2">
-            <div className={styles.meetTop}>
-              <p className={styles.jlabel} id="j2" style={{ margin: 0 }}>
-                <i>2</i>
-                {text.judge2}
-              </p>
-              <span className={`${styles.verdict} ${verdictClass}`} data-testid="verdict">
-                {verdictText(level)}
-              </span>
-            </div>
-            <div
-              className={styles.meet}
-              role="img"
-              aria-label={`払える熱いファンの見込みは${expected}人、必要なのは${condition.need}人。${verdictText(level)}`}
-            >
-              <span
-                className={styles.needMark}
-                style={{ left: `${(condition.need / max) * 100}%` }}
-              >
-                <span>{needText(condition.need)}</span>
-              </span>
-              <div className={styles.track}>
-                <i style={{ width: `${(expected / max) * 100}%` }} />
-              </div>
-              <span
-                className={styles.expMark}
-                style={{ left: `max(7.5em, ${(expected / max) * 100}%)` }}
-              >
-                {expectedText(expected)}
-              </span>
-            </div>
-            <p className={styles.meetLegend} aria-hidden="true">
-              <span>
-                <i style={{ background: 'var(--primary)' }} />
-                {text.legendExpected}
-              </span>
-              <span>
-                <i style={{ background: 'var(--ink)', width: 3 }} />
-                {text.legendNeed}
-              </span>
-            </p>
-            {low && <p className={styles.meetShort}>{shortText(condition.need, view.shortfall)}</p>}
-          </section>
-        </div>
-        <Scatter view={view} />
+    <section className={styles.jcard} aria-labelledby="j5">
+      <p className={styles.jlabel} id="j5">
+        <i>5</i>
+        {text.judge1}
+      </p>
+      <p className={styles.condLine}>
+        <span className={styles.k}>{text.lineLabel}</span>
+        <span className={styles.res} data-testid="line">
+          {yen(condition.line)}
+        </span>
+        <span className={styles.sub}>
+          <span data-testid="need">{condition.need}人</span>
+          <span className={styles.op}>×</span>
+          <span data-testid="price">{yen(condition.price)}</span>
+        </span>
+      </p>
+      <span className={`${styles.capChip} ${view.overCapacity ? styles.over : ''}`}>
+        {capChip(condition.need, cap, unit)}
+      </span>
+      <p className={styles.condMore}>
+        <span className={styles.k}>{text.ruleLabel}</span>
+        <span data-testid="rule">
+          {rule.before}
+          <b>{rule.line}</b>
+          {rule.middle}
+          <b>{rule.min}</b>
+          {rule.after}
+        </span>
+      </p>
+      <p className={styles.condNote}>{text.minNote}</p>
+      {view.gapYen !== null && (
+        <p className={styles.condWarn} role="status">
+          {warnText(view.gapYen)}
+        </p>
+      )}
+      <div className={styles.upSum}>
+        <p className={styles.condMore} style={{ marginTop: 0 }}>
+          <span className={styles.k}>{text.upliftLabel}</span>
+          <span className={styles.upTot} data-testid="uplift-total">
+            +{yen(view.uplift.total)}
+          </span>
+        </p>
+        <UpRows view={view} />
       </div>
       <div className={styles.judgeFoot}>
         <Adjust view={view} />
@@ -336,6 +358,64 @@ export function Judge({ view }: { readonly view: OfficeView }) {
           )}
         </div>
       </div>
+    </section>
+  );
+}
+
+/** ⑥ 確度: 満たせるか（札・横棒）と、熱量と資金（4 象限・線を動かす操作） */
+function Certainty({ view }: { readonly view: OfficeView }) {
+  const { condition, expected, level, low } = view;
+  const max = Math.max(expected, condition.need) * 1.12;
+  const verdictClass = level === '高' ? '' : level === '中' ? styles.mid : styles.low;
+  return (
+    <section className={styles.jcard} aria-labelledby="j6">
+      <div className={styles.meetTop}>
+        <p className={styles.jlabel} id="j6" style={{ margin: 0 }}>
+          <i>6</i>
+          {text.judge2}
+        </p>
+        <span className={`${styles.verdict} ${verdictClass}`} data-testid="verdict">
+          {verdictText(level)}
+        </span>
+      </div>
+      <div
+        className={styles.meet}
+        role="img"
+        aria-label={`払える熱いファンの見込みは${expected}人、必要なのは${condition.need}人。${verdictText(level)}`}
+      >
+        <span className={styles.needMark} style={{ left: `${(condition.need / max) * 100}%` }}>
+          <span>{needText(condition.need)}</span>
+        </span>
+        <div className={styles.track}>
+          <i style={{ width: `${(expected / max) * 100}%` }} />
+        </div>
+        <span className={styles.expMark} style={{ left: `max(7.5em, ${(expected / max) * 100}%)` }}>
+          {/* core の見込み。線を動かしても変わらない（札の元） */}
+          見込み <span data-testid="expected">{expected}人</span>
+        </span>
+      </div>
+      <p className={styles.meetLegend} aria-hidden="true">
+        <span>
+          <i style={{ background: 'var(--primary)' }} />
+          {text.legendExpected}
+        </span>
+        <span>
+          <i style={{ background: 'var(--ink)', width: 3 }} />
+          {text.legendNeed}
+        </span>
+      </p>
+      {low && <p className={styles.meetShort}>{shortText(condition.need, view.shortfall)}</p>}
+      <Scatter view={view} />
+    </section>
+  );
+}
+
+/** 判定（会場を選ぶと出る）: ⑥ 確度 と ⑤ 開催条件。会場を選ぶまでは出さない（I-01） */
+export function Judge({ view }: { readonly view: OfficeView }) {
+  return (
+    <div data-testid="judge" className={styles.judge}>
+      <Certainty view={view} />
+      <Summary view={view} />
     </div>
   );
 }

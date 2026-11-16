@@ -67,5 +67,5 @@
 
 ## テスト
 
-- `tests/unit/fan/`: ストアの順番と数字（U）。全人物が同じ初めの状態・新しい流れの通し（`flow-kurume.test.ts`）・文言の検査。主のボタン・仲間を呼ぶ・SNS 投稿の称賛は `heat-actions.test.ts`。ひとり体験の熱量の進み方は `solo-heat.test.ts`（推し 5 組 × コース 4 つで、段階が 1 つずつ上がる）。音のオフで即止まる動きは `sound-off.test.ts`、音源ファイルの音は `sound-files.test.ts`、トーストの動き減らしは `reduced-motion-toast.test.ts`
+- `tests/unit/fan/`: ストアの順番と数字（U）。全人物が同じ初めの状態・新しい流れの通し（`flow-v2.test.ts`）・文言の検査。主のボタン・仲間を呼ぶ・SNS 投稿の称賛は `heat-actions.test.ts`。ひとり体験の熱量の進み方は `solo-heat.test.ts`（推し 5 組 × コース 4 つで、段階が 1 つずつ上がる）。音のオフで即止まる動きは `sound-off.test.ts`、音源ファイルの音は `sound-files.test.ts`、トーストの動き減らしは `reduced-motion-toast.test.ts`
 - `tests/integration/fan/`: 画面（R）。共有の部品は本物、サーバーだけ偽物（`tests/helpers/fakeApi.ts`）。連打・ダブルタップ・Enter の連打は `press-guard.test.tsx`（本番と同じ 0.6 秒で確かめる。ほかのテストは、`setupFanTest` が 0 にして、間を置かずに続けて押す）。額の入力のシートの収まりは `deposit-sheet-fit.test.tsx`、演出の最中の音のボタンは `sound-layer.test.tsx`、画面での音源ファイルは `sound-files-ui.test.tsx`

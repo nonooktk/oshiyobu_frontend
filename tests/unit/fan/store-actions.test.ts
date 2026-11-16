@@ -80,14 +80,19 @@ describe('成立の表示（A-07・A-64〜A-66・I-18）', () => {
 });
 
 describe('次のアクション（SP-42）', () => {
-  it('申し込んだあとは、仲間を呼ぶ・SNSで広めるだけ。成立後は「仲間に知らせる」（B4）', () => {
-    const h = harness(4);
-    passStart(h);
-    expect(nextViewOf(h.view()).rows.map((r) => r.id)).toEqual(['friend', 'share']);
-    expect(nextViewOf(h.view()).rows[0]?.hint).toBe('仲間を呼ぶ → 熱が高まります'); // 人数は言わない
-    const h2 = harness(4, { server: 19 });
-    passStart(h2);
-    expect(nextViewOf(h2.view()).rows.map((r) => r.id)).toEqual(['notice']);
+  it('参加のあとは、預金でやること（推し活定期 → 預金）が 1 つずつ並び、済むと SNSで広める・プランを上げる。「仲間を呼ぶ」は出ない', () => {
+    const h = harness(4, { solo: true });
+    h.a.startNext();
+    h.a.startNext();
+    h.a.joinPlan();
+    expect(nextViewOf(h.view()).rows.map((r) => r.id)).toEqual(['teiki']);
+    h.a.runAcct('teiki', 'next');
+    expect(nextViewOf(h.view()).rows.map((r) => r.id)).toEqual(['deposit']);
+    h.a.runAcct('deposit', 'next', 20_000);
+    expect(nextViewOf(h.view()).rows.map((r) => r.id)).toEqual(['share', 'upgrade']);
+    const text = JSON.stringify(nextViewOf(h.view()));
+    expect(text).not.toContain('仲間を呼ぶ');
+    expect(text).not.toMatch(/\d+\s*人/); // 人数は言わない
   });
 });
 

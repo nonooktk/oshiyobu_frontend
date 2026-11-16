@@ -154,26 +154,6 @@ describe('事務所向けとの連動（事務所向けで選んだ市は、フ�
   });
 });
 
-describe('申し込み済みのあとのコース変更（SP-75。デモ用の操作）', () => {
-  it('別のコースに変えても、支援者は増えず（75 人のまま）、確保額だけが変わる。送り直しもしない', () => {
-    const h = harness(6);
-    passStart(h);
-    vi.advanceTimersByTime(3500);
-    h.a.closeGift();
-    h.a.runAcct('main', 'acct'); // 前方の席の条件（メイン口座・預金 100,000円）をそろえる
-    h.a.runAcct('deposit', 'acct', 80_000);
-    h.a.applyCourse('front');
-    vi.advanceTimersByTime(200);
-    expect(h.state().course).toBe('front');
-    expect(h.view().status.supporters).toBe(75);
-    expect(h.view().my?.price).toBe(21000);
-    expect(h.joins).toHaveLength(1);
-    expect(h.state().toast?.text).toBe(
-      'コースを「前方の席」に変えました。確保は21,000円になりました',
-    );
-  });
-});
-
 describe('会場の決め方（どの推しでも、久留米市・久留米の既定の会場に固定）', () => {
   it('5 組のどの推しを選んでも、市は久留米市・会場は Cボックスで、申し込む', () => {
     for (const oshi of ['tech0', 'krs48', 'riji', 'terao', 'heisei'] as const) {

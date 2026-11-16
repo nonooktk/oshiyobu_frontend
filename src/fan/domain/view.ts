@@ -301,14 +301,15 @@ export function nextViewOf(v: FanView): NextView {
     return { head: { kind: 'pre', course: t, items: condItems(v, t), ok }, rows, hint };
   }
 
-  if (status.established) {
+  const phase = homePhaseOf(fan, v.cond);
+  if (status.established && phase !== 'tasks') {
     rows.push({
       id: 'notice',
       label: '仲間に知らせる',
       why: [`いまの熱量は ${v.heat.name}。投稿文は、いまの熱量で作られます`],
       hint: '仲間に知らせる → 開催が決まったことを伝える',
     });
-  } else if (homePhaseOf(fan, v.cond) === 'tasks') {
+  } else if (phase === 'tasks') {
     // 参加のあと（新しい流れ）: 預金でやること（推し活定期をはじめる → 預金を積み増す）。いまやる 1 つだけが並ぶ
     if (!fan.done.teiki) {
       rows.push({

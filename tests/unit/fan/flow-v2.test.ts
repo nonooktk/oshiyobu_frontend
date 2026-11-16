@@ -190,6 +190,27 @@ describe('プランを上げる', () => {
     expect(h.state().course).toBe('front');
     expect(kinds(h)).toEqual(['fx']);
   });
+  it('参加のあとは、古い入口（applyCourse）からは、プランを変えられない（上げる・下げるとも。演出と特典を通すため）', () => {
+    const h = ready();
+    h.a.runAcct('deposit', 'acct', 5_000_000);
+    h.a.runAcct('main', 'acct');
+    h.a.clearAch();
+    h.a.applyCourse('top');
+    expect(h.state().course).toBe('normal');
+    h.a.upgradePlan('top');
+    vi.advanceTimersByTime(3300);
+    h.a.closeReward();
+    h.a.applyCourse('normal');
+    expect(h.state().course).toBe('top');
+  });
+  it('演出の間に、参加が取り消されたら（共有メーターの reset）、特典の贈呈は出ない', () => {
+    const h = ready();
+    h.a.upgradePlan('front');
+    h.a.serverReset(true);
+    vi.advanceTimersByTime(3300);
+    expect(kinds(h)).toEqual([]);
+    expect(h.state().held).toBe(false);
+  });
   it('預金が多い人は、上げても預金が減らない', () => {
     const h = ready();
     h.a.runAcct('deposit', 'acct', 5_000_000);

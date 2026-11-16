@@ -29,6 +29,7 @@ import {
   verdictText,
   warnText,
   yen,
+  realText,
 } from '../text/labels';
 import type { OfficeView } from '../view';
 import { Changed } from './Changed';
@@ -297,10 +298,19 @@ function Summary({ view }: { readonly view: OfficeView }) {
   const rule = ruleText(condition.line, condition.min);
   return (
     <section className={styles.jcard} aria-labelledby="j5">
-      <p className={styles.jlabel} id="j5">
-        <i>5</i>
-        {text.judge1}
-      </p>
+      {/* 見出しの段落（区画の名前）の外に、架空の札と、実在と架空の混ざり方の一文を置く（仕様 4.3） */}
+      <div className={styles.jHead}>
+        <p className={styles.jlabel} id="j5" style={{ margin: 0 }}>
+          <i>5</i>
+          {text.judge1}
+        </p>
+        <span className={styles.fictChip} data-testid="fict-5">
+          {realText.fiction}
+        </span>
+        <span className={styles.mixNote} data-testid="mix-note">
+          {realText.mixNote}
+        </span>
+      </div>
       <p className={styles.condLine}>
         <span className={styles.k}>{text.lineLabel}</span>
         <Changed k="line" now={condition.line} unit="円">
@@ -393,6 +403,9 @@ function Certainty({ view }: { readonly view: OfficeView }) {
           <i>6</i>
           {text.judge2}
         </p>
+        <span className={`${styles.fictChip} ${styles.fictMid}`} data-testid="fict-6">
+          {realText.fiction}
+        </span>
         <Changed k="level" now={level}>
           <span className={`${styles.verdict} ${verdictClass}`} data-testid="verdict">
             {verdictText(level)}

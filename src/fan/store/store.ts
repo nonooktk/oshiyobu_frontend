@@ -4,7 +4,6 @@ import {
   achievementPct,
   canApply,
   conditionOf,
-  courseOffersOf,
   crossedMilestone,
   performanceIdOf,
 } from '../../core';
@@ -35,6 +34,16 @@ import {
 } from '../domain/view';
 import type { FanView, MeterIn } from '../domain/view';
 import { canAddDeposit } from '../domain/deposit';
+import {
+  ENTRY_PLAN,
+  PLAN_NAMES,
+  homePhaseOf,
+  isUpgrade,
+  rewardOf,
+  taskDepositOf,
+  tasksDone,
+  upgradesOf,
+} from '../domain/plan';
 import { postedText } from '../domain/share';
 import type { ShareChannel } from '../domain/share';
 import type { SoundCue } from '../sound';
@@ -44,9 +53,11 @@ import {
   PRAISE_FRIEND,
   PRAISE_JOIN,
   PRAISE_JOIN_FEVER,
+  PRAISE_JOIN_PLAN,
   PRAISE_NOTIFY,
   PRAISE_SHARE,
   praiseJoinStage,
+  praiseUpgrade,
 } from '../text/praise';
 import type { Praise } from '../text/praise';
 import { VOICES } from '../text/voices';
@@ -369,6 +380,9 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     else if (top.kind === 'share') closeShare();
     else if (top.kind === 'deposit') closeDeposit();
     else if (top.kind === 'cancel') closeCancel();
+    else if (top.kind === 'confirm') closeJoinConfirm();
+    else if (top.kind === 'upgrade') closeUpgrade();
+    else if (top.kind === 'reward') closeReward();
     else closeCarry();
   };
 
@@ -563,11 +577,11 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     const rest = t1 && !reached && !canApplyOf(v1, t1) ? restText(t1, acct.deposit, acct.pay) : '';
     // 熱量の段階が上がったか（ひとり体験は、行動のたびに上がる。共有メーターありは、人数が変わらないので上がらない）
     const up = v1.heat.stage > v0.heat.stage;
-    const bump = !v1.solo
-      ? ''
-      : up
-        ? `熱量が「${v1.heat.name}」へ進みました。`
-        : '熱量が少し高まりました。';
+    const bump = up ? `熱量が「${v1.heat.name}」へ進みました。` : '';
+    // 参加のあと（新しい流れ）: 預金でやること 2 つが済んだか
+    const joinedNow = v1.joined;
+    const allDone = joinedNow && tasksDone(state, v1.cond);
+    const taskGap = Math.max(0, taskDepositOf(v1.cond) - acct.deposit);
     // 画面に出す文（トースト・読み上げ）と、短い称賛（行動 → それで何が進んだか）
     const toastText =
       id === 'teiki'
@@ -577,7 +591,10 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
           : `${yen(amount ?? 0)}を積み増しました（預金 ${yen(acct.deposit)}）`;
     const praise =
       id === 'teiki'
-        ? { title: 'はじめてくれてありがとう。', sub: `${bump}預金を積み増せるようになりました` }
+        ? {
+            title: 'はじめてくれてありがとう。',
+            sub: `${bump}${allDone ? '預金でやることが、すべて済みました' : '預金を積み増せるようになりました'}`,
+          }
         : {
             title: id === 'main' ? 'メイン口座にしてくれてありがとう。' : '積み増しありがとう。',
             sub:
@@ -586,7 +603,11 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
                 ? '申し込めるようになりました'
                 : t1
                   ? `${t1.name}まで、残りは ${rest}`
-                  : '申し込みの条件が 1 つそろいました'),
+                  : allDone
+                    ? '預金でやることが、すべて済みました'
+                    : taskGap > 0
+                      ? `預金でやることまで、あと ${yen(taskGap)}`
+                      : '預金の準備が進みました'),
           };
     // 条件の ✓ が付く動きは、称賛が薄れていく頃に始める（動きを減らす設定では 0）
     set({
@@ -599,7 +620,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
         nonce: ++seq,
       },
     });
-    if (reached) popLayer('deposit'); // 条件に届いたら、額の入力を閉じて、ホームの「申し込む」へ
+    if (reached || (allDone && id === 'deposit')) popLayer('deposit'); // 条件に届いたら、額の入力を閉じる
     sound(up ? 'stage' : 'share'); // 段階が上がったときは、段階の音。上がらない行動は、行動の音
     showAch(praise);
     toast(toastText, 3600);
@@ -698,7 +719,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
   const shareTo = (ch: ShareChannel): void => {
     const text = postedText(ch);
     toast(text);
-    sound('share');
+    sound(state.done.share ? 'share' : 'friend'); // 最初に広めた瞬間だけ、称賛の音（2 回目からは、行動の音）
     announce(`${text}。`); // トーストは読み上げの対象外なので、読み上げの領域でも伝える
     if (!state.done.share) {
       set({ done: { ...state.done, share: true } });
@@ -712,7 +733,6 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
         reduceMs: 2000,
         live: '投稿してくれてありがとう。応援が広がっています。',
         liveAfter: 900,
-        onEnd: () => unlockGift(1),
       });
     }
   };
@@ -734,6 +754,127 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     }
     run();
   };
+  /* ---------- 新しい流れ: 参加の確認 → 参加 → 預金でやること → SNSで広める／プランを上げる ---------- */
+  /** 参加の前の確認の枠を開く（表示だけ。実際の決済は無い）。 */
+  const openJoinConfirm = (): void => {
+    if (state.course !== null || state.layers.some((l) => l.kind === 'confirm')) return;
+    pushLayer({ kind: 'confirm' });
+    announce(`${PLAN_NAMES[ENTRY_PLAN]}で、プロジェクトに参加しますか。確認の表示です。`);
+  };
+  const closeJoinConfirm = (): void => {
+    popLayer('confirm');
+  };
+  /**
+   * 最安のプランで参加する（預金の条件は見ない。預金でやることは、参加のあとに済ませる）。
+   * 確認の枠を閉じ、ホームへ移り、参加の称賛を出す。称賛が終わるまで、主のボタンの押下を受けない。
+   */
+  const joinPlan = (): void => {
+    if (applying || state.course !== null) return;
+    popLayer('confirm');
+    clearAch();
+    applying = true;
+    set({
+      course: ENTRY_PLAN,
+      seat: ENTRY_PLAN,
+      aim: null,
+      start: null,
+      done: { ...state.done, join: true },
+      held: true,
+    });
+    sound('join');
+    deps.join(pidNow());
+    go('home');
+    showPraise({
+      kind: 'join',
+      praise: PRAISE_JOIN_PLAN,
+      size: 64,
+      say: VOICES[state.oshiId].say.join(condNow().city),
+      ms: 2500,
+      reduceMs: 1500,
+      live: `参加してくれてありがとう。${PRAISE_JOIN_PLAN.sub}。`,
+      onEnd: () => {
+        applying = false;
+        syncHeld();
+      },
+    });
+  };
+  /** 預金でやることのページへ移る（ホームの下のボタン）。 */
+  const goTasks = (): void => {
+    if (state.course === null) return;
+    go('acct');
+  };
+  /** プランを上げるシート。預金でやることが済んでから開ける。 */
+  const openUpgrade = (): void => {
+    if (homePhaseOf(state, condNow()) !== 'grow') return;
+    if (upgradesOf(state.course).length === 0 || state.layers.some((l) => l.kind === 'upgrade'))
+      return;
+    pushLayer({ kind: 'upgrade' });
+  };
+  const closeUpgrade = (): void => {
+    popLayer('upgrade');
+  };
+  /**
+   * プランを上げる。いまより上のプランだけ受ける（飛ばして上げてもよい）。操作 1 つで、そのプランの条件
+   * （預金の額・メイン口座）を満たした状態にしてから、プランを変える（デモ用の擬似の操作。実際の入出金は無い）。
+   * 特別な演出のあとに、特典の贈呈を出す。
+   */
+  const upgradePlan = (id: CourseId): void => {
+    if (applying || !isUpgrade(state.course, id)) return;
+    if (homePhaseOf(state, condNow()) !== 'grow') return;
+    const k = courseOf(condNow(), id);
+    popLayer('upgrade');
+    clearAch();
+    applying = true;
+    set({
+      course: id,
+      seat: id,
+      acct: {
+        ...state.acct,
+        deposit: Math.max(state.acct.deposit, k.deposit),
+        pay: state.acct.pay || k.mainAccount,
+      },
+      done: { ...state.done, ...(k.mainAccount ? { main: true as const } : {}) },
+      held: true,
+    });
+    if (state.page !== 'home') go('home');
+    sound('fever');
+    const name = PLAN_NAMES[id];
+    showPraise({
+      kind: 'upgrade',
+      praise: praiseUpgrade(name),
+      strong: true,
+      size: 72,
+      ms: 3200,
+      reduceMs: 1800,
+      live: `${name}に上がりました。ホームの背景が変わり、特典が届きます。`,
+      onEnd: () => {
+        applying = false;
+        syncHeld();
+        if (rewardOf(id)) {
+          pushLayer({ kind: 'reward', plan: id });
+          announce(`${name}の特典が届きました。`);
+        }
+      },
+    });
+  };
+  const closeReward = (): void => {
+    popLayer('reward');
+  };
+  /** いまのプランの特典を、もう一度見る（ホームの「特典を見る」）。 */
+  const showReward = (): void => {
+    if (state.course === null || !rewardOf(state.course)) return;
+    if (state.layers.some((l) => l.kind === 'reward')) return;
+    pushLayer({ kind: 'reward', plan: state.course });
+  };
+  /** 参加していないとき（やめたあと）に、プランを選ぶ画面へ戻る。 */
+  const rejoin = (): void => {
+    if (state.course !== null) return;
+    set({
+      page: 'start',
+      start: { step: 1, oshiId: state.oshiId, seat: ENTRY_PLAN, touched: true },
+    });
+  };
+
   /** ホームの主のボタン。ゲージの下の 1 つの行動を、その場で進める（別の画面で選ばせない）。 */
   const homePrimary = (): void => {
     const v = view();
@@ -768,6 +909,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
   const startPick = (kind: 'oshi' | 'seat', v: string): void => {
     const s = state.start;
     if (!s) return;
+    if (kind === 'seat' && v !== ENTRY_PLAN) return; // 上位のプランは、参加のあとに上げる
     set({
       start: {
         ...s,
@@ -777,7 +919,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       },
     });
   };
-  const STEP_TITLES = ['推しを選ぶ', '目指すコースを選ぶ'] as const;
+  const STEP_TITLES = ['推しを選ぶ', '参加するプランを選ぶ'] as const;
   const startStep = (n: 0 | 1): void => {
     const s = state.start;
     if (!s) return;
@@ -797,28 +939,16 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     else commitStart();
   };
   /**
-   * 選び終えたら、ホームへ。初めは預金 0円・口座なしなので、まだ申し込めない。選んだコースは、目指すコースとして登録する
-   * （ホームの主のボタンが、推し活定期をはじめる → 預金を積み増す → 申し込む、と案内する）。
-   * 条件がそろっているコースは、その場で申し込みが確定する（事務所向けから戻ってきたときなど。普段は通らない）。
+   * 選び終えたら、参加の確認の枠を出す（はじめの画面のまま）。最初に選べるのは最安のプランだけ。
+   * 推しは、ここで確定する（確認の枠に出す公演を合わせるため）。参加は、確認の枠の「参加する」で決まる（joinPlan）。
    */
   const commitStart = (): void => {
     const s = state.start;
     if (!s) return;
     const changedPid = performanceIdOf(s.oshiId, FAN_VENUE_ID) !== pidNow();
-    set({ oshiId: s.oshiId, seat: s.seat, venueId: FAN_VENUE_ID, start: null });
+    set({ oshiId: s.oshiId, seat: ENTRY_PLAN, venueId: FAN_VENUE_ID });
     if (changedPid) deps.fetch('performance-changed');
-    go('home');
-    const k = courseOffersOf(state.venueId).find((c) => c.id === s.seat);
-    if (!k) return;
-    if (canApply(k, state.acct.deposit, state.acct.pay)) applyCourse(k.id);
-    else {
-      set({ aim: k.id });
-      toast(`「${k.name}」を目指すコースにしました。申し込みは、条件がそろってからです`, 4200);
-      const v = view();
-      announce(
-        `${artistView(state.oshiId).name}を${state.city}に呼ぶ。「${k.name}」を目指すコースにしました。申し込みはまだです。熱量は${v.heat.name}です。`,
-      );
-    }
+    openJoinConfirm();
   };
 
   /* ---------- リセット（デモ用）・やめる ---------- */
@@ -1001,6 +1131,16 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       pickPend,
       pendCond,
       applyChange,
+      openJoinConfirm,
+      closeJoinConfirm,
+      joinPlan,
+      goTasks,
+      openUpgrade,
+      closeUpgrade,
+      upgradePlan,
+      closeReward,
+      showReward,
+      rejoin,
       toast,
       announce,
       toggleSound: (): void => set({ soundOn: !state.soundOn }),

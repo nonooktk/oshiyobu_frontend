@@ -11,6 +11,7 @@ import {
   depositErrorText,
   parseDepositInput,
 } from '../domain/deposit';
+import { taskDepositOf } from '../domain/plan';
 import { depositGapOf, opensText, restText } from '../domain/view';
 import { yen } from '../text/format';
 import fan from '../fan.module.css';
@@ -40,7 +41,12 @@ export function DepositCard({ title, desc, primary, compact = false }: Props) {
   const errId = `${base}-error`;
   // 目指すコースの預金の条件に、ちょうど届く額を、初めから入れておく（そのまま足しても、額を変えてもよい）
   const target = view.joined ? null : view.target;
-  const gap = target ? depositGapOf(target, d) : 0;
+  // 参加のあとは、預金でやることの額（最安のプランの預金の条件）に届く額を入れておく
+  const gap = target
+    ? depositGapOf(target, d)
+    : view.joined
+      ? Math.max(0, taskDepositOf(view.cond) - d)
+      : 0;
   const [value, setValue] = useState(gap > 0 ? String(gap) : '');
   // 理由の文。同じ入力をもう一度送っても読み上げ直されるよう、送るたびに nonce を変えて、要素を作り直す
   const [error, setError] = useState<{ text: string; nonce: number } | null>(null);
@@ -143,10 +149,12 @@ export function DepositCard({ title, desc, primary, compact = false }: Props) {
               <dt>預金</dt>
               <dd className={fan.num}>{`${yen(d)} → ${yen(after)}`}</dd>
             </div>
-            <div>
-              <dt>開くコース</dt>
-              <dd className={fan.num}>{opensText(view.cond, d, after, p, p)}</dd>
-            </div>
+            {view.joined ? null : (
+              <div>
+                <dt>開くコース</dt>
+                <dd className={fan.num}>{opensText(view.cond, d, after, p, p)}</dd>
+              </div>
+            )}
           </dl>
         </>
       ) : null}

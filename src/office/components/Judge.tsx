@@ -33,7 +33,7 @@ import {
 } from '../text/labels';
 import type { OfficeView } from '../view';
 import { Changed } from './Changed';
-import { QuadControls, QuadReset } from './QuadControls';
+import { QuadReset } from './QuadControls';
 
 /** 4 象限の名前 → 強調の対象の数字の名前（view.ts の CHANGE_KEYS） */
 const QUAD_CHANGE_KEY = {
@@ -198,7 +198,7 @@ function Scatter({ view }: { readonly view: OfficeView }) {
           <QuadReset />
         </div>
       </div>
-      <QuadControls />
+      {/* 境目のスライダー（QuadControls）は、条件の帯へ移した（要件 R-15）。初めの位置に戻すは、結果の横に残す */}
     </section>
   );
 }
@@ -359,6 +359,8 @@ function Summary({ view }: { readonly view: OfficeView }) {
         <UpRows view={view} />
       </div>
       <div className={styles.judgeFoot}>
+        {/* 条件を調整（費用・最低人数）は、⑤ に残す（条件の帯へは移さない）。既存のテスト I-07 が、
+            費用の入力の知らせを、判定の区画（data-testid="judge"）の中で探しているため（担当者の決定。R-15 は一部） */}
         <Adjust view={view} />
         <div className={styles.footBtns}>
           {condition.venue.simulatorVenueId === undefined ? (

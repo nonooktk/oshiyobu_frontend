@@ -112,6 +112,38 @@
   font-weight: 700;
   color: var(--ink-soft);
 }
+
+/* 条件の帯（要件 R-15）。推しの帯の下の 2 行目。高さは、会場を選ぶ前から確保する（選んだときに下の見出しが動かないように） */
+.condBand {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s4);
+  /* 境目（数字の入力。枠の線を含めて 48px）が出たときと同じ高さ（上下の余白と下の線を足して 65px） */
+  min-height: 65px;
+  padding: var(--s2) var(--s4);
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+/* 帯の中の境目: 枠を外して、名前・スライダー・数字の入力を横 1 行に */
+.condBand .qLines {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s4);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.condBand .qLineField {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.condBand .qLineRow input[type='range'] {
+  flex: none;
+  width: 120px;
+}
 .artists {
   display: flex;
   align-items: center;

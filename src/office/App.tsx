@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { ArtistBar } from './components/ArtistBar';
 import { ChangeLive } from './components/Changed';
+import { ConditionBand } from './components/ConditionBand';
 import { Header } from './components/Header';
 import { Judge } from './components/Judge';
 import { MapPanel } from './components/MapPanel';
@@ -37,6 +38,8 @@ export function App() {
         <div className={styles.office}>
           <Header />
           <ArtistBar />
+          {/* 条件の帯（要件 R-15）: 推し以外の条件を変える入力を、ここにまとめる */}
+          <ConditionBand view={view} />
           <p className="sr-only" aria-live="polite">
             {live}
           </p>

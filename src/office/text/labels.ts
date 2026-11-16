@@ -252,3 +252,9 @@ export function eventDate(date: string): string {
   const [y, m, d] = date.split('-').map(Number);
   return `${y}年${m}月${d}日`;
 }
+
+/** 条件の帯（要件 R-15）。推し以外の条件（集まる人数・境目・費用と最低人数）を、1 か所にまとめる */
+export const bandText = {
+  /** 帯の左の札（「アーティスト」と同じ形） */
+  label: '条件',
+} as const;

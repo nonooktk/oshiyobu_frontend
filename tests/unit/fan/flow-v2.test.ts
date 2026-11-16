@@ -51,11 +51,11 @@ describe('プランの決まり（domain/plan.ts）', () => {
     expect(upgradesOf('normal')).toEqual(['front', 'special', 'top']);
     expect(upgradesOf('top')).toEqual([]);
   });
-  it('特典: ゴールド ＝ 追加の画像、プラチナ ＝ 5秒の動画、ダイヤモンド ＝ 20秒の動画。最安には無い', () => {
+  it('特典: ゴールド ＝ 追加の画像、プラチナ ＝ 3秒の動画、ダイヤモンド ＝ 6秒の動画。最安には無い', () => {
     expect(rewardOf('normal')).toBeNull();
     expect(rewardOf('front')).toMatchObject({ kind: 'image' });
-    expect(rewardOf('special')).toMatchObject({ kind: 'video', seconds: 5 });
-    expect(rewardOf('top')).toMatchObject({ kind: 'video', seconds: 20 });
+    expect(rewardOf('special')).toMatchObject({ kind: 'video', seconds: 3 });
+    expect(rewardOf('top')).toMatchObject({ kind: 'video', seconds: 6 });
     expect(rewardsUpTo('top').map((r) => r.plan)).toEqual(['front', 'special', 'top']);
     expect(rewardsUpTo(null)).toEqual([]);
   });

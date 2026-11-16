@@ -148,8 +148,8 @@ describe('③ プランを上げると、背景と特典が変わる', () => {
     const seen: [string | null, string][] = [];
     for (const [plan, kind, label] of [
       ['ゴールドプラン', 'image', '追加の画像'],
-      ['プラチナプラン', 'video', '5秒の動画'],
-      ['ダイヤモンドプラン', 'video', '20秒の動画'],
+      ['プラチナプラン', 'video', '3秒の動画'],
+      ['ダイヤモンドプラン', 'video', '6秒の動画'],
     ] as const) {
       click(/^プランを上げる/);
       click(`${plan}に上げる`);

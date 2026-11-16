@@ -62,10 +62,10 @@ describe('申し込みをやめる・コースの札・支援の状況（I-25・
     await tick(3000);
     click('メニュー');
     await settle();
-    click('申し込みをやめる');
+    click('参加をやめる');
     await settle();
     fireEvent.click(
-      within(layer('sheet') as HTMLElement).getByRole('button', { name: '申し込みをやめる' }),
+      within(layer('sheet') as HTMLElement).getByRole('button', { name: '参加をやめる' }),
     );
     await tick(5000);
     expect(api.posts()).toHaveLength(1);
@@ -81,11 +81,11 @@ describe('申し込みをやめる・コースの札・支援の状況（I-25・
     await tick(4000);
     click('メニュー');
     await settle();
-    click('申し込みをやめる');
+    click('参加をやめる');
     await settle();
     const sheet = layer('sheet') as HTMLElement;
     expect(within(sheet).getByText('成立したあとの取り消しは、今後の対応範囲です。')).toBeTruthy();
-    expect(within(sheet).queryByRole('button', { name: '申し込みをやめる' })).toBeNull();
+    expect(within(sheet).queryByRole('button', { name: '参加をやめる' })).toBeNull();
     expect(within(sheet).getByRole('button', { name: '戻る' })).toBeTruthy();
   });
 });

@@ -237,7 +237,16 @@ export function condItems(v: FanView, k: CourseOffer): CondItem[] {
 }
 
 export type NextRowId =
-  'apply' | 'main' | 'deposit' | 'teiki' | 'notice' | 'friend' | 'share' | 'again' | 'upgrade';
+  | 'apply'
+  | 'main'
+  | 'deposit'
+  | 'teiki'
+  | 'notice'
+  | 'friend'
+  | 'share'
+  | 'again'
+  | 'upgrade'
+  | 'rejoin';
 export type NextRow = { id: NextRowId; label: string; why: readonly Seg[]; hint: string };
 export type NextHead =
   | { kind: 'pre'; course: CourseOffer; items: CondItem[]; ok: boolean }
@@ -249,65 +258,28 @@ export type NextView = { head: NextHead; rows: NextRow[]; hint: string };
 /** 次のアクション（SP-42）。いまできる行動の一覧と、ホームの 2 行目に出す 1 行。 */
 export function nextViewOf(v: FanView): NextView {
   const { fan, status } = v;
-  const { deposit: d, pay: p } = fan.acct;
+  const { deposit: d } = fan.acct;
   const rows: NextRow[] = [];
 
   if (!v.joined) {
-    const t = v.target;
-    if (!t) throw new Error('申し込む前は、目指すコースがあります');
-    const ok = canApplyOf(v, t);
-    const needMain = t.mainAccount && !p;
-    const after = v.afterJoin;
-    const afterJoin = after.stage > v.heat.stage ? `${after.name}へ進みます` : '熱が高まります';
-    // 流れ: 推し活定期をはじめる（口座が使える）→ メイン口座にする（条件にあるとき）→ 預金を積み増す → 申し込む。いまやる 1 つだけが並ぶ
-    if (!fan.done.teiki) {
-      rows.push({
-        id: 'teiki',
-        label: '推し活定期をはじめる',
-        why: [
-          `${v.solo ? 'あたたまってきます。' : ''}預金を積み増せるようになります。毎月 ${yen(TEIKI.monthlyYen)}の積立です（デモ用の操作）`,
-        ],
-        hint: '',
-      });
-    } else if (needMain) {
-      rows.push({
-        id: 'main',
-        label: 'メイン口座にする',
-        why: [
-          `${t.name}の条件の 1 つです（預金は変わりません）${v.solo ? '。熱が少し高まります' : ''}`,
-        ],
-        hint: '',
-      });
-    } else if (!ok) {
-      rows.push({
-        id: 'deposit',
-        label: '預金を積み増す',
-        why: [
-          `${t.name}まで、あと ${yen(Math.max(0, t.deposit - d))}。額は、入力で決めます${v.solo && v.afterReady.stage > v.heat.stage ? `。条件に届くと、${v.afterReady.name}へ進みます` : ''}`,
-        ],
-        hint: '',
-      });
-    } else {
-      rows.push({
-        id: 'apply',
-        label: `${t.name}に申し込む`,
-        why: [`${yen(t.price)}。申し込むと、${afterJoin}。申し込むと確定します`],
-        hint: '',
-      });
-    }
-    const hint = ok
-      ? `申し込む → ${after.stage > v.heat.stage ? `${after.name}へ` : '熱が高まります'}（${yen(t.price)}）`
-      : `${t.name}まで、残りは ${restText(t, d, p)}`;
-    return { head: { kind: 'pre', course: t, items: condItems(v, t), ok }, rows, hint };
+    // 参加していないとき（参加をやめたあと）: プランを選ぶ画面へ戻る 1 つだけ
+    const hint = '参加するプランを選べます';
+    rows.push({
+      id: 'rejoin',
+      label: '参加するプランを選ぶ',
+      why: ['プランの一覧へ戻ります。最初に選べるのは、いちばん下のプランです'],
+      hint,
+    });
+    return { head: { kind: 'going', heat: v.heat }, rows, hint };
   }
 
   const phase = homePhaseOf(fan, v.cond);
   if (status.established && phase !== 'tasks') {
     rows.push({
       id: 'notice',
-      label: '仲間に知らせる',
+      label: 'みんなに知らせる',
       why: [`いまの熱量は ${v.heat.name}。投稿文は、いまの熱量で作られます`],
-      hint: '仲間に知らせる → 開催が決まったことを伝える',
+      hint: 'みんなに知らせる → 開催が決まったことを伝える',
     });
   } else if (phase === 'tasks') {
     // 参加のあと（新しい流れ）: 預金でやること（推し活定期をはじめる → 預金を積み増す）。いまやる 1 つだけが並ぶ
@@ -432,9 +404,9 @@ export function homeActionOf(v: FanView): HomeAction {
     case 'notice':
       return {
         id,
-        label: '仲間に知らせる',
+        label: 'みんなに知らせる',
         sub: '→ 開催が決まったことを伝える',
-        hint: '押すと、開催が決まったことを仲間に伝えます',
+        hint: '押すと、開催が決まったことをみんなに伝えます',
       };
     case 'again':
       return {

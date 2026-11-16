@@ -46,7 +46,7 @@ describe('市を選ぶ入口は、ファン向けのどこにも無い', () => {
     passStartOnly();
     click('メニュー');
     await settle();
-    click(/^推し・条件の変更/);
+    click(/^推しの変更/);
     await settle();
     expect(screen.queryByText('希望の市')).toBeNull();
     expect(screen.queryByRole('button', { name: '熊本市' })).toBeNull();

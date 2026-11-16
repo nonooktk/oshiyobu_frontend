@@ -71,10 +71,10 @@ describe('人物 15 通り: どれで開いても、同じ初めの状態（I-67
 
 describe('推しの口調（A-42）', () => {
   const MARK: [string, string, RegExp][] = [
-    ['tech0', 'Tech0サステナアイドル', /カマヤーン[\s\S]*申し込みありがとう/],
+    ['tech0', 'Tech0サステナアイドル', /カマヤーン[\s\S]*参加ありがとう/],
     ['krs48', 'KRS48', /えへへ/],
     ['riji', 'りじちょーといっしょだよ。', /あれっす！ありがとうっす！/],
-    ['terao', 'てらお少年', /申し込みありがとう/],
+    ['terao', 'てらお少年', /参加ありがとう/],
     ['heisei', '平成の俺', /サンキュー/],
   ];
   it.each(MARK)(
@@ -110,10 +110,10 @@ describe('すべての画面に札「デモ用の架空データ」が出る（A
     for (const title of [
       '貢献',
       '口座と預金',
-      '応援コース',
+      'プラン',
       '支援の状況',
       'しくみ',
-      '推し・条件の変更',
+      '推しの変更',
       '情報の扱い',
     ]) {
       click(new RegExp(`^${title}`));
@@ -130,15 +130,15 @@ describe('すべての画面に札「デモ用の架空データ」が出る（A
     await closeGiftAfterFx();
     click('メニュー');
     await settle();
-    click('申し込みをやめる');
+    click('参加をやめる');
     await settle();
     const cancel = layer('sheet') as HTMLElement;
-    expect(within(cancel).getByRole('heading', { name: '申し込みをやめますか？' })).toBeTruthy();
+    expect(within(cancel).getByRole('heading', { name: '参加をやめますか？' })).toBeTruthy();
     expect(within(cancel).getAllByText('デモ用の架空データ')).toHaveLength(1);
     click('やめない（戻る）');
     await settle();
 
-    click(/^推し・条件の変更/);
+    click(/^推しの変更/);
     await settle();
     click('KRS48');
     click('この条件に変える（デモ用）');
@@ -192,8 +192,8 @@ describe('遅れて読む画面と、受け皿（I-119・I-121・I-103）', () =
     await closeGiftAfterFx();
     click('メニュー');
     await settle();
-    click('申し込みをやめる');
-    expect(screen.getByRole('heading', { name: '申し込みをやめますか？' })).toBeTruthy();
+    click('参加をやめる');
+    expect(screen.getByRole('heading', { name: '参加をやめますか？' })).toBeTruthy();
     expect(
       within(layer('sheet') as HTMLElement).getByRole('button', { name: '戻る' }),
     ).toBeTruthy();
@@ -232,7 +232,7 @@ describe('遅れて読む画面と、受け皿（I-119・I-121・I-103）', () =
     expect(screen.getAllByText('この端末に残ります')).toHaveLength(STORAGE_KEYS.length);
     expect(
       screen.getByText(
-        /送るのは、申し込みの合図（公演の指定を含む）と端末の番号だけです。個人の情報は送りません。/,
+        /送るのは、参加の合図（公演の指定を含む）と端末の番号だけです。個人の情報は送りません。/,
       ),
     ).toBeTruthy();
     // 共有ボタンは、押すと投稿したことになるだけで、投稿文を外へ送らない（コピーもしない）

@@ -1,6 +1,6 @@
 // 新しい流れの層（骨組み）: 参加の前の確認・プランを上げるシート・特典の贈呈。
 // 見た目は最小限（作り込みは、画面の担当者が行う）。状態と操作は、ストア（store.ts）が持つ。
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { artistView } from '../art/registry';
 import { rewardMediaOf } from '../art/rewards';
 import { ENTRY_PLAN, PLAN_NAMES, rewardOf, upgradesOf } from '../domain/plan';
@@ -123,9 +123,24 @@ export function UpgradeSheet({ inert }: { inert: boolean }) {
 export function RewardSheet({ plan, inert }: { plan: CourseId; inert: boolean }) {
   const { state, actions } = useFan();
   const close = useRef<HTMLButtonElement>(null);
+  // 開く前にいた要素（「特典を見る」など）。プランを上げた直後は、演出をはさむので残っていない
+  const [from] = useState(() => (typeof document === 'undefined' ? null : document.activeElement));
   useEffect(() => {
     close.current?.focus({ preventScroll: true });
-  }, []);
+    // 閉じたら、開く前の要素へ。戻せないときは、ホームの主のボタンへフォーカスを戻す
+    return () => {
+      const usable = (el: Element | null): el is HTMLElement =>
+        el instanceof HTMLElement &&
+        el !== document.body &&
+        el.isConnected &&
+        !el.closest('[inert]');
+      const to = usable(from)
+        ? from
+        : (document.querySelector('button[data-act="upgrade"]') ??
+          document.querySelector('button[data-act="share"]'));
+      if (usable(to)) to.focus({ preventScroll: true });
+    };
+  }, [from]);
   const r = rewardOf(plan);
   const o = artistView(state.oshiId);
   const media = rewardMediaOf(state.oshiId, plan);

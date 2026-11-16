@@ -88,3 +88,8 @@ export function homePhaseOf(
 /** ホームの背景の段（プランが上がるほど豪華になる。0 ＝ 最安・未参加）。 */
 export const backdropOf = (id: CourseId | null): 0 | 1 | 2 | 3 =>
   (id === null ? 0 : Math.max(0, planRank(id))) as 0 | 1 | 2 | 3;
+
+/** 画面に出す「達成した行動」（新しい流れで行う 4 つ。参加 → 預金でやること 2 つ → SNSで広める）。 */
+export const SHOWN_ACTS = ['join', 'teiki', 'deposit', 'share'] as const;
+export const shownDoneOf = (done: Fan['done']): readonly (typeof SHOWN_ACTS)[number][] =>
+  SHOWN_ACTS.filter((id) => done[id] === true);

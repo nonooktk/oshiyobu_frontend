@@ -45,10 +45,10 @@ describe('ファン向けの全画面', () => {
     for (const title of [
       '貢献',
       '口座と預金',
-      '応援コース',
+      'プラン',
       '支援の状況',
       'しくみ',
-      '推し・条件の変更',
+      '推しの変更',
       '情報の扱い',
     ]) {
       click(new RegExp(`^${title}`));
@@ -65,14 +65,14 @@ describe('ファン向けの全画面', () => {
     await closeGiftAfterFx();
     click('メニュー');
     await settle();
-    click('申し込みをやめる');
+    click('参加をやめる');
     await settle();
     const cancel = layer('sheet') as HTMLElement;
     expect(within(cancel).getAllByText(NOTICE)).toHaveLength(1);
     expect(within(cancel).getAllByText(BADGE)).toHaveLength(1);
     click('やめない（戻る）');
     await settle();
-    click(/^推し・条件の変更/);
+    click(/^推しの変更/);
     await settle();
     click('KRS48');
     click('この条件に変える（デモ用）');

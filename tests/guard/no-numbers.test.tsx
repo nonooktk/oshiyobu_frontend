@@ -144,11 +144,11 @@ describe('ファン向けの画面に、人数・達成率・目標の金額の�
     look('メニュー');
     for (const title of [
       '貢献',
-      '応援コース',
+      'プラン',
       '口座と預金',
       '支援の状況',
       'しくみ',
-      '推し・条件の変更',
+      '推しの変更',
       '情報の扱い',
     ]) {
       click(new RegExp(`^${title}`));
@@ -157,7 +157,7 @@ describe('ファン向けの画面に、人数・達成率・目標の金額の�
       click('‹ メニュー');
     }
     {
-      click('申し込みをやめる');
+      click('参加をやめる');
       await settle();
       look('やめる確認のシート', layer('sheet') as HTMLElement);
     }

@@ -710,7 +710,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       say: VOICES[state.oshiId].say.share(),
       ms: 2600,
       reduceMs: 2000,
-      live: '知らせてくれてありがとう。あなたの声が、仲間に届きました。',
+      live: '知らせてくれてありがとう。あなたの声が、みんなに届きました。',
     });
   };
   /**
@@ -1001,7 +1001,7 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
    */
   const serverReset = (counted: boolean): void => {
     set({ friends: 0, ...(counted ? { course: null } : {}) });
-    if (counted) announce('共有のメーターが初めに戻りました。もう一度申し込めます。');
+    if (counted) announce('共有のメーターが初めに戻りました。もう一度参加できます。');
   };
 
   const openCancel = (): void => pushLayer({ kind: 'cancel' });
@@ -1022,12 +1022,10 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     go('home');
     const say = VOICES[state.oshiId].say.quit();
     toast(
-      `申し込みをやめました。確保は解除され、負担は0円です。もう一度申し込めます。${artistView(state.oshiId).name}より「${say}」`,
+      `参加をやめました。確保は解除され、負担は0円です。もう一度参加できます。${artistView(state.oshiId).name}より「${say}」`,
       5000,
     );
-    announce(
-      `申し込みをやめました。確保は解除され、負担は0円です。熱量は${view().heat.name}です。`,
-    );
+    announce(`参加をやめました。確保は解除され、負担は0円です。熱量は${view().heat.name}です。`);
   };
 
   /* ---------- 「推し・条件の変更」（SP-25・SP-49。デモ用の操作） ---------- */

@@ -150,16 +150,10 @@ function Screen() {
               <ChunkBoundary<LayersModule>
                 key="cancel"
                 name="fan-layers"
-                frame={sheet('申し込みをやめますか？', inert, actions.closeCancel, '戻る', null)}
+                frame={sheet('参加をやめますか？', inert, actions.closeCancel, '戻る', null)}
               >
                 {(m) =>
-                  sheet(
-                    '申し込みをやめますか？',
-                    inert,
-                    actions.closeCancel,
-                    '戻る',
-                    <m.CancelBody />,
-                  )
+                  sheet('参加をやめますか？', inert, actions.closeCancel, '戻る', <m.CancelBody />)
                 }
               </ChunkBoundary>
             );

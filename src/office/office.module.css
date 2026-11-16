@@ -448,6 +448,34 @@
   background: var(--yellow-light);
   color: var(--warning-ink);
 }
+/* ① の札は、地図の枠の左上の角に重ねる（行が折れて地図が動かないように）。⑥ の行では、見出しのすぐ右
+   （成立の見込みの札は、これまでどおり右の端） */
+.mapCol .mapWrap {
+  position: relative;
+}
+.mapFict {
+  position: absolute;
+  top: var(--s2);
+  left: var(--s2);
+  z-index: 1;
+  pointer-events: none;
+}
+.fictMid {
+  margin-right: auto;
+}
+/* ⑤ の見出しの行（見出し・架空の札・一文） */
+.jHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s2);
+  margin: 0 0 var(--s2);
+}
+.mixNote {
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
 /* 出典のリンク（新しいタブで開く） */
 .srcLink {
   color: var(--primary);
@@ -1413,6 +1441,11 @@ div.chg > .prevVal {
   }
   .ppGrid {
     grid-template-columns: minmax(0, 1fr);
+  }
+  /* 狭い画面では地図が小さく、福岡市の大きい丸に重なるので、① の札は地図に重ねず、枠の中の上に置く */
+  .mapFict {
+    position: static;
+    margin: var(--s2) 0 0 var(--s2);
   }
   .barEnd {
     margin-left: 0;

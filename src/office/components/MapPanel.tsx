@@ -4,7 +4,7 @@ import { CITY_POS, MAP_VIEWBOX, RAMPS } from '../map/layout';
 import { PREF_SHAPES } from '../map/shapes';
 import styles from '../office.module.css';
 import { useOffice } from '../store';
-import { text } from '../text/labels';
+import { realText, text } from '../text/labels';
 
 const LEGEND_STEPS = [20000, 5000, 1000] as const;
 
@@ -74,6 +74,11 @@ export function MapPanel() {
         {metric === 'hot' && <span className={styles.formula}>{text.formula}</span>}
       </div>
       <div className={styles.mapWrap}>
+        {/* 登録者数・熱量は架空（仕様 4.3）。見出しの行に置くと、「払える熱量」の式と並んで行が折れ、地図が動くので、
+            地図の枠の左上の角（海で、市の丸も名前も無い所）に重ねる */}
+        <span className={`${styles.fictChip} ${styles.mapFict}`} data-testid="fict-1">
+          {realText.fiction}
+        </span>
         <svg
           viewBox={`0 0 ${MAP_VIEWBOX.width} ${MAP_VIEWBOX.height}`}
           role="group"

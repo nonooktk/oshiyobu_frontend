@@ -153,7 +153,7 @@ test('はじめの画面 → 参加 → 預金でやること → SNSで広め�
   await page.getByRole('button', { name: 'ダイヤモンドプランに上げる' }).click();
   const top = page.getByRole('dialog', { name: 'ダイヤモンドプランの特典' });
   await expect(top).toBeVisible({ timeout: 8000 });
-  await expect(top.getByText(/20秒の動画/).first()).toBeVisible();
+  await expect(top.getByText(/6秒の動画/).first()).toBeVisible();
   await page.waitForTimeout(400);
   await shot(page, '11-reward-diamond');
   await top.getByRole('button', { name: '閉じる' }).click();

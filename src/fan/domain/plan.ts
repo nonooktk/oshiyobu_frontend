@@ -30,16 +30,16 @@ export const upgradesOf = (from: CourseId | null): readonly CourseId[] =>
 /** プランを上げたときに贈る特典（最安のプランには無い）。動画の長さは秒。 */
 export type Reward =
   | { plan: CourseId; kind: 'image'; label: string }
-  | { plan: CourseId; kind: 'video'; seconds: 5 | 20; label: string };
+  | { plan: CourseId; kind: 'video'; seconds: 3 | 6; label: string };
 
 export function rewardOf(id: CourseId): Reward | null {
   switch (id) {
     case 'front':
       return { plan: id, kind: 'image', label: '追加の画像' };
     case 'special':
-      return { plan: id, kind: 'video', seconds: 5, label: '5秒の動画' };
+      return { plan: id, kind: 'video', seconds: 3, label: '3秒の動画' };
     case 'top':
-      return { plan: id, kind: 'video', seconds: 20, label: '20秒の動画' };
+      return { plan: id, kind: 'video', seconds: 6, label: '6秒の動画' };
     default:
       return null;
   }

@@ -258,3 +258,17 @@ export const bandText = {
   /** 帯の左の札（「アーティスト」と同じ形） */
   label: '条件',
 } as const;
+
+/** ② 集まる人数（要件 R-04・R-06）。会場の候補を、キャパが人数に近い会場から出すことにだけ使う（確認 8） */
+export const crowdText = {
+  label: '集まる人数',
+  unit: '人',
+  /** よく使う値のボタン（収支シミュレーターと同じ値。仕様 1.4） */
+  presets: [30, 100, 300, 500, 1000] as const,
+  live: (n: number): string =>
+    `集まる人数を ${n}人にしました。会場の候補を、キャパが近い会場から出しています。`,
+  clearLive: '集まる人数の指定をやめました。',
+  /** 規模感（キャパ ÷ 人数）。「ちょうど良い」のような判定はしない（core に基準が無いため。仕様 1.4） */
+  ratio: (cap: number, crowd: number): string =>
+    `キャパ ${cap} ÷ ${crowd}人 = ${(cap / crowd).toFixed(2)}`,
+} as const;

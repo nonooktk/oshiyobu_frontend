@@ -125,6 +125,47 @@
   background: var(--surface);
   border-bottom: 1px solid var(--line);
 }
+/* ② 集まる人数（帯の中）: 名前・数字の入力・よく使う値のボタンを横 1 行に */
+.crowd {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.crowdLabel {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.crowdPresets {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--s1);
+}
+.crowdBtn {
+  min-width: var(--tap);
+  min-height: var(--tap);
+  padding: 0 var(--s2);
+  border: 1px solid var(--primary);
+  border-radius: var(--pill);
+  background: var(--surface);
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.crowdBtn[aria-pressed='true'] {
+  background: var(--primary);
+  color: #fff;
+}
+/* ③ のカードの規模感（キャパ ÷ 人数） */
+.vratio {
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.venue[aria-pressed='true'] .vratio {
+  color: var(--ink);
+}
 /* 帯の中の境目: 枠を外して、名前・スライダー・数字の入力を横 1 行に */
 .condBand .qLines {
   display: flex;

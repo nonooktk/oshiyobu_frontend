@@ -3,13 +3,14 @@ import { venuesOf } from '../../core';
 import { HOME_CITY } from '../../core';
 import styles from '../office.module.css';
 import { useOffice } from '../store';
-import { sideNote, text, yen } from '../text/labels';
+import { crowdText, sideNote, text, yen } from '../text/labels';
 import { CityRealChip, VenueFacts } from './VenueFacts';
 
 /** 会場の候補（市を選ぶと出る）。市を選ぶまでは、案内と収支シミュレーターへの入口 */
 export function SidePanel() {
   const city = useOffice((s) => s.city);
   const venueId = useOffice((s) => s.venueId);
+  const crowd = useOffice((s) => s.crowd);
   const pickVenue = useOffice((s) => s.pickVenue);
   // キーボードで市を選んだとき（合図が増えたとき）、会場の先頭のボタンへフォーカスを移す（SP-03）
   const venueFocus = useOffice((s) => s.venueFocus);
@@ -36,7 +37,12 @@ export function SidePanel() {
       </div>
     );
   }
-  const list = venuesOf(city);
+  // ② 集まる人数を決めていれば、キャパが人数に近い会場から出す（同じ近さは、もとの順のまま。要件 R-04）。
+  // 決めていなければ、core の順のまま。並べ替えは表示だけで、候補の数は変えない
+  const list =
+    crowd === null
+      ? venuesOf(city)
+      : [...venuesOf(city)].sort((a, b) => Math.abs(a.cap - crowd) - Math.abs(b.cap - crowd));
   const [first, second] = sideNote(city === HOME_CITY);
   return (
     <div className={styles.sideCol}>
@@ -61,6 +67,12 @@ export function SidePanel() {
                 {venue.cap}
                 {venue.unit}・{venue.type}
               </span>
+              {/* 規模感（R-06）: キャパ ÷ 人数の数字だけ。判定の言葉は付けない（仕様 1.4） */}
+              {crowd !== null && (
+                <span className={styles.vratio} data-testid="venue-ratio">
+                  {crowdText.ratio(venue.cap, crowd)}
+                </span>
+              )}
               {venue.publicFee !== undefined && (
                 <span className={styles.vfee}>
                   <small>公開料金の目安</small>

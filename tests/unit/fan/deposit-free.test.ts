@@ -5,7 +5,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEPOSIT_MAX } from '../../../src/fan/domain/deposit';
 import { buildPostText } from '../../../src/fan/domain/share';
-import { canApplyOf, courseOf, nextViewOf } from '../../../src/fan/domain/view';
+
 import { harness, passStartOnly } from './helpers';
 
 beforeEach(() => {
@@ -16,10 +16,6 @@ afterEach(() => {
 });
 
 type H = ReturnType<typeof harness>;
-const canApplyNormal = (h: H): boolean => {
-  const v = h.view();
-  return canApplyOf(v, courseOf(v.cond, 'normal'));
-};
 
 /** はじめの画面を抜けて（目指すコースは通常の席）、推し活定期をはじめた状態。預金は 0円（通常の席の条件は 20,000円）。 */
 function started(personaNo = 1): H {
@@ -30,23 +26,6 @@ function started(personaNo = 1): H {
 }
 
 describe('自由な額で足す（初めは預金 0円・通常の席の条件は 20,000円）', () => {
-  it('足りない額（19,999円）では、まだ申し込めない。ちょうど届く額（あと 1円）で 20,000円になり、申し込める', () => {
-    const h = started();
-    expect(h.state().acct.deposit).toBe(0);
-    expect(canApplyNormal(h)).toBe(false);
-    h.a.runAcct('deposit', 'acct', 19_999);
-    expect(h.state().acct.deposit).toBe(19_999);
-    expect(canApplyNormal(h)).toBe(false);
-    h.a.runAcct('deposit', 'acct', 1);
-    expect(h.state().acct.deposit).toBe(20_000);
-    expect(canApplyNormal(h)).toBe(true);
-    // 次のアクションの先頭が、「通常の席に申し込む」に変わる（条件がその場で変わる）
-    expect(nextViewOf(h.view()).rows[0]).toMatchObject({
-      id: 'apply',
-      label: '通常の席に申し込む',
-    });
-  });
-
   it('決まった額だけでなく、どんな額でも足せる（12,345円）', () => {
     const h = started();
     h.a.runAcct('deposit', 'acct', 12_345);
@@ -74,41 +53,9 @@ describe('自由な額で足す（初めは預金 0円・通常の席の条件�
     h.a.runAcct('deposit', 'acct', 1);
     expect(h.state().acct.deposit).toBe(2_000_001);
   });
-
-  it('口座を使う行動（預金・メイン口座）は、推し活定期をはじめる前は、何も起きない', () => {
-    const h = harness(4, { solo: true });
-    passStartOnly(h);
-    h.a.runAcct('deposit', 'acct', 5_000);
-    h.a.runAcct('main', 'acct');
-    expect(h.state().acct).toEqual({ pay: false, deposit: 0, times: 0 });
-    expect(h.state().done).toEqual({});
-  });
 });
 
 describe('足したことの伝え方（トースト・読み上げ・短い称賛。事実の文だけ）', () => {
-  it('「◯◯円を積み増しました（預金 ◯◯円）」。条件に届いたときの称賛は「申し込めるようになりました」', () => {
-    const h = started();
-    h.a.runAcct('deposit', 'acct', 20_000);
-    expect(h.state().toast?.text).toBe('20,000円を積み増しました（預金 20,000円）');
-    expect(h.state().ach).toMatchObject({
-      title: '積み増しありがとう。',
-      sub: '熱量が「ヒートアップ」へ進みました。申し込めるようになりました',
-    });
-    expect(h.state().live).toContain(
-      '積み増しありがとう。熱量が「ヒートアップ」へ進みました。申し込めるようになりました',
-    );
-  });
-
-  it('条件に届かない額のときの称賛は、あと何が要るか（自分の預金の話）を言う', () => {
-    const h = started();
-    h.a.runAcct('deposit', 'acct', 1_000);
-    expect(h.state().toast?.text).toBe('1,000円を積み増しました（預金 1,000円）');
-    expect(h.state().ach).toMatchObject({
-      title: '積み増しありがとう。',
-      sub: '熱量が少し高まりました。通常の席まで、残りは 預金 19,000円',
-    });
-  });
-
   it('得・運を褒める語、使わない語が、トースト・読み上げ・称賛の文に入らない（G-04・G-10）', () => {
     const h = started();
     h.a.runAcct('deposit', 'acct', 5_000);

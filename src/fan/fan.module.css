@@ -2220,3 +2220,124 @@ button.rcard:hover {
 .pageHost {
   display: contents;
 }
+
+/* ---------- 新しい流れ（骨組み。見た目の作り込みは、画面の担当者が行う） ---------- */
+/* ホームの背景: プランが上がるほど豪華にする（0 ＝ 最安。1 ＝ ゴールド。2 ＝ プラチナ。3 ＝ ダイヤモンド） */
+.home[data-plan-tier='1'] {
+  background: linear-gradient(180deg, var(--yellow-light), var(--bg-c) 45%);
+}
+.home[data-plan-tier='2'] {
+  background: linear-gradient(180deg, var(--sky-light), var(--surface) 45%);
+}
+.home[data-plan-tier='3'] {
+  background: linear-gradient(
+    160deg,
+    var(--yellow-light),
+    var(--sky-light) 40%,
+    var(--surface) 75%
+  );
+}
+.planLine {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  margin: var(--s1) var(--s3) 0;
+}
+.planChip {
+  padding: 2px var(--s2);
+  border: 1px solid var(--primary);
+  border-radius: var(--pill);
+  background: var(--surface);
+  color: var(--primary-dark);
+  font-size: var(--fs-note);
+  font-weight: 700;
+}
+.homePair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s2);
+  margin: 0 var(--s3);
+}
+.homePair > .homeNext {
+  margin: var(--s2) 0 0;
+  padding: var(--s1) var(--s2);
+}
+.homePair .nxL {
+  font-size: var(--fs-body);
+}
+.sheetLead {
+  margin: 0 0 var(--s2);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--ink);
+}
+.sheetNote {
+  margin: var(--s2) 0;
+  font-size: var(--fs-note);
+  line-height: var(--lh-note);
+  color: var(--ink);
+}
+.planFacts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--s1) var(--s3);
+  margin: 0;
+  font-size: var(--fs-note);
+  line-height: var(--lh-note);
+  color: var(--ink);
+}
+.planFacts dt {
+  font-weight: 700;
+}
+.planFacts dd {
+  margin: 0;
+}
+.planList {
+  display: grid;
+  gap: var(--s2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.planItem {
+  display: grid;
+  gap: var(--s2);
+  padding: var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+}
+.planItem[aria-disabled='true'] {
+  background: var(--bg-c);
+}
+.planName {
+  margin: 0;
+  font-size: var(--fs-body);
+  font-weight: 700;
+  color: var(--ink);
+}
+.planLock {
+  margin: 0;
+  font-size: var(--fs-note);
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.rewardFrame {
+  display: grid;
+  gap: var(--s2);
+  justify-items: center;
+}
+.rewardFrame img,
+.rewardFrame video {
+  width: 100%;
+  max-height: 50vh;
+  object-fit: contain;
+  border-radius: var(--r);
+}
+.rewardWait {
+  margin: 0;
+  font-size: var(--fs-note);
+  font-weight: 700;
+  color: var(--ink);
+}

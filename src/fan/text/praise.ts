@@ -50,3 +50,17 @@ export const PRAISE_FEVER: Praise = {
   small: '仲間を呼んでくれてありがとう。',
   sub: 'あなたの声が届いて、開催が決まりました',
 };
+
+/** 最安のプランで、プロジェクトに参加した直後（新しい流れ）。 */
+export const PRAISE_JOIN_PLAN: Praise = {
+  title: 'ようこそ！',
+  small: '参加してくれてありがとう。',
+  sub: 'あなたの一歩で、プロジェクトが動き出しました',
+};
+
+/** プランを上げた直後（特別な演出）。褒めるのは、上げたという行動だけ。 */
+export const praiseUpgrade = (planName: string): Praise => ({
+  title: 'プランアップ！',
+  small: `${planName}に上げてくれてありがとう。`,
+  sub: 'あなたの応援が、もっと大きく届きます',
+});

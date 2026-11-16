@@ -76,7 +76,8 @@ export type Pend = { oshiId: ArtistId; seat: CourseId };
  * 演出の種類。称賛の演出（行動の直後）は、申し込み（join・stage）・投稿（share）・仲間に知らせる（notify）・仲間を呼ぶ（friend）・
  * FEVER の瞬間（fever）。gift は特典が開いたときのごほうび。
  */
-export type FxKind = 'join' | 'stage' | 'share' | 'notify' | 'friend' | 'fever' | 'gift';
+export type FxKind =
+  'join' | 'stage' | 'share' | 'notify' | 'friend' | 'fever' | 'gift' | 'upgrade';
 
 /** 80% の演出・特典の演出などの、全画面の演出。 */
 export type FxSpec = {
@@ -123,7 +124,13 @@ export type Layer =
   | { kind: 'share'; mode: ShareMode }
   | { kind: 'deposit' }
   | { kind: 'cancel' }
-  | { kind: 'carry' };
+  | { kind: 'carry' }
+  /** 参加の前の確認（表示だけ。実際の決済は無い）。 */
+  | { kind: 'confirm' }
+  /** プランを上げるシート。 */
+  | { kind: 'upgrade' }
+  /** プランを上げた直後の、特典の贈呈。 */
+  | { kind: 'reward'; plan: CourseId };
 
 /** ストアが持つ全部（ファン向けの進み ＋ 画面の状態）。 */
 export type FanState = Fan & {

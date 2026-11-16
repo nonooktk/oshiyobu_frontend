@@ -4,6 +4,7 @@ import type { CSSProperties } from 'react';
 import { TEIKI, canApply } from '../../core';
 import { artistView } from '../art/registry';
 import { CourseFace } from '../components/CourseFace';
+import { depositTasksOf, taskDepositOf } from '../domain/plan';
 import type { AcctId } from '../domain/state';
 import { nextLocked, opensText, restText } from '../domain/view';
 import { manYen, yen } from '../text/format';
@@ -211,51 +212,86 @@ export function AcctPage() {
       ],
     ];
   };
+  const tasks = depositTasksOf(state, cond);
+  const allDone = tasks.every((t) => t.ok);
+  const ids = view.joined
+    ? (['teiki', 'deposit'] as const)
+    : (['teiki', 'main', 'deposit'] as const);
   return (
     <>
-      <div className={fan.card}>
-        <p className={fan.bigK}>いまの預金（仮）</p>
-        <p className={`${styles.bigV} ${fan.num}`}>{yen(d)}</p>
-        <div
-          className={styles.gauge}
-          role="img"
-          aria-label={
-            `預金 ${yen(d)}。` +
-            cond.courses
-              .map(
-                (k) => `${k.name}は預金${yen(k.deposit)}以上${k.mainAccount ? 'とメイン口座' : ''}`,
-              )
-              .join('、')
-          }
-        >
-          <div className={styles.track}>
-            <i style={{ width: `${pos(d).toFixed(1)}%` }} />
-          </div>
-          {cond.courses.map((k, i) => (
-            <span
-              key={k.id}
-              className={i === 3 ? `${styles.tick} ${styles.tickEnd}` : styles.tick}
-              style={{ left: `${POS[i + 1]}%` }}
-            >
-              <span>
-                {SHORT[i]}
-                <br />
-                {manYen(k.deposit)}
-              </span>
-            </span>
-          ))}
+      {view.joined ? (
+        <div className={fan.card} data-tasks={allDone ? 'done' : 'todo'}>
+          <p className={fan.bigK}>預金でやること</p>
+          <ul className={styles.taskList}>
+            {tasks.map((t) => (
+              <li key={t.id} data-task={t.id} data-ok={t.ok ? 'true' : 'false'}>
+                <span aria-hidden="true">{t.ok ? '✓' : '・'}</span>
+                {t.label}
+                {t.id === 'deposit' ? `（${yen(taskDepositOf(cond))}以上）` : ''}
+                <span className={fan.srOnly}>{t.ok ? '。済みました' : '。まだです'}</span>
+              </li>
+            ))}
+          </ul>
+          <p className={styles.actD}>いまの預金（仮）: {yen(d)}</p>
+          {allDone ? (
+            <>
+              <p className={styles.actDone}>✓ すべて済みました</p>
+              <button
+                type="button"
+                className={`${fan.btn} ${fan.btnFull}`}
+                onClick={() => actions.go('home')}
+              >
+                ホームへもどる
+              </button>
+            </>
+          ) : null}
         </div>
-        <dl className={styles.facts} style={{ marginTop: 'var(--s2)' }}>
-          <dt>メイン口座</dt>
-          <dd>{p ? 'はい' : 'いいえ'}</dd>
-          <dt>申し込めるコース</dt>
-          <dd>{open.length ? open.map((k) => k.name).join('・') : 'なし'}</dd>
-          <dt>次に開くコース</dt>
-          <dd>{nx ? `${nx.name}（残りは ${restText(nx, d, p)}）` : 'すべて開いています'}</dd>
-        </dl>
-      </div>
+      ) : (
+        <div className={fan.card}>
+          <p className={fan.bigK}>いまの預金（仮）</p>
+          <p className={`${styles.bigV} ${fan.num}`}>{yen(d)}</p>
+          <div
+            className={styles.gauge}
+            role="img"
+            aria-label={
+              `預金 ${yen(d)}。` +
+              cond.courses
+                .map(
+                  (k) =>
+                    `${k.name}は預金${yen(k.deposit)}以上${k.mainAccount ? 'とメイン口座' : ''}`,
+                )
+                .join('、')
+            }
+          >
+            <div className={styles.track}>
+              <i style={{ width: `${pos(d).toFixed(1)}%` }} />
+            </div>
+            {cond.courses.map((k, i) => (
+              <span
+                key={k.id}
+                className={i === 3 ? `${styles.tick} ${styles.tickEnd}` : styles.tick}
+                style={{ left: `${POS[i + 1]}%` }}
+              >
+                <span>
+                  {SHORT[i]}
+                  <br />
+                  {manYen(k.deposit)}
+                </span>
+              </span>
+            ))}
+          </div>
+          <dl className={styles.facts} style={{ marginTop: 'var(--s2)' }}>
+            <dt>メイン口座</dt>
+            <dd>{p ? 'はい' : 'いいえ'}</dd>
+            <dt>申し込めるコース</dt>
+            <dd>{open.length ? open.map((k) => k.name).join('・') : 'なし'}</dd>
+            <dt>次に開くコース</dt>
+            <dd>{nx ? `${nx.name}（残りは ${restText(nx, d, p)}）` : 'すべて開いています'}</dd>
+          </dl>
+        </div>
+      )}
       <div className={styles.stack}>
-        {(['teiki', 'main', 'deposit'] as const).map((id) => {
+        {ids.map((id) => {
           const def = ACCT_DEF[id];
           // 口座を使う行動は、推し活定期をはじめたあとから
           if (id !== 'teiki' && !started)

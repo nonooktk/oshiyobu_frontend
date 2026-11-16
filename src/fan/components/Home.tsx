@@ -4,8 +4,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { artistView } from '../art/registry';
 import logoMark from '../../assets/img/logo-mark.webp';
-import { depositGapOf, homeActionOf, homeKeyOf } from '../domain/view';
-import { yen } from '../text/format';
+import { PLAN_NAMES, backdropOf, homePhaseOf, rewardOf, upgradesOf } from '../domain/plan';
+import { homeKeyOf } from '../domain/view';
 import { VOICES } from '../text/voices';
 import styles from '../fan.module.css';
 import { useFan } from '../store/FanProvider';
@@ -18,7 +18,33 @@ export function Home() {
   const { state, view, actions } = useFan();
   const o = artistView(state.oshiId);
   const voice = VOICES[o.id];
-  const act = homeActionOf(view);
+  const phase = homePhaseOf(state, view.cond);
+  const canUp = upgradesOf(state.course).length > 0;
+  // 主のボタン（預金でやることが済むまでは 1 つ。済んだあとは「SNSで広める」と「プランを上げる」の 2 つ）
+  const act =
+    phase === 'start'
+      ? {
+          id: 'rejoin',
+          label: '参加するプランを選ぶ',
+          sub: '→ プランの一覧へ',
+          hint: '押すと、プランを選ぶ画面に戻ります',
+          run: actions.rejoin,
+        }
+      : phase === 'tasks'
+        ? {
+            id: 'tasks',
+            label: '預金でやることへ',
+            sub: '→ 推し活定期と預金の準備',
+            hint: '押すと、預金でやることのページへ移ります',
+            run: actions.goTasks,
+          }
+        : {
+            id: 'share',
+            label: 'SNSで広める',
+            sub: '→ 応援が広がります',
+            hint: '押すと、投稿のシートが開きます',
+            run: () => actions.openShare('share'),
+          };
   const key = homeKeyOf(view);
   const lines = voice.home[key](view.heat.stage, view.cond.city);
   const src = o.art.imgs ? (o.art.imgs[Math.max(0, state.homeIdx)] ?? o.art.imgs[0]) : o.art.img;
@@ -35,21 +61,18 @@ export function Home() {
     setPrevHint(hint);
     setPopKey(popKey + 1);
   }
-  // 副のボタン（SNS への投稿）は、申し込んだあとから。まだ投稿していない間だけ。主のボタンが投稿のときは、重ねない
-  const showShare = view.joined && !state.done.share && act.id !== 'share';
-  const note = !view.joined
-    ? act.id === 'apply'
-      ? '押すと、その場で完了します。擬似の動きで、実際の手続きは始まりません。'
-      : act.id === 'teiki'
-        ? '押すと、その場で口座が使える状態になります。デモ用の操作で、実際の手続きは行われません。'
-        : act.id === 'deposit' && view.target
-          ? `${view.target.name}まで、預金はあと ${yen(depositGapOf(view.target, view.fan.acct.deposit))}。額は入力で決めます（仮の預金）。`
-          : '押すと、その場で完了します。擬似の動きで、実際の入出金は始まりません。'
-    : view.status.established
-      ? '開催が決まったことを、仲間にも伝えられます。'
-      : '投稿してくれてありがとう。';
+  const planName = state.course ? PLAN_NAMES[state.course] : '';
+  const hasReward = state.course !== null && rewardOf(state.course) !== null;
+  const note =
+    phase === 'start'
+      ? 'いまは、参加していません。'
+      : phase === 'tasks'
+        ? '預金でやることが済むと、SNSで広める・プランを上げる、に進めます。'
+        : canUp
+          ? '擬似の動きです。実際の投稿・入出金は始まりません。'
+          : 'いちばん上のプランです。応援ありがとう。';
   return (
-    <div className={`${styles.page} ${styles.home}`}>
+    <div className={`${styles.page} ${styles.home}`} data-plan-tier={backdropOf(state.course)}>
       <Strip />
       <div className={styles.homeBar}>
         <img src={logoMark} alt="OSHIYOBU" width={32} height={32} />
@@ -116,51 +139,64 @@ export function Home() {
 
       <Meter view={view} run={state.gaugeRun} />
 
-      {view.joined ? null : (
-        <p className={styles.warn}>
-          <span className={styles.warnIcon} aria-hidden="true">
-            !
-          </span>
-          <span className={styles.warnText}>
-            <Wbr parts={['ここまでは、チケットと特典の', '入手前です。']} />
-          </span>
+      {planName ? (
+        <p className={styles.planLine}>
+          <span className={styles.planChip}>{planName}</span>
+          {hasReward ? (
+            <button
+              type="button"
+              className={`${styles.btn} ${styles.btnText} ${styles.btnSm}`}
+              onClick={() => actions.press(actions.showReward)}
+            >
+              特典を見る
+            </button>
+          ) : null}
         </p>
-      )}
+      ) : null}
 
-      <button
-        ref={nextBtn}
-        type="button"
-        data-act={act.id}
-        className={
-          popKey === 0
-            ? styles.homeNext
-            : `${styles.homeNext} ${popKey % 2 ? styles.btnPopA : styles.btnPopB}`
-        }
-        aria-label={`${act.label}。${act.hint}`}
-        aria-busy={state.held}
-        onClick={() => actions.press(actions.homePrimary)}
-      >
-        <span className={styles.nxL}>
-          {act.label}
-          <i className={styles.chev} aria-hidden="true">
-            ›
-          </i>
-        </span>
-        <span className={styles.nxW}>{act.sub}</span>
-      </button>
-      <div className={styles.slot}>
-        {showShare ? (
+      <div className={phase === 'grow' && canUp ? styles.homePair : undefined}>
+        <button
+          ref={nextBtn}
+          type="button"
+          data-act={act.id}
+          className={
+            popKey === 0
+              ? styles.homeNext
+              : `${styles.homeNext} ${popKey % 2 ? styles.btnPopA : styles.btnPopB}`
+          }
+          aria-label={`${act.label}。${act.hint}`}
+          aria-busy={state.held}
+          onClick={() => actions.press(act.run)}
+        >
+          <span className={styles.nxL}>
+            {act.label}
+            <i className={styles.chev} aria-hidden="true">
+              ›
+            </i>
+          </span>
+          <span className={styles.nxW}>{act.sub}</span>
+        </button>
+        {phase === 'grow' && canUp ? (
           <button
             type="button"
-            className={`${styles.btn} ${styles.btnSecondary} ${styles.btnSm} ${styles.shareBtn}`}
+            data-act="upgrade"
+            className={styles.homeNext}
+            aria-label="プランを上げる。押すと、上のプランの一覧が開きます"
             aria-busy={state.held}
-            onClick={() => actions.press(() => actions.openShare('share'))}
+            onClick={() => actions.press(actions.openUpgrade)}
           >
-            SNSに投稿する（任意）
+            <span className={styles.nxL}>
+              プランを上げる
+              <i className={styles.chev} aria-hidden="true">
+                ›
+              </i>
+            </span>
+            <span className={styles.nxW}>→ 特典が届きます</span>
           </button>
-        ) : (
-          <p className={styles.slotNote}>{note}</p>
-        )}
+        ) : null}
+      </div>
+      <div className={styles.slot}>
+        <p className={styles.slotNote}>{note}</p>
       </div>
     </div>
   );

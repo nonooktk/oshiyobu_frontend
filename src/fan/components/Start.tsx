@@ -1,20 +1,19 @@
 // はじめの画面（推し → コースの 2 ステップ。SP-40）。初めから選んであるので、「次へ」と「このコースを目指して始める」で、ホームへ進む。
 // 呼ぶ市は、どの推しでも久留米市に固定（市を選ぶ画面は無い）。会場の説明は、コースを選ぶ画面に置く。
 import { useEffect, useRef } from 'react';
-import { ARTIST_IDS, canApply, courseOffersOf } from '../../core';
+import { ARTIST_IDS } from '../../core';
 import { ARTISTS_VIEW, artistView } from '../art/registry';
 import logoMark from '../../assets/img/logo-mark.webp';
+import { ENTRY_PLAN, PLAN_NAMES, PLAN_ORDER, rewardOf } from '../domain/plan';
 import { courseOf } from '../domain/view';
 import { yen } from '../text/format';
 import styles from '../fan.module.css';
-import { MyState, PayNote } from '../text/pay';
 import { useFan } from '../store/FanProvider';
 import { Av, WholeArt } from './Art';
-import { CourseFace } from './CourseFace';
 import { Strip } from './Frame';
 import { Wbr } from './text';
 
-const TITLES = ['推しを選ぶ', '目指すコースを選ぶ'] as const;
+const TITLES = ['推しを選ぶ', '参加するプランを選ぶ'] as const;
 
 export function Start() {
   const { state, view, actions } = useFan();
@@ -29,7 +28,6 @@ export function Start() {
 
   const o = artistView(s.oshiId);
   const c = view.cond; // 会場は、久留米の既定の会場に固定
-  const { deposit, pay } = state.acct;
 
   return (
     <div className={`${styles.page} ${step === 1 ? styles.step3 : ''}`}>
@@ -95,83 +93,59 @@ export function Start() {
               熱量が満ちると、開催が決まります
             </p>
             <p className={styles.rcNote}>
-              <MyState deposit={deposit} pay={pay} />
+              最初に選べるのは、{PLAN_NAMES[ENTRY_PLAN]}
+              です。上のプランは、参加のあとに上げられます。
             </p>
-            <p className={styles.rcNote}>
-              <PayNote />
-            </p>
-            <div className={styles.rcList} role="group" aria-label="目指すコース">
-              {courseOffersOf(c.venueId).map((k) => {
-                const sel = k.id === s.seat;
+            <ul className={styles.planList} aria-label="プラン">
+              {PLAN_ORDER.map((id) => {
+                const k = courseOf(c, id);
+                const open = id === ENTRY_PLAN;
+                const r = rewardOf(id);
                 return (
-                  <button
-                    key={k.id}
-                    type="button"
-                    className={sel ? `${styles.rcard} ${styles.sel}` : styles.rcard}
-                    aria-pressed={sel}
-                    onClick={() => actions.startPick('seat', k.id)}
+                  <li
+                    key={id}
+                    className={styles.planItem}
+                    data-plan={id}
+                    aria-disabled={open ? undefined : 'true'}
                   >
-                    <CourseFace
-                      k={courseOf(c, k.id)}
-                      cond={c}
-                      a={o}
-                      deposit={deposit}
-                      pay={pay}
-                      mark={sel ? '選択中' : ''}
-                      ring={!sel}
-                    />
-                  </button>
+                    <p className={styles.planName}>
+                      {PLAN_NAMES[id]}
+                      {open ? '（✓ 選択中）' : ''}
+                    </p>
+                    <dl className={styles.planFacts}>
+                      <dt>確保する額</dt>
+                      <dd className={styles.num}>{yen(k.price)}</dd>
+                      {r ? (
+                        <>
+                          <dt>特典</dt>
+                          <dd>{r.label}</dd>
+                        </>
+                      ) : null}
+                    </dl>
+                    {open ? null : <p className={styles.planLock}>参加のあとに、上げられます</p>}
+                  </li>
                 );
               })}
-            </div>
+            </ul>
           </>
         ) : null}
       </div>
       <div className={styles.stFoot}>
         {step === 1 ? (
-          <SelLine seat={courseOf(c, s.seat)} ok={canApply(courseOf(c, s.seat), deposit, pay)} />
+          <p className={styles.stSel}>
+            <Wbr
+              parts={['押すと、参加の確認が出ます。', 'デモのため、', '実際の決済は行われません。']}
+            />
+          </p>
         ) : null}
         <button
           type="button"
           className={`${styles.btn} ${styles.btnFull}`}
           onClick={actions.startNext}
         >
-          {step < 1
-            ? '次へ'
-            : canApply(courseOf(c, s.seat), deposit, pay)
-              ? 'この内容で申し込む'
-              : 'このコースを目指して始める'}
+          {step < 1 ? '次へ' : `${PLAN_NAMES[ENTRY_PLAN]}で参加する`}
         </button>
       </div>
     </div>
-  );
-}
-
-/** 選んだコースに合わせた 1 文（下に固定した帯の、ボタンの上）。 */
-function SelLine({ seat, ok }: { seat: { name: string; price: number }; ok: boolean }) {
-  return (
-    <p className={styles.stSel}>
-      {ok ? (
-        <Wbr
-          parts={[
-            `${seat.name} ${yen(seat.price)}は、`,
-            '成立まで',
-            '口座の中で',
-            '確保されます。',
-          ]}
-        />
-      ) : (
-        <Wbr
-          parts={[
-            `${seat.name}は、`,
-            'いまは申し込めません。',
-            '条件がそろうと',
-            '申し込めます。',
-            'お金はまだ',
-            '動きません。',
-          ]}
-        />
-      )}
-    </p>
   );
 }

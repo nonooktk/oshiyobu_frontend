@@ -98,7 +98,7 @@ Vite 8・React 19・TypeScript（strict）の静的サイト（3 ページ: `/` 
 | `npm run check:api` | API の `/healthz`（`coreVersion` が `core.lock.json` と一致するか）・メーターの形・404・CORS・応答の時間。`-- --write` を付けたときだけ、試験用の公演に申し込みを送り、冪等性と人数の増え方も確かめる |
 | `npm run check:live` | 実ブラウザ（Chrome）で `/`・`/fan/?p=4`・`/presenter/` を開き、エラー 0・失敗した通信 0・札 2 枚あり、を確かめる。**既定（ひとり体験）**: `/fan/` は API への通信が 0 件。`/presenter/` の「接続を確認する」を押すと、`/healthz` が 200 で返り、CORS で許され、画面に応答の時間が出る（CSP と CORS を通って、ブラウザから API に届いた証拠。リセットは押さない）。**`-- --shared`**（共有メーターでビルドした画面）: `/fan/` からのメーター取得が 200 で返る |
 | `npm run api:local` | 手元で API を立てる（`core.lock.json` で固定した版の backend。`Ctrl + C` で止める） |
-| `npm run accept` | `verify` → `check:api` → `check:live` → ひとり体験の通し（`npm run e2e:solo`。実ブラウザで、はじめの画面 → 申し込む → 80% → 仲間を呼ぶ → 成立。20 秒ほど）を順に回し、最後に項目ごとの表を出す。**検収の入口**。`-- --skip-solo` で通しを飛ばせる（その項目は「飛ばした」になり、未完了） |
+| `npm run accept` | `verify` → `check:api` → `check:live` → ひとり体験の通し（`npm run e2e:solo`。実ブラウザで、はじめの画面 → 参加 → 預金でやること → SNSで広める → プランを上げる。20 秒ほど）を順に回し、最後に項目ごとの表を出す。**検収の入口**。`-- --skip-solo` で通しを飛ばせる（その項目は「飛ばした」になり、未完了） |
 
 ### 8.3 API の接続先の渡し方
 
@@ -159,7 +159,7 @@ Vite 8・React 19・TypeScript（strict）の静的サイト（3 ページ: `/` 
 | `check:live` の「`/fan/` は API への通信が 0 件」 | ひとり体験（既定）のはずが、ファン向けが API を呼んでいる。`VITE_SHARED_METER=on` がビルドに入っている／`src/shared/meter/config.ts` を変えた | 環境変数・GitHub の Variable を確かめる。共有メーターで動かす意図なら `--shared` で確かめる（意図がなければ、管理者へ） |
 | `check:live` の「`/presenter/` の接続を確認する」 | `/healthz` が 200 で返らない／CORS で許されない／画面に応答の時間が出ない。`VITE_API_BASE` がビルドに入っていない、API が止まっている、接続元が違う、のどれか | 接続先の値と API は管理者に確かめる。画面の文言を変えたなら、`scripts/check-live.mjs` の読み取りも合わせる |
 | `check:live` の「札が 2 枚ある」（各ページ） | `DemoBadge` を消した・文言を変えた | 「6. 画面の決まり」のとおりに戻す |
-| `accept` の「ひとり体験の通し」 | はじめの画面 → 申し込む → 80% → 仲間を呼ぶ → 成立、のどこかが落ちている。ファン向けの画面・文言の変更が原因のことが多い | 出力の末尾の落ちた手順と、画面写真（`test-results/solo`）を見る。`e2e-solo/solo.spec.ts` の期待値は勝手に変えない |
+| `accept` の「ひとり体験の通し」 | はじめの画面 → 参加 → 預金でやること → SNSで広める → プランを上げる、のどこかが落ちている。ファン向けの画面・文言の変更が原因のことが多い | 出力の末尾の落ちた手順と、画面写真（`test-results/solo`）を見る。`e2e-solo/solo.spec.ts` の期待値は勝手に変えない |
 | `accept` の「ひとり体験の通し」が「飛ばした」 | e2e:solo が使うポート（5297・8798）が使用中 | 使っているものを確かめる（自分が起動したものだけを止める）。または `--skip-solo` |
 | `check:live --shared` の「メーターの取得」 | 取得の通信が出ない／200 で返らない／CORS で許可されない。多くは、`VITE_API_BASE` がビルドに入っていない、`check:csp` が落ちている、API が止まっている、接続元が違う、のどれか | `check:csp` を先に直す。API と接続元は管理者に確かめる |
 | `check:live` の「ブラウザの起動」 | Chrome が入っていない | Google Chrome を入れる |

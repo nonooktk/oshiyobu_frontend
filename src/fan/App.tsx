@@ -10,6 +10,7 @@ import { NextAction } from './components/NextAction';
 import { SoundToggle } from './components/SoundToggle';
 import type { SoundPlace } from './components/SoundToggle';
 import { Start } from './components/Start';
+import { ConfirmSheet, RewardSheet, UpgradeSheet } from './components/PlanLayers';
 import type { LayersModule, PagesModule } from './prefetch';
 import { setupFanPrefetch } from './prefetch';
 import { PAGE_TITLES } from './text/ui';
@@ -138,6 +139,12 @@ function Screen() {
             return <ThanksLayer key="thanks" inert={inert} />;
           case 'share':
             return <ShareSheet key="share" mode={layer.mode} inert={inert} />;
+          case 'confirm':
+            return <ConfirmSheet key="confirm" inert={inert} />;
+          case 'upgrade':
+            return <UpgradeSheet key="upgrade" inert={inert} />;
+          case 'reward':
+            return <RewardSheet key={`reward-${i}`} plan={layer.plan} inert={inert} />;
           case 'cancel':
             return (
               <ChunkBoundary<LayersModule>

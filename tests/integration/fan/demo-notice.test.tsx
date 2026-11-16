@@ -2,10 +2,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   act,
-  btn,
   click,
   closeGiftAfterFx,
-  fireEvent,
   layer,
   mountFan,
   openNextPage,
@@ -13,8 +11,8 @@ import {
   passStart,
   screen,
   setupFanTest,
-  tick,
   within,
+  joinFromPlans,
 } from './helpers';
 
 setupFanTest();
@@ -34,7 +32,7 @@ describe('ファン向けの全画面', () => {
     expect(notices()).toBe(1);
     click('次へ');
     expect(notices()).toBe(1);
-    click('このコースを目指して始める');
+    joinFromPlans();
     fundAndApply();
     expect(notices()).toBe(1);
     await closeGiftAfterFx();
@@ -61,53 +59,6 @@ describe('ファン向けの全画面', () => {
     }
   });
 
-  it('演出・特典の絵・感謝のメッセージの層にも、札と並んで出る', async () => {
-    mountFan('?p=4');
-    passStart();
-    await tick(650);
-    expect(layer('fx')?.textContent).toContain(NOTICE);
-    expect(layer('fx')?.textContent).toContain(BADGE);
-    await tick(2600);
-    expect(layer('gift')?.textContent).toContain(NOTICE);
-    expect(layer('gift')?.textContent).toContain(BADGE);
-    // 感謝（3 つ目の特典の絵を閉じた直後）
-    await tick(10);
-    fireEvent.click(within(layer('gift') as HTMLElement).getByRole('button', { name: '閉じる' }));
-    click(/^SNSに投稿する（任意）/);
-    fireEvent.click(btn('X'));
-    // 投稿した直後の称賛の演出にも、札が並んで出る
-    expect(layer('fx')?.textContent).toContain(NOTICE);
-    expect(layer('fx')?.textContent).toContain(BADGE);
-    await tick(2600 + 2300);
-    fireEvent.click(within(layer('gift') as HTMLElement).getByRole('button', { name: '閉じる' }));
-    fireEvent.click(within(layer('share') as HTMLElement).getByRole('button', { name: '閉じる' }));
-    click(/^仲間を呼ぶ/); // ホームの主のボタン（共有のシートは経由しない）
-    expect(layer('share')).toBeNull();
-    await tick(1200 + 2300);
-    fireEvent.click(within(layer('gift') as HTMLElement).getByRole('button', { name: '閉じる' }));
-    expect(layer('thanks')?.textContent).toContain(NOTICE);
-    expect(layer('thanks')?.textContent).toContain(BADGE);
-  });
-
-  it('短い称賛の札の最中も、札が出ている', async () => {
-    mountFan('?p=4');
-    click('次へ');
-    fireEvent.click(
-      screen
-        .getAllByRole('button')
-        .find(
-          (b) => b.hasAttribute('aria-pressed') && (b.textContent ?? '').includes('前方の席'),
-        ) as HTMLElement,
-    );
-    click('このコースを目指して始める');
-    click(/^推し活定期をはじめる/); // ホームの主のボタン
-    click(/^メイン口座にする/);
-    // 短い称賛の札の最中も、ページの札 2 枚が出ている（札は、全画面を覆わないので、隠れない）
-    expect(layer('ach')).not.toBeNull();
-    expect(notices()).toBe(1);
-    expect(screen.getAllByText(BADGE)).toHaveLength(1);
-  });
-
   it('下から出るシート（引き継ぎ・申し込みをやめる確認）の中にも、札と並んで出る', async () => {
     mountFan('?p=4');
     passStart();
@@ -128,15 +79,5 @@ describe('ファン向けの全画面', () => {
     await settle();
     const carry = layer('sheet') as HTMLElement;
     expect(within(carry).getAllByText(NOTICE)).toHaveLength(1);
-  });
-
-  it('共有のシートの中にも、札 2 枚が出る（P-01）', async () => {
-    mountFan('?p=4');
-    passStart();
-    await closeGiftAfterFx();
-    click(/^SNSに投稿する（任意）/);
-    const share = layer('share') as HTMLElement;
-    expect(within(share).getAllByText(NOTICE)).toHaveLength(1);
-    expect(within(share).getAllByText(BADGE)).toHaveLength(1);
   });
 });

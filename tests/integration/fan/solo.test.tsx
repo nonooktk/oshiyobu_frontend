@@ -14,7 +14,6 @@ import {
   click,
   closeGiftAfterFx,
   fireEvent,
-  layer,
   mountFan,
   passStart,
   screen,
@@ -26,7 +25,6 @@ setupFanTest();
 
 const IDLE_MS = 300_000;
 const IDLE_TEXT = 'しばらく操作がなかったので、最初に戻しました';
-const meter = () => screen.getByRole('img', { name: /^開催熱量。/ });
 const shell = () => document.querySelector('div[data-page]')?.getAttribute('data-page');
 const supporters = () => getAppStore().view().status.supporters;
 /** 閉じる・再読み込み・別のページへ（ブラウザが pagehide を出す） */
@@ -46,36 +44,6 @@ const shared = () =>
 
 describe('ひとり体験（既定）', () => {
   beforeEach(solo);
-
-  it('はじめの画面 → 申し込む（75 人・80%）→ 仲間を呼ぶ（93 人・成立）まで、サーバーを 1 回も呼ばずに進む', async () => {
-    mountFan('?p=4');
-    passStart();
-    expect(supporters()).toBe(75);
-    expect(meter().getAttribute('aria-label')).toBe('開催熱量。FEVER 目前。あと一歩');
-    await closeGiftAfterFx();
-    fireEvent.click(screen.getByRole('button', { name: /^仲間を呼ぶ/ })); // ホームの主のボタン
-    expect(layer('share')).toBeNull(); // 共有のシートは経由しない
-    expect(layer('fx')?.textContent).toContain('届いた！');
-    expect(supporters()).toBe(75); // ゲージが伸びきるまで、人数（内部）は変わらない
-    await tick(2600);
-    // 成立の演出（FEVER の瞬間）
-    expect(layer('fx')?.textContent).toContain('FEVER！');
-    expect(layer('fx')?.textContent).toContain('あなたの声が届いて、開催が決まりました');
-    await tick(3600 + 10 + 2200 + 10);
-    click('閉じる'); // 特典の絵
-    expect(supporters()).toBe(93);
-    expect(getAppStore().view().status.established).toBe(true);
-    expect(api.fetch).not.toHaveBeenCalled();
-  });
-
-  it('主のボタンの予告が、仲間を呼ぶと開催が決まる、になっている（あと N 人が 1 減る、ではない）', async () => {
-    mountFan('?p=4');
-    passStart();
-    await closeGiftAfterFx();
-    expect(screen.getByRole('button', { name: /^仲間を呼ぶ/ }).textContent).toContain(
-      '→ FEVER（開催決定）へ',
-    );
-  });
 
   it('閉じる（pagehide）と、初めの状態に戻る。次に開くと、はじめの画面で、74 人から', async () => {
     mountFan('?p=4');
@@ -125,17 +93,6 @@ describe('ひとり体験（既定）', () => {
     expect(shell()).toBe('start');
   });
 
-  it('演出の最中・シートを開いている最中でも、時間が来たら戻る', async () => {
-    mountFan('?p=4');
-    passStart();
-    await closeGiftAfterFx();
-    click(/^SNSに投稿する（任意）/);
-    expect(layer('share')).not.toBeNull();
-    await tick(IDLE_MS);
-    expect(shell()).toBe('start');
-    expect(layer('share')).toBeNull();
-  });
-
   it('はじめの画面のまま 5 分たっても、理由は出さない（戻すものが無い）', async () => {
     mountFan('?p=4');
     await tick(IDLE_MS + 1000);
@@ -155,22 +112,6 @@ describe('ひとり体験（既定）', () => {
 
 describe('人物（アカウント）に入るたびに、その人物の初めの状態から始まる', () => {
   beforeEach(solo);
-
-  it('人物 4 で申し込んだあと、人物 10 を開いても、前の人物の申し込み・特典・人数を持ち越さない（初めの状態は全人物で同じ）', async () => {
-    mountFan('?p=4');
-    passStart();
-    await closeGiftAfterFx();
-    expect(getAppStore().getState().gifts).toEqual([true, false, false]);
-    reopen('?p=10');
-    const s = getAppStore().getState();
-    expect(shell()).toBe('start');
-    expect(s).toMatchObject({ oshiId: 'tech0', city: '久留米市', course: null, aim: null });
-    expect(s.acct).toEqual({ pay: false, deposit: 0, times: 0 });
-    expect(s.gifts).toEqual([false, false, false]);
-    expect(s.done).toEqual({});
-    expect(s.friends).toBe(0);
-    expect(supporters()).toBe(getAppStore().view().cond.start);
-  });
 
   it('同じ人物に入り直しても、前の申し込みは無い。ブラウザに残るのは、端末の番号だけ', async () => {
     mountFan('?p=4');

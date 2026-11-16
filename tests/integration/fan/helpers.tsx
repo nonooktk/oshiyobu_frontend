@@ -87,13 +87,17 @@ export const click = (name: string | RegExp): void => {
  * はじめの画面を進めて、参加するところまで（推し → 最安のプラン → 参加の確認 →「参加する」→ ホーム）。
  * 参加の称賛の演出は、出たままにしない（終わるまで待つ）。預金でやることは、まだ済んでいない。
  */
-export function passStartOnly(): void {
-  click('次へ');
+/** プランの一覧（はじめの画面 2/2）から、参加の確認 →「参加する」→ ホーム（称賛が終わるまで待つ）。 */
+export function joinFromPlans(): void {
   click(/で参加する$/);
   click('参加する');
   act(() => {
     vi.advanceTimersByTime(2600);
   });
+}
+export function passStartOnly(): void {
+  click('次へ');
+  joinFromPlans();
 }
 
 /**
@@ -116,10 +120,10 @@ export function passStart(): void {
   fundAndApply();
 }
 
-/** 特典の絵（層）を閉じる。 */
+/** 称賛の演出が終わるまで待ち、短い称賛の札も消す（古い作りでは、ここで特典の絵を閉じていた。いまは、絵の層は出ない）。 */
 export async function closeGiftAfterFx(): Promise<void> {
   await tick(700 + 2600);
-  click('閉じる');
+  act(() => getAppStore().actions.clearAch());
 }
 
 export const layer = (name: string): HTMLElement | null =>

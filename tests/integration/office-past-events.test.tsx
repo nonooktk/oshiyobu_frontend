@@ -72,10 +72,16 @@ describe('事務所向けの ④ これまでの公演', () => {
     );
   });
 
-  it('公演の記録が無い会場（Cボックス・RISE UP）は「記録は、まだありません」で、④ の札は出さない', () => {
+  it('公演の記録が無い会場（RISE UP・メディキット県民文化センター）は「記録は、まだありません」で、④ の札は出さない', () => {
+    // RISE UP は会場のデータも無い。メディキットは会場のデータはあるが、公演が 0 件
+    const cases = [
+      { city: '久留米市', coreId: 'riseup', name: /RISE UP/ },
+      { city: '宮崎市', coreId: 'MYZ-004', name: /メディキット県民文化センター/ },
+    ];
     render(<App />);
-    choose('久留米市');
-    for (const name of [/久留米シティプラザ Cボックス/, /RISE UP/]) {
+    for (const { city, coreId, name } of cases) {
+      expect(eventsOf(coreId)).toHaveLength(0);
+      choose(city);
       fireEvent.click(screen.getByRole('button', { name }));
       expect(within(past()).getByTestId('past-none').textContent).toBe('記録は、まだありません');
       expect(within(past()).queryByTestId('real-chip')).toBeNull();

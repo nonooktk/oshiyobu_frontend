@@ -969,6 +969,15 @@
   border-radius: 2px;
   vertical-align: -1px;
 }
+/* ⑥ の凡例の下の、需要の出どころ（登録 → 預金の支えがある熱いファン）。③ の規模感と同じ 13px */
+.meetSource {
+  margin: var(--s1) 0 0;
+  font-size: 13px;
+  color: var(--ink);
+}
+.meetSource b {
+  font-weight: 700;
+}
 .meetShort {
   margin: var(--s2) 0 0;
   font-size: 14px;

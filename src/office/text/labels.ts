@@ -280,3 +280,24 @@ export const crowdText = {
   ratio: (cap: number, crowd: number): string =>
     `キャパ ${cap} ÷ ${crowd}人 = ${(cap / crowd).toFixed(2)}`,
 } as const;
+
+/** ⑥ の凡例の下の、需要の出どころ（要件 R-03）。数字は core の値のまま（区切りだけ付ける）。
+    並べると「久留米市の登録 1,380人 → 預金の支えがある熱いファン（見込み） 187人」 */
+export function demandSource(
+  city: string,
+  reg: number,
+  expected: number,
+): {
+  readonly lead: string;
+  readonly reg: string;
+  readonly mid: string;
+  readonly expected: string;
+} {
+  const people = (n: number): string => `${n.toLocaleString('ja-JP')}人`;
+  return {
+    lead: `${city}の登録`,
+    reg: people(reg),
+    mid: `→ ${text.rankHead}`,
+    expected: people(expected),
+  };
+}

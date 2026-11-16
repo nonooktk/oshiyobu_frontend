@@ -1,4 +1,4 @@
-import { COST_ITEM_IDS, demandOf } from '../../core';
+import { cityIndex, COST_ITEM_IDS, demandOf, metricValues } from '../../core';
 import styles from '../office.module.css';
 import {
   quadDots,
@@ -14,6 +14,7 @@ import { ARTIST_TEXT } from '../text/artists';
 import {
   capChip,
   COST_LABELS,
+  demandSource,
   depositText,
   heatText,
   quadLineText,
@@ -393,6 +394,21 @@ function Summary({ view }: { readonly view: OfficeView }) {
   );
 }
 
+/** ⑥ の凡例の下の 1 行: 選んだ市の登録者数 → 預金の支えがある熱いファン（見込み）。
+    数字は core の値のまま（登録は地図の丸の面積と同じ metricValues、見込みは横棒と同じ view.expected） */
+function DemandSource({ expected }: { readonly expected: number }) {
+  const artistId = useOffice((s) => s.artistId);
+  const city = useOffice((s) => s.city);
+  if (city === null) return null;
+  const reg = metricValues(artistId, 'reg')[cityIndex(city)] ?? 0;
+  const line = demandSource(city, reg, expected);
+  return (
+    <p className={styles.meetSource} data-testid="demand-source">
+      {line.lead} <b>{line.reg}</b> {line.mid} <b>{line.expected}</b>
+    </p>
+  );
+}
+
 /** ⑥ 確度: 満たせるか（札・横棒）と、熱量と資金（4 象限・線を動かす操作） */
 function Certainty({ view }: { readonly view: OfficeView }) {
   const { condition, expected, level, low } = view;
@@ -443,6 +459,8 @@ function Certainty({ view }: { readonly view: OfficeView }) {
           {text.legendNeed}
         </span>
       </p>
+      {/* 需要の出どころ（R-03）。強調はしない（見込みの強調は、横棒の「見込み」のほう） */}
+      <DemandSource expected={expected} />
       {low && (
         <p className={styles.meetShort}>
           <Changed k="shortfall" now={view.shortfall} unit="人">

@@ -1,9 +1,10 @@
 // ひとり体験（既定）の、実ブラウザでの通し（手元の Google Chrome・幅 390px・ポート 5297）。
-// 基準の公演（人物 4・Tech0サステナアイドル × 久留米市 × Cボックス）を、
-//   はじめの画面 → ホーム（点火）→ 推し活定期をはじめる（あたたまってきた）→ 預金を積み増して条件に届く（ヒートアップ）
-//   → 申し込む（FEVER 目前の称賛）→ ホームの主のボタン「仲間を呼ぶ」（届いた！ → ゲージが加速して伸びる → FEVER の瞬間）
-//   → 閉じて開き直す（はじめの画面・熱量は初めから）
-// まで通す。共有のシートは経由しない。大きい文字が、画面の左右に収まることも確かめる。API の接続先つきでビルドしてあるが、共有メーターではないので、偽の API（8798）への要求は 0 件。
+// 基準の公演（人物 4・Tech0サステナアイドル × 久留米市 × Cボックス）を、新しい流れ（docs/fan/要件.md）で通す:
+//   はじめの画面 → プランの一覧（上の 3 つは選べない）→ 参加の確認 → 参加する → ホーム
+//   → 預金でやること（推し活定期をはじめる・預金を積み増す）→ SNSで広める → プランを上げる（ゴールド → ダイヤモンド。背景と特典）
+//   → 閉じて開き直す（はじめの画面）
+// 開催熱量は、どの時点でも「FEVER 目前」・ゲージ 8 割付近のまま。大きい文字が、画面の左右に収まることも確かめる。
+// API の接続先つきでビルドしてあるが、共有メーターではないので、偽の API（8798）への要求は 0 件。
 // 各段の画面写真を、環境変数 SOLO_SHOTS の場所（既定は test-results/solo）に置く
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -12,6 +13,7 @@ import type { Page } from '@playwright/test';
 
 const API = 'http://127.0.0.1:8798';
 const SHOTS = process.env.SOLO_SHOTS ?? 'test-results/solo';
+const HEAT = '開催熱量。FEVER 目前。あと一歩';
 // ファン向けの画面には、人数・達成率の数字は出ない（G-08）。ホームのゲージは「開催熱量。段階の名前。距離のことば」
 const meter = (page: Page) => page.getByRole('img', { name: /^開催熱量。/ });
 const layer = (page: Page, name: string) => page.locator(`[data-layer="${name}"]`);
@@ -31,57 +33,37 @@ const titleInside = async (page: Page, width: number): Promise<boolean> => {
   return box !== null && box.x >= 0 && box.x + box.width <= width;
 };
 /**
- * はじめの画面（推し → コース。市の選択は無い）を進めて、ホームで、推し活定期をはじめる → 預金を積み増す（額の入力は、条件にちょうど届く額が
- * 初めから入っている）→ 申し込む、まで進める（主のボタンの 1 つずつ）。shots があれば、各段の画面写真を置く。
- */
-const startToApply = async (page: Page, shots = false, clock = false): Promise<void> => {
-  const snap = async (name: string): Promise<void> => {
-    if (shots) await shot(page, name);
-  };
-  await expect(page.getByText(/会場:/)).toHaveCount(0); // 1 / 2（推し）には、会場の説明は無い
-  await page.getByRole('button', { name: '次へ' }).click();
-  await expect(page.getByRole('heading', { name: '目指すコースを選ぶ' })).toBeVisible();
-  await expect(page.getByText(/会場: 久留米シティプラザ Cボックス/)).toBeVisible();
-  await snap('01b-course');
-  await page.getByRole('button', { name: 'このコースを目指して始める' }).click();
-  await expect(page.getByRole('button', { name: /^推し活定期をはじめる/ })).toBeVisible();
-  // 開いた直後は 点火（行動のたびに、段階が 1 つずつ上がる）
-  await expect(meter(page)).toHaveAttribute('aria-label', '開催熱量。点火。はじまったところ');
-  await snap('02a-home-before-start');
-  await page.getByRole('button', { name: /^推し活定期をはじめる/ }).click();
-  await expect(layer(page, 'ach').getByText('はじめてくれてありがとう。')).toBeVisible();
-  await expect(
-    layer(page, 'ach').getByText('熱量が「あたたまってきた」へ進みました。'),
-  ).toBeVisible();
-  await expect(meter(page)).toHaveAttribute(
-    'aria-label',
-    '開催熱量。あたたまってきた。だんだん近づいてきた',
-  );
-  await expect(
-    page.getByText('推し活定期をはじめました。デモ用の操作で、実際の手続きは行われません').first(),
-  ).toBeVisible(); // 画面のトースト（読み上げ用の領域にも同じ文がある）
-  await snap('02b-started');
-  await settle(page, clock); // 押した直後は、次の押下を受けない
-  await page.getByRole('button', { name: /^預金を積み増す/ }).click();
-  await expect(page.getByRole('textbox', { name: '積み増す額（円）' })).toHaveValue('20000'); // 条件にちょうど届く額
-  await snap('02c-deposit-input');
-  await page.getByRole('button', { name: '積み増す', exact: true }).click();
-  await expect(layer(page, 'ach').getByText('申し込めるようになりました')).toBeVisible();
-  await expect(layer(page, 'ach').getByText('熱量が「ヒートアップ」へ進みました。')).toBeVisible();
-  await expect(meter(page)).toHaveAttribute('aria-label', '開催熱量。ヒートアップ。もう少し');
-  await snap('02d-reached');
-  await expect(page.getByRole('button', { name: /^申し込む/ })).toBeVisible();
-  await snap('02e-home-apply');
-  await settle(page, clock);
-  await page.getByRole('button', { name: /^申し込む/ }).click();
-};
-/**
  * 主のボタンを押したあと、次の押下を受けない間（0.6 秒ほど。連打・ダブルタップで 2 段進むのを止めている）を待つ。
  * 時計を止めている台本（clock）は、時計を進める。
  */
-const settle = async (page: Page, clock = false): Promise<void> => {
-  if (clock) await page.clock.runFor(700);
-  else await page.waitForTimeout(700);
+const settle = async (page: Page, clock = false, ms = 700): Promise<void> => {
+  if (clock) await page.clock.runFor(ms);
+  else await page.waitForTimeout(ms);
+};
+/** はじめの画面 → プランの一覧 → 参加の確認 →「参加する」→ ホーム（参加の称賛が終わるまで）。 */
+const startToJoin = async (page: Page, shots = false, clock = false): Promise<void> => {
+  const snap = async (name: string): Promise<void> => {
+    if (shots) await shot(page, name);
+  };
+  await page.getByRole('button', { name: '次へ' }).click();
+  await expect(page.getByRole('heading', { name: '参加するプランを選ぶ' })).toBeVisible();
+  await expect(page.locator('li[data-plan]')).toHaveCount(4);
+  await expect(page.locator('li[data-plan][aria-disabled="true"]')).toHaveCount(3); // 上の 3 つは選べない
+  await expect(page.locator('li[data-plan] button')).toHaveCount(0);
+  await snap('01b-plans');
+  await page.getByRole('button', { name: /で参加する$/ }).click();
+  const confirm = page.getByRole('dialog', { name: '参加しますか？' });
+  await expect(confirm).toBeVisible();
+  await expect(confirm.getByText(/実際の決済・入出金は行われません/)).toBeVisible();
+  await settle(page, clock, 400);
+  await snap('02a-confirm');
+  await page.getByRole('button', { name: '参加する', exact: true }).click();
+  await expect(layer(page, 'fx').getByText('ようこそ！')).toBeVisible();
+  await settle(page, clock, 1000);
+  if (shots) expect(await titleInside(page, 390)).toBe(true); // 大きい文字が、左右にはみ出さない
+  await snap('02b-fx-join');
+  await settle(page, clock, 2200);
+  await expect(page.getByRole('button', { name: /^預金でやることへ/ })).toBeVisible();
 };
 /** 偽の API が受けた要求（取得・申し込み）。接続の確認（/healthz）は数えない */
 const apiRequests = async (): Promise<{ method: string; path: string }[]> =>
@@ -93,7 +75,7 @@ test.beforeEach(async () => {
   await fetch(`${API}/__control`, { method: 'POST', body: JSON.stringify({ resetState: true }) });
 });
 
-test('はじめの画面 → 申し込む（FEVER 目前）→ 仲間を呼ぶ（届いた！ → ゲージが加速 → FEVER・開催決定）→ 閉じて開き直す（はじめの画面・初めの熱量）', async ({
+test('はじめの画面 → 参加 → 預金でやること → SNSで広める → プランを上げる（背景と特典）→ 閉じて開き直す（はじめの画面）', async ({
   context,
   page,
 }) => {
@@ -106,78 +88,93 @@ test('はじめの画面 → 申し込む（FEVER 目前）→ 仲間を呼ぶ�
   await expect(page.getByText('動作確認用のデモ画面です')).toBeVisible();
   await shot(page, '01-start');
 
-  // ② はじめる → 積み増す → 申し込む（FEVER 目前の演出）
-  await startToApply(page, true);
-  await expect(layer(page, 'fx').getByText('FEVER 目前！')).toBeVisible();
-  await page.waitForTimeout(1200);
-  await expect(layer(page, 'fx').getByText('申し込みありがとう。あなたの一歩で、')).toBeVisible();
-  await expect(layer(page, 'fx').getByText('FEVER 目前まで来ました')).toBeVisible();
-  expect(await titleInside(page, 390)).toBe(true); // 大きい文字が、左右にはみ出さない
-  await shot(page, '02-fx-fever-soon');
-  await expect(layer(page, 'gift')).toBeVisible({ timeout: 8000 }); // 演出のあと、特典 1/3 の絵
-  await shot(page, '03-gift-1');
-  await layer(page, 'gift').getByRole('button', { name: '閉じる' }).click();
-  await expect(meter(page)).toHaveAttribute('aria-label', '開催熱量。FEVER 目前。あと一歩');
-  await shot(page, '04-home-fever-soon');
+  // ② プランの一覧 → 参加の確認 → 参加する
+  await startToJoin(page, true);
+  await expect(meter(page)).toHaveAttribute('aria-label', HEAT);
+  const fill0 = await gaugeFill(page);
+  expect(fill0).toBeGreaterThan(0.75);
+  expect(fill0).toBeLessThan(0.85); // ゲージは 8 割付近
+  await expect(page.locator('button[data-act]')).toHaveCount(1); // 主のボタンは 1 つ
+  await shot(page, '03-home-tasks');
 
-  // ③ 仲間を呼ぶ（ホームの主のボタン。共有のシートは出ない）→ 届いた！ → ゲージが終わりに近いほど速く伸びる → FEVER の瞬間
-  await expect(page.getByRole('button', { name: /^SNSに投稿する（任意）/ })).toBeVisible(); // 副のボタン（申し込んだあとから）
-  await page.getByRole('button', { name: /^仲間を呼ぶ/ }).click();
-  await expect(layer(page, 'share')).toHaveCount(0);
-  await expect(layer(page, 'fx').getByText('届いた！')).toBeVisible();
-  const samples = await page.evaluate(
-    () =>
-      new Promise<{ t: number; g: number }[]>((resolve) => {
-        const out: { t: number; g: number }[] = [];
-        const t0 = performance.now();
-        const bar = document.querySelector('[data-heat] i');
-        const tick = (): void => {
-          const t = performance.now() - t0;
-          const m = bar
-            ? /inset\(\s*[\d.]+(?:px)?\s+([\d.]+)%/.exec(getComputedStyle(bar).clipPath)
-            : null;
-          out.push({ t, g: m ? 1 - Number(m[1]) / 100 : Number.NaN });
-          if (t < 2400) requestAnimationFrame(tick);
-          else resolve(out);
-        };
-        requestAnimationFrame(tick);
-      }),
-  );
-  await shot(page, '05-friend-reach');
-  const at = (ms: number): number => samples.find((p) => p.t >= ms)?.g ?? Number.NaN;
-  const early = at(1200) - at(0); // 前半の伸び
-  const late = at(2400) - at(1200); // 後半の伸び
-  expect(early).toBeGreaterThanOrEqual(0);
-  expect(late).toBeGreaterThan(early * 2); // 終わりに近いほど速く伸びる
-  await expect(layer(page, 'fx').getByText('FEVER！', { exact: true })).toBeVisible({
-    timeout: 8000,
-  });
-  await expect(layer(page, 'fx').getByText('あなたの声が届いて、開催が決まりました')).toBeVisible();
+  // ③ 預金でやること（推し活定期をはじめる → 預金を積み増す）
+  await page.getByRole('button', { name: /^預金でやることへ/ }).click();
+  await expect(page.locator('[data-tasks="todo"]')).toBeVisible();
+  await page.getByRole('button', { name: '推し活定期をはじめる', exact: true }).click();
+  await expect(page.locator('li[data-task="teiki"][data-ok="true"]')).toBeVisible();
+  await expect(layer(page, 'ach').getByText('はじめてくれてありがとう。')).toBeVisible();
+  await shot(page, '04a-tasks-teiki');
+  await expect(page.getByRole('textbox', { name: '積み増す額（円）' })).toHaveValue('20000'); // ちょうど届く額
+  await page.getByRole('button', { name: '積み増す', exact: true }).click();
+  await expect(page.locator('[data-tasks="done"]')).toBeVisible();
+  await expect(layer(page, 'ach').getByText(/預金でやることが、すべて済みました/)).toBeVisible();
+  await shot(page, '04b-tasks-done');
+  await page.getByRole('button', { name: 'ホームへもどる' }).click();
+  await expect(page.locator('button[data-act="share"]')).toBeVisible();
+  await expect(page.locator('button[data-act="upgrade"]')).toBeVisible(); // 済んだあとだけ、2 つ
+  await page.waitForTimeout(1500);
+  await shot(page, '05-home-grow');
+
+  // ④ SNSで広める（外へは出ない）
+  await page.locator('button[data-act="share"]').click();
+  await expect(layer(page, 'share')).toBeVisible();
+  await layer(page, 'share').getByRole('button', { name: 'X', exact: true }).click();
+  await expect(layer(page, 'fx').getByText('広がった！')).toBeVisible();
   await page.waitForTimeout(900);
-  expect(await titleInside(page, 390)).toBe(true); // FEVER の大きい文字が、左右にはみ出さない
-  expect(await gaugeFill(page)).toBeGreaterThan(0.99); // ゲージは満タン
-  await shot(page, '06-fx-established'); // FEVER の瞬間の演出の最中
-  await expect(layer(page, 'gift')).toBeVisible({ timeout: 10_000 }); // 演出のあと、特典 2/3 の絵
-  await layer(page, 'gift').getByRole('button', { name: '閉じる' }).click();
-  // ホームは FEVER。主のボタンは、仲間に知らせる（もう一度は呼べない）
-  await expect(meter(page)).toHaveAttribute('aria-label', '開催熱量。FEVER。開催が決まりました');
-  await expect(page.getByRole('button', { name: /^仲間を呼ぶ/ })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /^仲間に知らせる/ })).toBeVisible();
-  await shot(page, '07-home-fever');
+  expect(await titleInside(page, 390)).toBe(true);
+  await shot(page, '06-fx-share');
+  await page.waitForTimeout(2600);
+  await layer(page, 'share').getByRole('button', { name: '閉じる' }).click();
+  await settle(page);
 
-  // ④ 閉じて開き直す（ブラウザに残るのは端末の番号だけ。ファン向けの状態は初めに戻る）
+  // ⑤ プランを上げる（ゴールド → 特別な演出 → 特典の贈呈 → 背景が変わる）
+  await page.locator('button[data-act="upgrade"]').click();
+  const sheet = page.getByRole('dialog', { name: 'プランを上げる' });
+  await expect(sheet.locator('li[data-plan]')).toHaveCount(3);
+  await page.waitForTimeout(400);
+  await shot(page, '07-upgrade-sheet');
+  await page.getByRole('button', { name: 'ゴールドプランに上げる' }).click();
+  await expect(layer(page, 'fx').getByText('プランアップ！')).toBeVisible();
+  await page.waitForTimeout(900);
+  expect(await titleInside(page, 390)).toBe(true);
+  await shot(page, '08-fx-upgrade');
+  const reward = page.getByRole('dialog', { name: 'ゴールドプランの特典' });
+  await expect(reward).toBeVisible({ timeout: 8000 });
+  await expect(reward.getByText(/追加の画像/).first()).toBeVisible();
+  await page.waitForTimeout(400);
+  await shot(page, '09-reward-gold');
+  await reward.getByRole('button', { name: '閉じる' }).click();
+  await expect(page.locator('[data-plan-tier="1"]')).toBeVisible();
+  await settle(page);
+  await shot(page, '10-home-gold');
+
+  // ⑥ 飛ばして、ダイヤモンドへ。いちばん上では、「プランを上げる」は出ない
+  await page.locator('button[data-act="upgrade"]').click();
+  await page.getByRole('button', { name: 'ダイヤモンドプランに上げる' }).click();
+  const top = page.getByRole('dialog', { name: 'ダイヤモンドプランの特典' });
+  await expect(top).toBeVisible({ timeout: 8000 });
+  await expect(top.getByText(/20秒の動画/).first()).toBeVisible();
+  await page.waitForTimeout(400);
+  await shot(page, '11-reward-diamond');
+  await top.getByRole('button', { name: '閉じる' }).click();
+  await expect(page.locator('[data-plan-tier="3"]')).toBeVisible();
+  await expect(page.locator('button[data-act="upgrade"]')).toHaveCount(0);
+  await expect(meter(page)).toHaveAttribute('aria-label', HEAT); // 熱量は、最後まで動かない
+  expect(Math.abs((await gaugeFill(page)) - fill0)).toBeLessThan(0.01);
+  await settle(page);
+  await shot(page, '12-home-diamond');
+
+  // ⑦ 閉じて開き直す（ブラウザに残るのは端末の番号だけ。ファン向けの状態は初めに戻る）
   await page.close();
   const reopened = await context.newPage();
   await reopened.goto('/fan/?p=4');
   await expect(reopened.getByRole('heading', { name: '推しを選ぶ' })).toBeVisible();
-  await shot(reopened, '08-reopen-start');
-  await startToApply(reopened);
-  await expect(layer(reopened, 'fx').getByText('FEVER 目前！')).toBeVisible(); // 初めから始まるので、また FEVER 目前の演出
-  await layer(reopened, 'gift').getByRole('button', { name: '閉じる' }).click({ timeout: 10_000 });
-  await expect(meter(reopened)).toHaveAttribute('aria-label', '開催熱量。FEVER 目前。あと一歩'); // 前回の FEVER を持ち越さない
-  await shot(reopened, '09-reopen-home-fever-soon');
+  await shot(reopened, '13-reopen-start');
+  await startToJoin(reopened);
+  await expect(reopened.locator('[data-plan-tier="0"]')).toBeVisible(); // 前回のプランを持ち越さない
+  await expect(reopened.locator('button[data-act="upgrade"]')).toHaveCount(0);
 
-  // ⑤ API には、1 回も要求を送らない（API の接続先は渡されたままでも）
+  // ⑧ API には、1 回も要求を送らない（API の接続先は渡されたままでも）
   expect(await apiRequests()).toEqual([]);
   expect(errors).toEqual([]);
 });
@@ -187,9 +184,7 @@ test('操作が 5 分無いと、初めの状態に戻り、理由が出る（�
 }) => {
   await page.clock.install();
   await page.goto('/fan/?p=4');
-  await startToApply(page, false, true);
-  await page.clock.runFor(3500);
-  await layer(page, 'gift').getByRole('button', { name: '閉じる' }).click();
+  await startToJoin(page, false, true);
   await expect(meter(page)).toBeVisible();
   // 偽の時計で時間を一気に飛ばすと、画面が scroll を起こすことがある（実時間で 40 秒見ても起きない）。scroll も「操作」に数えるので、
   // 10 秒ずつ進めて、戻るまで見る（最大 900 秒）。最後の操作から 290 秒までは、必ず戻らない

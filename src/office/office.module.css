@@ -851,6 +851,48 @@
   text-align: right;
 }
 
+/* 変わった数字の強調（要件 R-14。仕様 2.2）。背景を淡い色にして、約 2 秒で元に戻す。1 回だけ（点滅にしない。G-05） */
+.chg {
+  border-radius: 4px;
+  animation: changedFade 2s ease-out 1 both;
+}
+@keyframes changedFade {
+  from {
+    background-color: var(--yellow-light);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+/* 前の値（例: 前 187人（−67））。次に数字が変わるまで残す */
+.prevVal {
+  margin-left: var(--s1);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+/* 4 象限のカードでは、差をカードの右上の角に小さく重ねる（カードの背と名前の幅を変えない） */
+.qNames li {
+  position: relative;
+}
+.qNames .prevVal {
+  position: absolute;
+  top: -8px;
+  right: var(--s2);
+  margin: 0;
+  padding: 0 3px;
+  border-radius: 4px;
+  background: var(--surface);
+  font-size: 11px;
+  line-height: 1.3;
+}
+div.chg > .prevVal {
+  display: block;
+  margin-left: 0;
+  text-align: right;
+}
+
 /* 条件を調整・足 */
 /* ⑤ の中の足（条件を調整・収支シミュレーター・提案を見る） */
 .judgeFoot {
@@ -1219,6 +1261,11 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  /* 薄れていく動きをやめて、色と前の値だけにする */
+  .chg {
+    animation: none;
+    background-color: var(--yellow-light);
+  }
   .track > i,
   .needMark,
   .expMark {

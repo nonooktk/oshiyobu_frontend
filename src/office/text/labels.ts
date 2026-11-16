@@ -1,5 +1,6 @@
 import { MAX_COST_YEN } from '../../core';
 import type { CostItemId, ParseResult } from '../../core';
+import type { ChangeKey, Snapshot } from '../view';
 
 // 事務所向けの画面の文言（出典: モック index.html と 文言の校正.md。決まった言い方は仕様の「文言」）。
 // 決まった言い方・使わない語は、仕様 SP-81。ここを直すときは、tests/unit/forbidden-words.test.ts の語を使わない
@@ -109,6 +110,59 @@ export const quadLineValues = (deposit: number, heat: number): string =>
 export const privQuadLine = (deposit: number, heat: number): string =>
   `${text.judge3}: ${quadLineValues(deposit, heat)}`;
 
+/**
+ * 変わった数字の、前の値（要件 R-14。仕様 2.2）。例: 「前 187人（−67）」「前 650,000円（+50,000）」「前 高」。
+ * 増えたか減ったかは、色に頼らず、「+」「−」付きの差で示す（「▲」「▼」「減」は 3 ページの書体に無い。G-11）
+ */
+export function prevText(
+  prev: number | string,
+  now: number | string,
+  unit: '' | '人' | '円',
+): string {
+  if (typeof prev !== 'number' || typeof now !== 'number') return `前 ${prev}`;
+  const diff = now - prev;
+  const sign = diff > 0 ? '+' : '−';
+  return `前 ${prev.toLocaleString('ja-JP')}${unit}（${sign}${Math.abs(diff).toLocaleString('ja-JP')}）`;
+}
+/** 4 象限のカードに出す、短い差（例: 「−49」）。カードの幅が狭いので、前の値は読み上げにだけ入れる */
+export function diffText(prev: number | string, now: number | string): string {
+  if (typeof prev !== 'number' || typeof now !== 'number') return '';
+  const diff = now - prev;
+  return `${diff > 0 ? '+' : '−'}${Math.abs(diff).toLocaleString('ja-JP')}`;
+}
+
+/** 変わった数字の読み上げで使う名前と単位（画面の見出しと同じ語） */
+const CHANGE_LABELS: Readonly<Record<ChangeKey, readonly [string, '' | '人' | '円']>> = {
+  expected: ['見込み', '人'],
+  level: ['成立の見込み', ''],
+  shortfall: ['足りない人数', '人'],
+  line: [text.lineLabel, '円'],
+  need: ['必要人数', '人'],
+  price: ['通常の席の価格', '円'],
+  upliftTotal: [text.upliftLabel, '円'],
+  quadHotRich: [QUAD_NAMES.hotRich, '人'],
+  quadHotPoor: [QUAD_NAMES.hotPoor, '人'],
+  quadCoolRich: [QUAD_NAMES.coolRich, '人'],
+  quadCoolPoor: [QUAD_NAMES.coolPoor, '人'],
+};
+
+/** 変わった数字の読み上げ（要件 R-14。仕様 2.2）。例: 「見込み 187人から 120人。成立の見込み 高から中。」 */
+export function changeLiveText(
+  keys: readonly ChangeKey[],
+  prev: Snapshot | null,
+  now: Snapshot | null,
+): string {
+  if (prev === null || now === null) return '';
+  const fmt = (v: number | string, unit: string) =>
+    typeof v === 'number' ? `${v.toLocaleString('ja-JP')}${unit}` : v;
+  return keys
+    .map((key) => {
+      const [label, unit] = CHANGE_LABELS[key];
+      return `${label} ${fmt(prev[key], unit)}から ${fmt(now[key], unit)}。`;
+    })
+    .join('');
+}
+
 export const capChip = (need: number, cap: number, unit: string): string =>
   need <= cap ? `キャパ ${cap}${unit}に収まる` : `キャパ ${cap}${unit}を超える`;
 
@@ -161,13 +215,16 @@ export const shortText = (need: number, shortfall: number): string =>
 export const expectedText = (n: number): string => `見込み ${n}人`;
 export const needText = (n: number): string => `必要 ${n}人`;
 
-export function sideNote(isHome: boolean, reach: boolean): readonly [string, string] {
+/**
+ * ③ 会場の候補の下の注記。2 文目は、推しに関係なく正しい固定の文にする。
+ * 会場の候補は、core のデータで市ごとに決まった固定の一覧で、推しによって絞り込んでいない。
+ * 推しの名前や、特定の推しの見込みで「届く会場だけ」とは書かない（届くかは、会場を選ぶと「満たせるか」に出る）
+ */
+export function sideNote(isHome: boolean): readonly [string, string] {
   return [
     isHome
       ? '空き日は架空です。料金は公式サイトの公開情報にもとづく目安です（2026-11-12 確認）。'
       : '空き日は架空です。会場名・キャパは会場データ（実在・公演の記録あり）にもとづきます。',
-    reach
-      ? '候補は最大3件です。Tech0サステナアイドルの見込みが必要人数に届く会場だけを出しています。'
-      : 'この市には、見込みが必要人数に届く会場がありません。必要人数が見込みに最も近い1件だけを出しています。',
+    '候補は、この市の会場から最大3件です。必要人数に届くかは、会場を選ぶと「満たせるか」に出ます。',
   ];
 }

@@ -15,7 +15,8 @@ import {
   text,
   verdictText,
 } from './text/labels';
-import { viewOf } from './view';
+import { changedKeys, snapshotOf, viewOf } from './view';
+import type { ChangeKey, Snapshot } from './view';
 
 // 事務所向けの状態（メモリだけ。再読み込みで初めに戻る。設計 D-10）。
 // 計算は core の純関数（view.ts）。ここでは、選択と入力の流れだけを持つ。
@@ -48,6 +49,33 @@ export interface OfficeState {
   venueFocus: number;
   /** 4 象限の区切り（要件 R-12）。推し・市を切り替えても残す。「最初に戻す」で初めの位置に戻る */
   quadLine: QuadLine;
+  /** 直前の操作で変わった数字と、その前の値（要件 R-14）。次に数字が変わるまで残す */
+  changes: Changes;
+}
+
+export interface Changes {
+  /** 変わった数字の名前。空なら、強調しない */
+  readonly keys: readonly ChangeKey[];
+  /** 変わる前の値（keys が空のときは null） */
+  readonly prev: Snapshot | null;
+  /** 変わるたびに 1 増える。部品が、薄れていく動きを最初からやり直す合図に使う */
+  readonly seq: number;
+  /**
+   * 4 象限の線を動かして変わったか。線は数字を見比べながら動かすので、強調・「前」・読み上げを出さない
+   * （記録は残す。#26 の統括の指摘 ②）。推し・会場・費用を替えたときは、線の位置に関係なく出す
+   */
+  readonly byLine: boolean;
+}
+
+const NO_CHANGES: Changes = { keys: [], prev: null, seq: 0, byLine: false };
+
+/**
+ * この操作で、強調の読み上げ（ChangeLive）が読む数字の名前。操作の前の seq と比べ、この操作で記録が
+ * 入れ替わったときだけ返す（前の操作の記録が残っているだけなら、空）。線を動かした変化は読まないので、空
+ */
+function announcedKeys(changes: Changes, seqBefore: number): readonly ChangeKey[] {
+  if (changes.seq === seqBefore || changes.prev === null || changes.byLine) return [];
+  return changes.keys;
 }
 
 const EMPTY_COSTS: CostValues = { venue: 0, prod: 0, fee: 0, travel: 0, profit: 0 };
@@ -69,6 +97,7 @@ export const initialOfficeState = (): OfficeState => ({
   band: '',
   venueFocus: 0,
   quadLine: INITIAL_QUAD_LINE,
+  changes: NO_CHANGES,
 });
 
 interface OfficeActions {
@@ -115,15 +144,21 @@ export const officeStore = createStore<OfficeState & OfficeActions>()((set, get)
 
     setArtist(id) {
       if (id === get().artistId) return;
+      const seq = get().changes.seq;
       set({ artistId: id });
       const view = viewOf(get());
       const name = ARTIST_TEXT[id].name;
+      // 強調の読み上げ（ChangeLive）が「見込み 187人から 120人」などを読むときは、ここでは同じ数字を読まない
+      const said = announcedKeys(get().changes, seq);
       set({
         live:
           `${name}に切り替えました。` +
           (view === null
             ? ''
-            : `${get().city}の払える熱いファンの見込みは${view.expected}人。${verdictText(view.level)}。`),
+            : (said.includes('expected')
+                ? ''
+                : `${get().city}の払える熱いファンの見込みは${view.expected}人。`) +
+              (said.includes('level') ? '' : `${verdictText(view.level)}。`)),
       });
     },
 
@@ -154,6 +189,7 @@ export const officeStore = createStore<OfficeState & OfficeActions>()((set, get)
 
     pickVenue(id) {
       const venue = venueById(id);
+      const seq = get().changes.seq;
       // 会場を選び直したら、費用は会場の区分の値、最低人数は必要人数から始める
       set({
         venueId: id,
@@ -165,7 +201,15 @@ export const officeStore = createStore<OfficeState & OfficeActions>()((set, get)
         minError: null,
       });
       const view = viewOf(get());
-      if (view !== null) set({ live: `${venue.name}を選びました。${verdictText(view.level)}。` });
+      if (view !== null) {
+        // 強調の読み上げが「成立の見込み 高から 中」を読むときは、ここでは読まない
+        const said = announcedKeys(get().changes, seq);
+        set({
+          live:
+            `${venue.name}を選びました。` +
+            (said.includes('level') ? '' : `${verdictText(view.level)}。`),
+        });
+      }
     },
 
     setAdjustOpen(open) {
@@ -278,6 +322,45 @@ export const officeStore = createStore<OfficeState & OfficeActions>()((set, get)
       announce(text.resetAllDone);
     },
   };
+});
+
+/** いまの状態での、強調の対象の数字（判定が出ていなければ null） */
+export function snapshotOfState(state: OfficeState): Snapshot | null {
+  const view = viewOf(state);
+  if (view === null || state.city === null) return null;
+  return snapshotOf(view, quadPeopleAt(state.artistId, state.city, state.quadLine).people);
+}
+
+// 状態が変わるたびに、⑤ ⑥ の数字を前と比べる（要件 R-14）。
+// - 変わった数字があれば、その名前と前の値を changes に入れる（次に数字が変わるまで残す）
+// - 判定が消えた（市を変えた・最初に戻した）ときは、強調を消す。初めて判定が出たときは、強調しない
+// - 数字が変わらない操作（枠を開く・指標を替えるなど）は、changes をそのままにする
+// - ただし、会場を替えて数字が変わらなかったときは、強調と前の値を消す（前の会場のときの「前」を、
+//   今の会場の数字と比べたように見せない。#26 の統括の指摘）
+// - 4 象限の線を動かして変わったときは、byLine の印を付ける（画面には出さない。記録は残す）
+let lastSnapshot: Snapshot | null = snapshotOfState(officeStore.getState());
+let lastVenueId: VenueId | null = officeStore.getState().venueId;
+let lastLine: QuadLine = officeStore.getState().quadLine;
+officeStore.subscribe((state) => {
+  const next = snapshotOfState(state);
+  const prev = lastSnapshot;
+  const venueChanged = state.venueId !== lastVenueId;
+  const byLine =
+    state.quadLine.deposit !== lastLine.deposit || state.quadLine.heat !== lastLine.heat;
+  lastSnapshot = next;
+  lastVenueId = state.venueId;
+  lastLine = state.quadLine;
+  if (next === null) {
+    if (state.changes.keys.length > 0) officeStore.setState({ changes: NO_CHANGES });
+    return;
+  }
+  const keys = changedKeys(prev, next);
+  if (keys.length === 0) {
+    if (venueChanged && state.changes.keys.length > 0)
+      officeStore.setState({ changes: NO_CHANGES });
+    return;
+  }
+  officeStore.setState({ changes: { keys, prev, seq: state.changes.seq + 1, byLine } });
 });
 
 export function useOffice<T>(selector: (state: OfficeState & OfficeActions) => T): T {

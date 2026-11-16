@@ -479,6 +479,8 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
     const v = view();
     const k = courseOf(v.cond, id);
     if (!canApplyOf(v, k) || state.course === id) return;
+    // 参加のあとのプランの変更は、upgradePlan だけ（下げる・演出と特典を通さない変更を、ここで受けない）
+    if (state.course !== null) return;
     const first = !state.done.join;
     const had = v.joined;
     applying = true; // 称賛・演出が終わるまで、主・副のボタンの押下を受けない（下の after で解く）
@@ -850,6 +852,8 @@ export function createFanStore({ personaNo, deps }: StoreOptions) {
       onEnd: () => {
         applying = false;
         syncHeld();
+        // 演出の間に、参加が取り消された・プランが変わった（共有メーターの reset など）ときは、特典を出さない
+        if (state.course !== id) return;
         if (rewardOf(id)) {
           pushLayer({ kind: 'reward', plan: id });
           announce(`${name}の特典が届きました。`);

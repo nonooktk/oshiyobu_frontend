@@ -61,6 +61,12 @@ describe('特典の動画（G-15）', () => {
     );
   });
 
+  it('特典の素材の対応表（src/fan/art/rewards.ts）に、外の URL を書かない（G-16）', () => {
+    const text = readFileSync(join(ROOT, 'src/fan/art/rewards.ts'), 'utf8');
+    const urls = text.match(/['"`](?:https?:)?\/\/[^'"`]+['"`]/g) ?? [];
+    expect(urls, guardMessage('G-16', `外の URL: ${urls.join('・')}`)).toEqual([]);
+  });
+
   it('<video> には、muted と playsInline を付ける。外の URL を src に書かない', () => {
     const bad: string[] = [];
     for (const f of sources) {

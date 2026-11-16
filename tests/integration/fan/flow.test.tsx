@@ -62,30 +62,6 @@ describe('基準の流れ（人物 4・tech0・久留米市・Cボックス）',
   });
 });
 
-describe('申し込み済みの再押下・コース変更（A-24・I-24）', () => {
-  it('同じコースの「申し込み中」は押せない。上位コースは条件がそろうと「このコースに変える（デモ用）」になる', async () => {
-    mountFan('?p=6');
-    passStart();
-    await closeGiftAfterFx();
-    act(() => {
-      const { actions } = getAppStore();
-      actions.runAcct('main', 'home'); // 前方の席の条件（メイン口座・預金 100,000円）をそろえる
-      actions.runAcct('deposit', 'home', 80_000);
-      actions.clearAch();
-    });
-    click('メニュー');
-    await act(async () => {
-      await import('../../../src/fan/pages/Pages');
-    });
-    click('応援コース');
-    expect(
-      screen.getByRole('button', { name: 'このコースで申し込み中' }).hasAttribute('disabled'),
-    ).toBe(true);
-    expect(screen.getAllByRole('button', { name: 'このコースに変える（デモ用）' })).toHaveLength(1);
-    expect(screen.getAllByRole('button', { name: '条件がそろうと申し込めます' })).toHaveLength(2);
-  });
-});
-
 describe('共有メーターの reset と連動（I-64・I-126・A-62 のファン向け側）', () => {
   it('サーバーの人数に追いつく: 取れた人数（ほかの端末の申し込み）を足して、自分の分を二重に数えない（I-129）', async () => {
     mountFan('?p=4');

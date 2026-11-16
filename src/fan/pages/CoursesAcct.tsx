@@ -61,7 +61,8 @@ export function CoursesPage() {
         {cond.courses.map((k) => {
           const mine = state.course === k.id;
           const ok = canApply(k, deposit, pay);
-          const demoChange = view.joined && !mine && ok;
+          // 参加のあとのプランの変更は、ホームの「プランを上げる」だけ（ここからは変えない。段階・演出・特典を通すため）
+          const demoChange = false;
           const isAim = view.target?.id === k.id;
           return (
             <div
@@ -111,13 +112,15 @@ export function CoursesPage() {
                   <button type="button" className={`${fan.btn} ${fan.btnFull}`} disabled>
                     このコースで申し込み中
                   </button>
+                ) : view.joined ? (
+                  <p className={styles.actD}>プランは、ホームの「プランを上げる」から上げます。</p>
                 ) : ok ? (
                   <button
                     type="button"
                     className={`${fan.btn} ${fan.btnFull}`}
                     onClick={() => actions.applyCourse(k.id)}
                   >
-                    {view.joined ? 'このコースに変える（デモ用）' : '申し込む'}
+                    申し込む
                   </button>
                 ) : view.joined ? (
                   <button type="button" className={`${fan.btn} ${fan.btnFull}`} disabled>

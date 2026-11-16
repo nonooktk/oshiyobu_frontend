@@ -3,7 +3,7 @@ import type { ActId } from '../domain/state';
 
 /** 達成した行動 6 つの名前。 */
 export const ACT_NAMES: Record<ActId, string> = {
-  join: '申し込んだ',
+  join: '参加した',
   share: 'SNSで広めた',
   friend: '仲間が申し込んだ',
   main: 'メイン口座にした',
@@ -14,12 +14,12 @@ export const ACT_NAMES: Record<ActId, string> = {
 /** メニュー配下の画面の見出し。 */
 export const PAGE_TITLES = {
   more: 'メニュー',
-  menu: '応援コース',
+  menu: 'プラン',
   acct: '口座と預金',
   contrib: '貢献',
   area: '支援の状況',
   how: 'しくみ',
-  opt: '推し・条件の変更',
+  opt: '推しの変更',
   priv: '情報の扱い',
   next: '次のアクション',
 } as const;

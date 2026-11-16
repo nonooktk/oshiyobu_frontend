@@ -79,7 +79,7 @@ describe('① 利用者を呼ぶ語は「あなた」', () => {
   it('「みなさん」「お友だち」「仲間」は、利用者そのものではないので、そのまま（言い換えない）', () => {
     expect(VOICES.terao.home.reached(5, CITY).join('')).toContain('みなさん');
     expect(VOICES.terao.home.friend(3, CITY).join('')).toContain('お友だち');
-    expect(VOICES.tech0.home.post(2, CITY).join('')).toContain('仲間');
+    expect(VOICES.tech0.home.friend(2, CITY).join('')).toContain('仲間');
   });
 });
 
@@ -106,8 +106,8 @@ describe('② カマヤーンは「大好きだよ。」をよく言う', () => 
 
   it('申し込みの礼のあと（ホームの post・postSoon と、特典 1/3 のひとこと）に入る', () => {
     const byName = Object.fromEntries(scenes.map((s) => [s.name, s]));
-    expect(byName['post（段階 2）']?.text).toMatch(/申し込みありがとう。大好きだよ。/);
-    expect(byName['postSoon（段階 4）']?.text).toMatch(/申し込みありがとう。大好きだよ。/);
+    expect(byName['post（段階 2）']?.text).toMatch(/参加ありがとう。大好きだよ。/);
+    expect(byName['postSoon（段階 4）']?.text).toMatch(/参加ありがとう。大好きだよ。/);
     expect(byName['say.join']?.text).toMatch(/ありがとう。大好きだよ。/);
   });
 

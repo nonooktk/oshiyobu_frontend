@@ -46,18 +46,18 @@ describe('基準の流れ（人物 4・tech0・久留米市・Cボックス）',
     await act(async () => {
       await import('../../../src/fan/pages/Pages');
     });
-    click('申し込みをやめる');
-    expect(screen.getByRole('heading', { name: '申し込みをやめますか？' })).toBeTruthy();
+    click('参加をやめる');
+    expect(screen.getByRole('heading', { name: '参加をやめますか？' })).toBeTruthy();
     await act(async () => {
       await import('../../../src/fan/layers/Sheets');
     });
     fireEvent.click(
-      within(layer('sheet') as HTMLElement).getByRole('button', { name: '申し込みをやめる' }),
+      within(layer('sheet') as HTMLElement).getByRole('button', { name: '参加をやめる' }),
     );
     await tick(10);
     expect(supporters()).toBe(74);
     expect(
-      screen.getAllByText(/申し込みをやめました。確保は解除され、負担は0円です。/).length,
+      screen.getAllByText(/参加をやめました。確保は解除され、負担は0円です。/).length,
     ).toBeGreaterThan(0);
   });
 });

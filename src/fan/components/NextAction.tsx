@@ -42,11 +42,12 @@ export function NextAction() {
     else if (row.id === 'friend') actions.callFriends();
     else if (row.id === 'notice') actions.notifyFriends();
     else if (row.id === 'upgrade') actions.openUpgrade();
+    else if (row.id === 'rejoin') actions.rejoin();
     else actions.openShare('share');
   };
-  const doneIds = (
-    view.joined ? (['share'] as const) : (['deposit', 'teiki', 'main'] as const)
-  ).filter((k) => view.fan.done[k]);
+  const doneIds = (view.joined ? (['teiki', 'deposit', 'share'] as const) : ([] as const)).filter(
+    (k) => view.fan.done[k],
+  );
   const h = next.head;
   return (
     <DetailPage title="次のアクション">
@@ -94,7 +95,7 @@ export function NextAction() {
         ) : h.kind === 'est' ? (
           <>
             <p className={`${styles.nxV} ${styles.nxVsm}`}>ライブの開催が決まりました</p>
-            <p className={styles.nxSub}>仲間に、開催が決まったことを知らせましょう</p>
+            <p className={styles.nxSub}>みんなに、開催が決まったことを知らせましょう</p>
           </>
         ) : (
           <>
@@ -135,7 +136,7 @@ export function NextAction() {
         </div>
         <p className={styles.dNote}>
           {view.joined
-            ? '押すと、その場で進みます。SNS への投稿は、ホームの「SNSに投稿する（任意）」からできます。'
+            ? '押すと、その場で進みます。'
             : '押すと、その場で完了します。擬似の動きで、実際の入出金は始まりません。'}
         </p>
       </div>

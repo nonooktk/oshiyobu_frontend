@@ -5,9 +5,8 @@ import { RECRUITMENT_DEADLINE, areaFor } from '../../core';
 import { STORAGE_KEYS } from '../../shared/device';
 import { artistView } from '../art/registry';
 import { PAGE_TITLES } from '../text/ui';
-import { ACT_IDS } from '../domain/state';
+import { PLAN_NAMES, SHOWN_ACTS, rewardsUpTo, shownDoneOf } from '../domain/plan';
 import type { Page } from '../domain/state';
-import { courseOf } from '../domain/view';
 import { yen } from '../text/format';
 import fan from '../fan.module.css';
 import { useFan } from '../store/FanProvider';
@@ -203,7 +202,7 @@ function MorePage() {
       </div>
       <div className={styles.menuFoot} style={{ margin: 0 }}>
         <button type="button" className={styles.quitLink} onClick={actions.openCancel}>
-          申し込みをやめる
+          参加をやめる
         </button>
       </div>
     </>
@@ -250,9 +249,9 @@ function AreaPage() {
       <button
         type="button"
         className={`${fan.btn} ${fan.btnFull}`}
-        onClick={() => actions.go(view.joined ? 'next' : 'menu')}
+        onClick={() => (view.joined ? actions.go('next') : actions.rejoin())}
       >
-        {view.joined ? '次のアクション' : 'コースを選ぶ'}
+        {view.joined ? '次のアクション' : '参加するプランを選ぶ'}
       </button>
     </>
   );
@@ -294,9 +293,7 @@ function HowPage() {
           <br />
           届かなければ、お金は動かない。
         </p>
-        <p className={styles.plain}>
-          選んだコースの金額は、成立するまで自分の口座の中で確保されます。
-        </p>
+        <p className={styles.plain}>プランの金額は、成立するまで自分の口座の中で確保されます。</p>
       </div>
       <div className={fan.card}>
         <p className={fan.bigK}>お金の動き</p>
@@ -304,16 +301,16 @@ function HowPage() {
           <li>
             <i>1</i>
             <span>
-              コースを選んで、申し込む
+              プランを選んで、参加する
               <small>
-                申し込むと確定します。選んだコースの金額を、成立するまで自分の口座の中で確保（コースごとに条件あり。前方の席・特別コース・最上位コースは、メイン口座にすることと、預金の額）
+                参加すると確定します。プランの金額を、成立するまで自分の口座の中で確保。最初に選べるのは、いちばん下のプランです。上のプランへは、参加のあとに上げられます
               </small>
             </span>
           </li>
           <li>
             <i>2</i>
             <span>
-              期限まで、仲間を集める<small>期限 {RECRUITMENT_DEADLINE}</small>
+              期限まで、応援を広げる<small>期限 {RECRUITMENT_DEADLINE}</small>
             </span>
           </li>
           <li>
@@ -321,7 +318,7 @@ function HowPage() {
             <span>
               開催熱量が FEVER に届いたら、開催が決まる
               <small>
-                数えるのは、資金を確保できた申し込みだけ。申し込みは、おひとりにつき一度です。上位のコースでも、熱量への加わり方は同じです
+                数えるのは、資金を確保できた参加だけ。参加は、おひとりにつき一度です。上のプランでも、熱量への加わり方は同じです
               </small>
             </span>
           </li>
@@ -347,35 +344,33 @@ function HowPage() {
       <button
         type="button"
         className={`${fan.btn} ${fan.btnFull}`}
-        onClick={() => actions.go(view.joined ? 'next' : 'menu')}
+        onClick={() => (view.joined ? actions.go('next') : actions.rejoin())}
       >
-        {view.joined ? '次のアクション' : 'コースを選ぶ'}
+        {view.joined ? '次のアクション' : '参加するプランを選ぶ'}
       </button>
     </>
   );
 }
 
 /**
- * 情報の扱い（SP-50。決定 17・6）。送るのは、申し込みの合図（公演の指定を含む）と端末の番号だけ。
+ * 情報の扱い（SP-50。決定 17・6）。送るのは、参加の合図（公演の指定を含む）と端末の番号だけ。
  * 端末の中に残るのは、端末の番号だけで、再読み込みでほかは初めに戻る。
  */
 function PrivPage() {
   const { state, view } = useFan();
   const o = artistView(state.oshiId);
   const { cond } = view;
-  const sk = courseOf(cond, state.seat);
   const rows: [string, ReactNode][] = [
     ['推し', o.name],
     ['希望の市・会場', `${cond.city}・${cond.venue.name}`],
-    ['希望のコース', `${sk.name} ${yen(sk.price)}`],
     [
-      '申し込みの状態',
-      view.my ? `申し込み中（${view.my.name}。確保 ${yen(view.my.price)}）` : '未申し込み',
+      '参加の状態',
+      view.my
+        ? `参加中（${PLAN_NAMES[view.my.id]}。確保 ${yen(view.my.price)}）`
+        : 'まだ参加していません',
     ],
-    ['目指すコース', view.target ? view.target.name : 'なし（申し込み済み）'],
-    ['仲間を呼んだか', state.called > 0 ? 'はい' : 'いいえ'],
-    ['達成した行動', `${view.doneCount} / ${ACT_IDS.length}`],
-    ['開いた特典', `${view.giftCount} / 3`],
+    ['達成した行動', `${shownDoneOf(state.done).length} / ${SHOWN_ACTS.length}`],
+    ['受け取った特典', `${rewardsUpTo(state.course).length} / 3`],
     [
       '預金額・メイン口座（擬似）',
       <MyState key="my" deposit={state.acct.deposit} pay={state.acct.pay} />,
@@ -389,7 +384,7 @@ function PrivPage() {
           className={styles.privFig}
           viewBox="0 0 300 120"
           role="img"
-          aria-label="図: 選んだ内容はこの端末の中に置き、共有のメーターへは、申し込みの合図と端末の番号だけを送る"
+          aria-label="図: 選んだ内容はこの端末の中に置き、共有のメーターへは、参加の合図と端末の番号だけを送る"
         >
           <rect
             x="6"
@@ -425,7 +420,7 @@ function PrivPage() {
           </text>
           <line x1="150" y1="60" x2="196" y2="60" stroke="var(--ink)" strokeWidth="2" />
           <text x="246" y="50" textAnchor="middle">
-            申し込みの合図と
+            参加の合図と
           </text>
           <text x="246" y="72" textAnchor="middle">
             端末の番号だけ
@@ -446,7 +441,7 @@ function PrivPage() {
       <div className={fan.card}>
         <p className={fan.bigK}>保存先</p>
         <p className={styles.plain}>
-          送るのは、申し込みの合図（公演の指定を含む）と端末の番号だけです。個人の情報は送りません。
+          送るのは、参加の合図（公演の指定を含む）と端末の番号だけです。個人の情報は送りません。
         </p>
         <p className={styles.plain}>
           端末の中に残るのは、端末の番号だけです。選んだ内容や達成の記録は、画面を開いているあいだだけ覚えていて、再読み込みで初めに戻ります。

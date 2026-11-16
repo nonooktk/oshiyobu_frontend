@@ -7,6 +7,7 @@ import type { Heat, SoloProgress } from './heat';
 import type { Seg } from '../text/format';
 import { yen } from '../text/format';
 import type { HomeKey } from '../text/voices';
+import { homePhaseOf, taskDepositOf, upgradesOf } from './plan';
 import { ACT_IDS } from './state';
 import type { Fan } from './state';
 
@@ -236,7 +237,7 @@ export function condItems(v: FanView, k: CourseOffer): CondItem[] {
 }
 
 export type NextRowId =
-  'apply' | 'main' | 'deposit' | 'teiki' | 'notice' | 'friend' | 'share' | 'again';
+  'apply' | 'main' | 'deposit' | 'teiki' | 'notice' | 'friend' | 'share' | 'again' | 'upgrade';
 export type NextRow = { id: NextRowId; label: string; why: readonly Seg[]; hint: string };
 export type NextHead =
   | { kind: 'pre'; course: CourseOffer; items: CondItem[]; ok: boolean }
@@ -307,35 +308,51 @@ export function nextViewOf(v: FanView): NextView {
       why: [`いまの熱量は ${v.heat.name}。投稿文は、いまの熱量で作られます`],
       hint: '仲間に知らせる → 開催が決まったことを伝える',
     });
+  } else if (homePhaseOf(fan, v.cond) === 'tasks') {
+    // 参加のあと（新しい流れ）: 預金でやること（推し活定期をはじめる → 預金を積み増す）。いまやる 1 つだけが並ぶ
+    if (!fan.done.teiki) {
+      rows.push({
+        id: 'teiki',
+        label: '推し活定期をはじめる',
+        why: [
+          `預金を積み増せるようになります。毎月 ${yen(TEIKI.monthlyYen)}の積立です（デモ用の操作）`,
+        ],
+        hint: '預金でやることが、残っています',
+      });
+    } else {
+      rows.push({
+        id: 'deposit',
+        label: '預金を積み増す',
+        why: [
+          `預金でやることまで、あと ${yen(Math.max(0, taskDepositOf(v.cond) - d))}。額は、入力で決めます`,
+        ],
+        hint: '預金でやることが、残っています',
+      });
+    }
   } else {
-    // 仲間を呼ぶと成立する（ひとり体験は、必ず成立に届く所まで増える）
-    const clinch = {
-      why: '仲間が申し込むと、ライブの開催が決まります',
-      hint: '仲間を呼ぶ → FEVER（開催決定）へ',
-    };
-    const ft =
-      v.friendsClinch || status.friendClinches
-        ? clinch
-        : { why: '仲間が申し込むと、熱が高まります', hint: '仲間を呼ぶ → 熱が高まります' };
-    const gc = v.giftCount;
-    if (!fan.done.friend)
-      rows.push({ id: 'friend', label: '仲間を呼ぶ', why: [ft.why], hint: ft.hint });
+    // 預金でやることが済んだあと: SNSで広める・プランを上げる
     if (!fan.done.share) {
       rows.push({
         id: 'share',
         label: 'SNSで広める',
-        why: [`投稿文が自動で入ります${gc < 3 ? `。広めると、特典 ${gc + 1}/3 が開きます` : ''}`],
-        hint: gc < 3 ? `SNSで広めると、特典 ${gc + 1}/3 が開きます` : 'SNSで広められます',
+        why: ['投稿文が自動で入ります。応援が広がります'],
+        hint: 'SNSで広められます',
+      });
+    }
+    if (upgradesOf(fan.course).length > 0) {
+      rows.push({
+        id: 'upgrade',
+        label: 'プランを上げる',
+        why: ['上のプランに上げると、ホームの背景が変わり、特典が届きます'],
+        hint: 'プランを上げられます',
       });
     }
     if (!rows.length) {
       rows.push({
         id: 'again',
-        label: 'もう一度、仲間を呼ぶ',
+        label: 'もう一度、SNSで広める',
         why: [`いまの熱量は ${v.heat.name}。投稿文は、いまの熱量で作り直せます`],
-        hint: status.gathered
-          ? 'FEVER 目前です。もう一度、仲間を呼べます'
-          : 'もう一度、仲間を呼べます',
+        hint: 'もう一度、SNSで広められます',
       });
     }
   }

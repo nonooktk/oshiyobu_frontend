@@ -1,6 +1,7 @@
 // ファン向けのストアのテストの共通部品。通信は無い（共有メーターは、テストが env で作る）。
 import { conditionOf, performanceIdOf } from '../../../src/core';
 import type { PerformanceId } from '../../../src/core';
+import { taskDepositOf } from '../../../src/fan/domain/plan';
 import type { SoundCue } from '../../../src/fan/sound';
 import { createFanStore } from '../../../src/fan/store/store';
 import type { Deps } from '../../../src/fan/store/store';
@@ -76,27 +77,24 @@ export function harness(
   };
 }
 
-/** はじめの画面（推し → コースの 2 つ）を、初めから選んである値のまま進めて、ホームへ。まだ申し込めない（口座なし・預金 0円）。 */
+/**
+ * はじめの画面（推し → 最安のプラン）を、初めから選んである値のまま進め、参加の確認で「参加する」まで。
+ * ホームに着く。預金でやることは、まだ済んでいない。参加の称賛の演出は、出たまま（テストが時間を進める）。
+ */
 export function passStartOnly(h: Harness): void {
   h.a.startNext();
-  h.a.startNext();
+  h.a.startNext(); // 参加の確認の枠が出る
+  h.a.joinPlan();
 }
 
-/**
- * ホームから、目指すコースに申し込める所まで進めて、申し込む（主のボタンの流れ）。
- * 推し活定期をはじめる → （メイン口座が条件なら）メイン口座にする → 預金を、条件にちょうど届く額だけ積み増す → 申し込む。
- */
+/** 預金でやること 2 つを済ませる（推し活定期をはじめる → 預金を、ちょうど届く額だけ積み増す）。 */
 export function fundAndApply(h: Harness): void {
   h.a.runAcct('teiki', 'home');
-  const t = h.view().target;
-  if (!t) return;
-  if (t.mainAccount) h.a.runAcct('main', 'home');
-  const gap = Math.max(0, t.deposit - h.state().acct.deposit);
+  const gap = Math.max(0, taskDepositOf(h.view().cond) - h.state().acct.deposit);
   if (gap > 0) h.a.runAcct('deposit', 'home', gap);
-  h.a.homePrimary();
 }
 
-/** はじめの画面を進めて、ホームで、目指すコースに申し込むところまで（人物ごとの違いは無い）。 */
+/** 参加して、預金でやることを済ませるところまで（ホームに「SNSで広める」「プランを上げる」が出る段階）。 */
 export function passStart(h: Harness): void {
   passStartOnly(h);
   fundAndApply(h);

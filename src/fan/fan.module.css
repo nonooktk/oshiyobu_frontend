@@ -2230,7 +2230,12 @@ button.rcard:hover {
   background: linear-gradient(180deg, var(--sky-light), var(--surface) 45%);
 }
 .home[data-plan-tier='3'] {
-  background: linear-gradient(160deg, var(--yellow-light), var(--sky-light) 40%, var(--surface) 75%);
+  background: linear-gradient(
+    160deg,
+    var(--yellow-light),
+    var(--sky-light) 40%,
+    var(--surface) 75%
+  );
 }
 .planLine {
   display: flex;

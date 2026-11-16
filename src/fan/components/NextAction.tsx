@@ -41,10 +41,11 @@ export function NextAction() {
     else if (row.id === 'deposit') actions.openDeposit();
     else if (row.id === 'friend') actions.callFriends();
     else if (row.id === 'notice') actions.notifyFriends();
-    else actions.openShare(row.id === 'share' ? 'share' : 'friend');
+    else if (row.id === 'upgrade') actions.openUpgrade();
+    else actions.openShare('share');
   };
   const doneIds = (
-    view.joined ? (['friend', 'share'] as const) : (['deposit', 'teiki', 'main'] as const)
+    view.joined ? (['share'] as const) : (['deposit', 'teiki', 'main'] as const)
   ).filter((k) => view.fan.done[k]);
   const h = next.head;
   return (

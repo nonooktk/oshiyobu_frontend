@@ -425,6 +425,73 @@
   font-weight: 400;
 }
 
+/* 実在と架空の札（要件 R-16・仕様 4.3）。区別は、色と文の両方で付ける */
+.realChip,
+.fictChip {
+  display: inline-block;
+  justify-self: start;
+  padding: 1px var(--s2);
+  border-radius: var(--r);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: normal;
+}
+.realChip {
+  margin: 0 0 var(--s2);
+  border: 1px solid var(--success-ink);
+  background: var(--surface);
+  color: var(--success-ink);
+}
+.fictChip {
+  border: 1px solid var(--warning-ink);
+  background: var(--yellow-light);
+  color: var(--warning-ink);
+}
+/* 出典のリンク（新しいタブで開く） */
+.srcLink {
+  color: var(--primary);
+  font-weight: 700;
+  text-decoration: underline;
+}
+/* ③ の選んだ会場の、詳しい欄（実在の情報） */
+.facts {
+  margin: var(--s1) 0 0;
+  padding: var(--s2) var(--s3);
+  border-left: 3px solid var(--success-ink);
+  background: var(--surface);
+  font-size: 13px;
+  color: var(--ink);
+}
+.facts p {
+  margin: 0;
+}
+.factsName {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--s2);
+  font-weight: 700;
+}
+.factsK,
+.factsSub {
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 400;
+}
+.factsBasis {
+  color: var(--ink-soft);
+}
+.factsSrc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--s3);
+  color: var(--ink-soft);
+}
+.factsNone {
+  color: var(--ink-soft);
+}
+
 /* 判定 */
 .judge {
   display: grid;

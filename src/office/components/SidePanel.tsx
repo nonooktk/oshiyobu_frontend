@@ -4,6 +4,7 @@ import { HOME_CITY } from '../../core';
 import styles from '../office.module.css';
 import { useOffice } from '../store';
 import { sideNote, text, yen } from '../text/labels';
+import { CityRealChip, VenueFacts } from './VenueFacts';
 
 /** 会場の候補（市を選ぶと出る）。市を選ぶまでは、案内と収支シミュレーターへの入口 */
 export function SidePanel() {
@@ -44,6 +45,8 @@ export function SidePanel() {
         3
       </span>
       <h3 className={styles.sideH}>{city}の会場</h3>
+      {/* 実在の札は、見出しの外に置く（見出しの名前は「<市>の会場」のまま） */}
+      <CityRealChip venueIds={list.map((venue) => venue.id)} />
       <ul className={styles.venues} ref={venueList}>
         {list.map((venue) => (
           <li key={venue.id}>
@@ -65,6 +68,9 @@ export function SidePanel() {
                 </span>
               )}
             </button>
+            {/* 選んだ会場だけ、詳しい欄（実在の情報と出典）。ボタンの外に置く（押せる物を入れ子にしない。
+                ボタンの名前は core の名前のまま） */}
+            {venue.id === venueId && <VenueFacts venueId={venue.id} />}
           </li>
         ))}
       </ul>

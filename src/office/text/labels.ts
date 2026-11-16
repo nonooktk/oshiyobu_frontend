@@ -228,3 +228,27 @@ export function sideNote(isHome: boolean): readonly [string, string] {
     '候補は、この市の会場から最大3件です。必要人数に届くかは、会場を選ぶと「満たせるか」に出ます。',
   ];
 }
+
+/** 実在と架空の見分け（要件 R-16・仕様 4.3）。③④ の実在の情報と、①⑤⑥ の架空の数字に付ける札と文言 */
+export const realText = {
+  /** ③④ の見出しの横の札。確認日は、出しているデータの確認日（いちばん新しい日） */
+  chip: (checkedOn: string): string => `実在の公開情報（出典あり・確認日 ${checkedOn}）`,
+  /** ①⑤⑥ の見出しの横の札（「デモ用の架空データ」の文は、全画面の札の 1 回だけにする。I-101） */
+  fiction: '架空（デモ用）',
+  /** ⑤ に添える一文（実在の会場に、架空の費用と見込みを重ねる所） */
+  mixNote: '会場の名前は実在・数字は架空',
+  officialName: '公式の名前',
+  source: '出典',
+  newTab: '（新しいタブで開きます）',
+  checkedOn: (date: string): string => `確認日 ${date}`,
+  noSource: '出典は、まだありません',
+  pastHead: 'これまでの公演',
+  noEvents: '記録は、まだありません',
+  pickVenueFirst: '会場を選ぶと出ます',
+} as const;
+
+/** 公演の日（YYYY-MM-DD）を「2026年8月8日」の形にする（「日付」の「付」は書体に無いので、見出しの語は付けない） */
+export function eventDate(date: string): string {
+  const [y, m, d] = date.split('-').map(Number);
+  return `${y}年${m}月${d}日`;
+}

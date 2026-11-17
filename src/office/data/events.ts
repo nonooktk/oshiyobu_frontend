@@ -4,16 +4,30 @@
 // 2026-11-15 に追加（P3 の第 1 段: venues.ts の会場ごとに、新しい順に 5 件まで）。
 // 元は public/simulator.html の公演のデータ（2026-11-12 時点）。出典のページを開き、日付と出演者が載っていることを
 // 確かめた行だけを置いた。出演者の名前は、出典のページに載っている書き方に合わせた。
-// 置いていない公演（確かめられなかったもの）:
-// - 久留米シティプラザ Cボックス・メディキット県民文化センター イベントホールの公演: 出典が PDF で、中の字を読めなかった
+// 置いていない公演（確かめられなかったもの・置かないと決めたもの）:
+// - メディキット県民文化センター イベントホールの公演: 出典が PDF で、中の字を読めなかった
 // - DRUM Be-1 の 2026-11-07: 出典のページの字（Shift_JIS）を読めず、出演者を確かめられなかった
 // - BRICK BLOCK の 2026-08-08: 出典がお知らせで、年の記載が無く、開かれたかどうかも書かれていなかった
 // - Event Space R BASE の 2026-09-27: 出典の会場の欄が「RAG.G / R BASE」の 2 会場で、R BASE の公演と言い切れなかった
+// - 久留米シティプラザ Cボックスの 音の森ピアノコンサート（2025-08-12）: 出典の名前は「お問合せ」の欄のもので、出演者の記載ではなかった。
+//   料金の欄が「関係者」で、関係者だけの催しと読めた
 // 公演の日程表のページ（DRUM・WHIPPING POST・CIB の月ごとの表など）は、時がたつと中身が入れ替わることがある。
 // 出典が開けなくなった・値が違っていた行は、外す（README.md の 7）。
+//
+// 2026-11-16 に追加: 久留米シティプラザ Cボックス（FUK-019）の 4 件。出典は久留米シティプラザの公式の PDF。
+// 担当者が PDF を目で開き、会場（Cボックス）・日付・出演者・公演名が載っていることを確かめた。
+// 複数日の公演は、初日を置いている。
+// 2025年8月の PDF（CBOX_PDF_2025_08）は、「6月15日現在」の予定表である。
 import type { PastEvent } from './types';
 
 const CHECKED = '2026-11-15';
+/** Cボックスの 4 件を確かめた日 */
+const CHECKED_CBOX = '2026-11-16';
+const CBOX_PDF_2025_08 = 'https://kurumecityplaza.jp/static/pdf/202508_schedule.pdf';
+const CBOX_PDF_2024 =
+  'https://kurumecityplaza.jp/uploads/ckeditor/attachments/3301/kcppapper20240329_A4_web.pdf';
+const CBOX_PDF_2023 =
+  'https://kurumecityplaza.jp/uploads/ckeditor/attachments/2859/kcppapper20230531_web.pdf';
 
 export const PAST_EVENTS: readonly PastEvent[] = [
   // Music hall Fragile（FUK-020）
@@ -260,5 +274,38 @@ export const PAST_EVENTS: readonly PastEvent[] = [
     title: '黄金のギターを弾く男とブラジルの男 LIVE 2026',
     sourceUrl: 'https://t-a-music.wixsite.com/b-shuffle/2026%E5%B9%B4-10%E6%9C%88',
     checkedOn: CHECKED,
+  },
+  // 久留米シティプラザ Cボックス（FUK-019）
+  {
+    venueId: 'FUK-019',
+    artist: '落語教育委員会',
+    date: '2025-08-22',
+    title: '落語教育委員会ｉｎ久留米',
+    sourceUrl: CBOX_PDF_2025_08,
+    checkedOn: CHECKED_CBOX,
+  },
+  {
+    venueId: 'FUK-019',
+    artist: '石原海',
+    date: '2024-11-30',
+    title: '『重力の光：祈りの記録篇』',
+    sourceUrl: CBOX_PDF_2024,
+    checkedOn: CHECKED_CBOX,
+  },
+  {
+    venueId: 'FUK-019',
+    artist: '木ノ下裕一',
+    date: '2024-07-27',
+    title: '『ひらたい古典』',
+    sourceUrl: CBOX_PDF_2024,
+    checkedOn: CHECKED_CBOX,
+  },
+  {
+    venueId: 'FUK-019',
+    artist: '神里雄大／岡崎藝術座',
+    date: '2023-09-02',
+    title: '『イミグレ怪談』',
+    sourceUrl: CBOX_PDF_2023,
+    checkedOn: CHECKED_CBOX,
   },
 ];

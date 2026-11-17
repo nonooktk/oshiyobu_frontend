@@ -9,9 +9,9 @@ export const PLAN_ORDER: readonly CourseId[] = ['normal', 'front', 'special', 't
 /** 最初に参加するプラン（最安）。 */
 export const ENTRY_PLAN: CourseId = 'normal';
 
-/** プランの名前（画面に出す名前。最安のプランの名前は仮）。 */
+/** プランの名前（画面に出す名前）。 */
 export const PLAN_NAMES: Readonly<Record<CourseId, string>> = {
-  normal: 'スタンダードプラン',
+  normal: 'ベーシックプラン',
   front: 'ゴールドプラン',
   special: 'プラチナプラン',
   top: 'ダイヤモンドプラン',

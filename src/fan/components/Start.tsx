@@ -11,6 +11,7 @@ import styles from '../fan.module.css';
 import { useFan } from '../store/FanProvider';
 import { Av, WholeArt } from './Art';
 import { Strip } from './Frame';
+import { LockIcon } from './LockIcon';
 import { Wbr } from './text';
 
 const TITLES = ['推しを選ぶ', '参加するプランを選ぶ'] as const;
@@ -106,11 +107,15 @@ export function Start() {
                     key={id}
                     className={styles.planItem}
                     data-plan={id}
+                    data-selected={open ? 'true' : undefined}
+                    data-locked={open ? undefined : 'true'}
                     aria-disabled={open ? undefined : 'true'}
                   >
                     <p className={styles.planName}>
+                      {open ? null : <LockIcon className={styles.planLockIcon} />}
                       {PLAN_NAMES[id]}
                       {open ? '（✓ 選択中）' : ''}
+                      {open ? null : <span className={styles.srOnly}>（ロック中）</span>}
                     </p>
                     <dl className={styles.planFacts}>
                       <dt>確保する額</dt>

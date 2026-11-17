@@ -98,7 +98,25 @@
   --ls-text: 0.03em;
 }
 
-/* ファン向けだけ、書体を差し替える（--font-fan の説明は上）。事務所向け・発表者用には data-page が付かないので、効かない */
+/*
+  ファン向けだけ、書体と色を差し替える。事務所向け・発表者用には data-page が付かないので、効かない（上の :root の値は変えていない）。
+  書体: --font-fan の説明は上。
+  色: 2026-11-18 に、統括の承認（「A で進めよう」）で足した。にしやまさんの Figma の色（白地に、水色 → マゼンタ）に寄せるため。
+    名前は :root にあるものだけ（新しい名前の色は足していない）。黄・成功・警告・エラー・熱量の赤・--rainbow-violet・--surface は、:root のまま。
+    文字の色は、白（--surface）と --bg-c の上で 4.5:1 以上。白い文字は、--primary（5.33:1）と --sky（4.78:1）の上で 4.5:1 以上（tests/unit/fan/fan-colors.test.ts が見る）。
+    開催熱量の棒は、--primary が青でなくなるため、虹の並びから --primary を外した（fan.module.css の --rainbow）。
+*/
 :root[data-page='fan'] {
   --font: var(--font-fan);
+
+  --primary: #c9128a; /* マゼンタ。主のボタンの右の端と、強調の文字・線 */
+  --primary-dark: #a50e72;
+  --sky: #0878b8; /* 白い文字を載せられる水色。主のボタンの左の端 */
+  --sky-light: #7fd4fa;
+  --ink: #16182d;
+  --ink-soft: #565b78;
+  --bg-c: #f3f5f9;
+  --line: #dfe3ee;
+  --gray-300: #b9bfd3;
+  --scrim: rgba(22, 24, 45, 0.6); /* --ink の半透明（ダイアログの背面） */
 }

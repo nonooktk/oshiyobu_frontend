@@ -113,7 +113,11 @@
   white-space: nowrap;
 }
 
-/* ---------- ボタン（青地に白＝主／白地に青の線＝副／青の文字だけ＝文字。ピル型） ---------- */
+/*
+  ---------- ボタン（水色 → マゼンタのグラデーションに白＝主／白地にマゼンタの線＝副／マゼンタの文字だけ＝文字。ピル型） ----------
+  主のボタンは、線を透明にして、グラデーションを線の下まで敷く（background-origin）。線が単色だと、水色の側に細い線が見えるため。
+  副・文字・黄・無効は、background を書き直すので、グラデーションは出ない（副は、線の色を自分で持つ）。
+*/
 .btn {
   display: inline-flex;
   align-items: center;
@@ -121,9 +125,10 @@
   gap: var(--s2);
   min-height: var(--tap);
   padding: var(--s2) var(--s4);
-  border: 1px solid var(--primary);
+  border: 1px solid transparent;
   border-radius: var(--pill);
-  background: var(--primary);
+  background: linear-gradient(90deg, var(--sky), var(--primary));
+  background-origin: border-box;
   color: var(--surface);
   font-size: var(--fs-body);
   font-weight: 700;
@@ -133,8 +138,8 @@
   user-select: none;
 }
 .btn:hover {
-  background: var(--primary-dark);
-  border-color: var(--primary-dark);
+  background-image: linear-gradient(90deg, var(--sky), var(--primary-dark));
+  border-color: transparent;
 }
 .btnSm {
   padding: var(--s2) var(--s3);
@@ -144,6 +149,7 @@
   width: 100%;
 }
 .btnSecondary {
+  border-color: var(--primary);
   background: var(--surface);
   color: var(--primary);
 }
@@ -482,18 +488,18 @@
 /*
   棒の色は、満タンのときの長さに対して固定の虹（紫 → 青 → 水色 → 緑 → 黄 → 橙 → 赤）。紫は、棒の左端（--rainbow-violet。ファン向けの中だけで使う）。長さが伸びるほど、色が足されて、FEVER（満タン）で全体が虹色になる。
   色は、tokens.css にある値だけ（新しい色は足していない。緑と橙は、--success・--warning の値を借りた）。
+  青は --sky を使う。ファン向けの --primary はマゼンタで、色相の並び（紫 → 青 → 水色）から外れるため、虹には入れない（2026-11-18）。
 */
 .gTrough,
 .barH {
   --rainbow: linear-gradient(
     90deg,
     var(--rainbow-violet) 0%,
-    var(--primary) 14%,
-    var(--sky) 29%,
-    var(--sky-light) 43%,
-    var(--success) 57%,
-    var(--yellow) 71%,
-    var(--warning) 86%,
+    var(--sky) 17%,
+    var(--sky-light) 33%,
+    var(--success) 50%,
+    var(--yellow) 67%,
+    var(--warning) 83%,
     var(--heat-3) 100%
   );
 }
@@ -619,17 +625,18 @@
   margin: var(--s2) var(--s3) 0;
   min-height: 64px;
   padding: var(--s1) var(--s4);
-  border: 1px solid var(--primary);
+  border: 1px solid transparent;
   border-radius: var(--pill);
-  background: var(--primary);
+  background: linear-gradient(90deg, var(--sky), var(--primary));
+  background-origin: border-box;
   color: var(--surface);
   font: inherit;
   text-align: center;
   cursor: pointer;
 }
 .homeNext:hover {
-  background: var(--primary-dark);
-  border-color: var(--primary-dark);
+  background-image: linear-gradient(90deg, var(--sky), var(--primary-dark));
+  border-color: transparent;
 }
 /* 押した直後（次の押下を受けない間。0.6 秒ほどか、称賛が終わるまで）は、少し淡くして、押したことを受け取ったと見せる。固まって見えないよう、すぐ戻る */
 .homeNext,

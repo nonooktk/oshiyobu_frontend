@@ -1,6 +1,6 @@
 // @vitest-environment node
 // 収支シミュレーター（public/simulator.html。班の方の道具）の検査（設計 D-21・I-101・I-31〜I-35 の前提）
-// 計算とデータ（script）は、元のまま置く。変えてよいのは、script の外の表示（帯の文言・札・戻るリンク）だけ
+// 計算とデータ（script）は、統括が了承した版のまま置く（ハッシュで固定）。変えるときは、統括の了承を得て、ハッシュを替える
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
@@ -11,13 +11,15 @@ const html = readFileSync(`${ROOT}public/simulator.html`, 'utf8');
 const script = /\n<script>\n[\s\S]*\n<\/script>\n/.exec(html)?.[0] ?? '';
 const outside = html.replace(script, '');
 
-// 元（mock/simulator.html。2026-11-13 時点）の script 全体（<script> から </script> まで）の SHA-256
-const ORIGINAL_SCRIPT_SHA256 = 'c081c662503f88d89957c860021276fc87bbfce96cbba98aa173a2d8aceb22e7';
+// script 全体（<script> から </script> まで）の SHA-256。
+// 元（mock/simulator.html。2026-11-13 時点）は c081c662503f88d89957c860021276fc87bbfce96cbba98aa173a2d8aceb22e7。
+// 2026-11-18、統括の了承（「全部、勝手に直してよい」）で、公演のデータから音の森の 1 件を外した版に替えた（docs/office/要件.md の M-20）
+const APPROVED_SCRIPT_SHA256 = 'aeb5e64b7022f34aea19c1be71e3313aedcccd9dde27aa9aaa4e6224aa661a85';
 
 describe('収支シミュレーター', () => {
-  it('計算とデータ（script）が、元のまま（ハッシュが一致する）', () => {
+  it('計算とデータ（script）が、統括の了承した版のまま（ハッシュが一致する。2026-11-18）', () => {
     expect(script.length).toBeGreaterThan(300000);
-    expect(createHash('sha256').update(script).digest('hex')).toBe(ORIGINAL_SCRIPT_SHA256);
+    expect(createHash('sha256').update(script).digest('hex')).toBe(APPROVED_SCRIPT_SHA256);
   });
 
   it('札「デモ用の架空データ」が出る（N-12・SP-80）。「DEMO」の古い札は無い', () => {

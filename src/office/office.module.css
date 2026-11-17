@@ -629,6 +629,15 @@
   font-weight: 700;
   text-align: right;
 }
+/* 見込みの下に、登録の何 % か（M-01）。行の高さ（--tap）の中に収める */
+.rankShare {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
 .rankReg {
   font-size: 12px;
   color: var(--ink-soft);
@@ -984,6 +993,22 @@
   vertical-align: -1px;
 }
 /* ⑥ の凡例の下の、需要の出どころ（登録 → 預金の支えがある熱いファン）。③ の規模感と同じ 13px */
+/* 需要の出どころの文と、その横の割合（M-01） */
+.meetSourceRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--s1);
+  margin: var(--s1) 0 0;
+}
+.meetSourceRow > .meetSource {
+  margin: 0;
+}
+.meetShare {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
 .meetSource {
   margin: var(--s1) 0 0;
   font-size: 13px;

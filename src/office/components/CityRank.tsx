@@ -1,6 +1,7 @@
 import { CITIES, demandOf, metricValues } from '../../core';
 import type { ArtistId, CityName } from '../../core';
 import styles from '../office.module.css';
+import { shareOfReg } from '../share';
 import { useOffice } from '../store';
 import { text } from '../text/labels';
 
@@ -45,30 +46,40 @@ export function CityRank() {
         </span>
       </div>
       <ol className={styles.rankList}>
-        {rows.map((row, n) => (
-          <li key={row.name}>
-            <button
-              type="button"
-              className={styles.rankBtn}
-              aria-pressed={city === row.name}
-              aria-label={`${n + 1} ${row.name} ${text.rankExpected} ${people(row.expected)} ${text.rankReg} ${people(row.reg)}`}
-              onClick={(event) => {
-                pickCity(row.name);
-                // キーボードで押したとき（detail が 0）は、地図の丸と同じく、会場の先頭へフォーカスを移す（SP-03）
-                if (event.detail === 0) focusVenues();
-              }}
-            >
-              <span className={styles.rankNo} aria-hidden="true">
-                {n + 1}
-              </span>
-              <span className={styles.rankName}>{row.name}</span>
-              <span className={styles.rankExp}>{people(row.expected)}</span>
-              <span className={styles.rankReg}>
-                {text.rankReg} {people(row.reg)}
-              </span>
-            </button>
-          </li>
-        ))}
+        {rows.map((row, n) => {
+          const share = shareOfReg(row.expected, row.reg);
+          return (
+            <li key={row.name}>
+              <button
+                type="button"
+                className={styles.rankBtn}
+                aria-pressed={city === row.name}
+                aria-label={`${n + 1} ${row.name} ${text.rankExpected} ${people(row.expected)} ${text.rankReg} ${people(row.reg)}${share === null ? '' : ` ${text.shareOfReg(share)}`}`}
+                onClick={(event) => {
+                  pickCity(row.name);
+                  // キーボードで押したとき（detail が 0）は、地図の丸と同じく、会場の先頭へフォーカスを移す（SP-03）
+                  if (event.detail === 0) focusVenues();
+                }}
+              >
+                <span className={styles.rankNo} aria-hidden="true">
+                  {n + 1}
+                </span>
+                <span className={styles.rankName}>{row.name}</span>
+                <span className={styles.rankExp}>
+                  {people(row.expected)}
+                  {share !== null && (
+                    <small className={styles.rankShare} data-testid="rank-share">
+                      {text.shareOfReg(share)}
+                    </small>
+                  )}
+                </span>
+                <span className={styles.rankReg}>
+                  {text.rankReg} {people(row.reg)}
+                </span>
+              </button>
+            </li>
+          );
+        })}
       </ol>
     </section>
   );

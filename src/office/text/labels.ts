@@ -37,6 +37,8 @@ export const text = {
   rankExpected: '見込み',
   /** 一覧の行の、登録者数の前に置く語 */
   rankReg: '登録',
+  /** 見込みが登録の何 % か（M-01。割合は share.ts の shareOfReg）。一覧の行と、⑥ の需要の出どころの行に出す */
+  shareOfReg: (share: string): string => `登録の ${share}`,
   /** 会場を選ぶ前の、右の列の案内（判定は会場を選ぶまで出ない。I-01） */
   pickVenue: '会場を選ぶ',
   simulator: '収支シミュレーター',

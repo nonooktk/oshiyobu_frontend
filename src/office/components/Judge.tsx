@@ -9,6 +9,7 @@ import {
   xOfDeposit,
   yOfHeat,
 } from '../scatter';
+import { shareOfReg } from '../share';
 import { useOffice } from '../store';
 import { ARTIST_TEXT } from '../text/artists';
 import {
@@ -402,10 +403,19 @@ function DemandSource({ expected }: { readonly expected: number }) {
   if (city === null) return null;
   const reg = metricValues(artistId, 'reg')[cityIndex(city)] ?? 0;
   const line = demandSource(city, reg, expected);
+  const share = shareOfReg(expected, reg);
+  // 割合（M-01）は、出どころの文（data-testid="demand-source"）の外に並べる。文そのものは core の値のまま
   return (
-    <p className={styles.meetSource} data-testid="demand-source">
-      {line.lead} <b>{line.reg}</b> {line.mid} <b>{line.expected}</b>
-    </p>
+    <div className={styles.meetSourceRow}>
+      <p className={styles.meetSource} data-testid="demand-source">
+        {line.lead} <b>{line.reg}</b> {line.mid} <b>{line.expected}</b>
+      </p>
+      {share !== null && (
+        <span className={styles.meetShare} data-testid="demand-share">
+          （{text.shareOfReg(share)}）
+        </span>
+      )}
+    </div>
   );
 }
 

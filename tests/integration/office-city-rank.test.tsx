@@ -60,8 +60,10 @@ describe('事務所向けの ① 市の一覧', () => {
         const expected = demandOf(id, name).expected;
         expect(button.textContent).toContain(people(expected));
         expect(button.textContent).toContain(`登録 ${people(reg)}`);
+        // 2026-11-18（M-01）: 読み上げの名前の最後に、見込みが登録の何 % か（小数 1 桁で四捨五入）を足した
+        const share = `${(Math.round((expected * 1000) / reg) / 10).toFixed(1)}%`;
         expect(button.getAttribute('aria-label')).toBe(
-          `${n + 1} ${name} 見込み ${people(expected)} 登録 ${people(reg)}`,
+          `${n + 1} ${name} 見込み ${people(expected)} 登録 ${people(reg)} 登録の ${share}`,
         );
       });
     },

@@ -127,6 +127,11 @@
   border-bottom: 1px solid var(--line);
 }
 /* ② 集まる人数（帯の中）: 名前・数字の入力・よく使う値のボタンを横 1 行に */
+/* ② 集まる人数の行（① 地図のすぐ下。M-02） */
+.crowdRow {
+  padding: var(--s2) var(--s4);
+  border-top: 1px solid var(--line);
+}
 .crowd {
   display: flex;
   align-items: center;

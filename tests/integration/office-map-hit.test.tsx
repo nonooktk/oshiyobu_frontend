@@ -98,9 +98,9 @@ describe('事務所向けの ① 地図の押せる範囲と、② の番号の�
     },
   );
 
-  it('② の番号の印「2」が条件の帯の中に出て、入力の名前は「集まる人数」のまま', () => {
+  it('② の番号の印「2」が ② の行（① 地図の下。2026-11-18 に帯から移した。M-02）に出て、入力の名前は「集まる人数」のまま', () => {
     render(<App />);
-    const mark = within(screen.getByTestId('cond-band')).getByTestId('crowd-num');
+    const mark = within(screen.getByTestId('crowd-row')).getByTestId('crowd-num');
     expect(mark.textContent).toBe('2');
     expect(mark.getAttribute('aria-hidden')).toBe('true');
     expect(mark.closest('label')).toBeNull();

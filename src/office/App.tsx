@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { ArtistBar } from './components/ArtistBar';
 import { ChangeLive } from './components/Changed';
 import { ConditionBand } from './components/ConditionBand';
+import { CrowdField } from './components/CrowdField';
 import { Header } from './components/Header';
 import { Judge } from './components/Judge';
 import { MapPanel } from './components/MapPanel';
@@ -38,7 +39,7 @@ export function App() {
         <div className={styles.office}>
           <Header />
           <ArtistBar />
-          {/* 条件の帯（要件 R-15）: 推し以外の条件を変える入力を、ここにまとめる */}
+          {/* 条件の帯（要件 R-15）: 境目（預金額・熱量）。② 集まる人数は、2026-11-18 に ① 地図の下へ移した（M-02） */}
           <ConditionBand view={view} />
           <p className="sr-only" aria-live="polite">
             {live}
@@ -48,6 +49,10 @@ export function App() {
           <main className={styles.board}>
             <div className={styles.leftCol}>
               <MapPanel />
+              {/* ② 集まる人数は、① 地図のすぐ下（2026-11-18。docs/office/要件.md の M-02）。市・会場を選ぶ前から使える */}
+              <div className={styles.crowdRow} data-testid="crowd-row">
+                <CrowdField />
+              </div>
               {/* 地図の下は、③ 会場の候補と ④ これまでの公演を横に 2 列（1280 × 800 で、両方の見出しが見えるように） */}
               <div className={styles.lowerRow} data-testid="lower-row">
                 <SidePanel />

@@ -401,6 +401,7 @@
   display: inline;
 }
 .cityLabel {
+  /* layout.ts の LABEL_FONT と同じ値（名前の押せる範囲の大きさを、この値から見積もっている） */
   font-size: 18px;
   font-weight: 700;
   fill: var(--ink);

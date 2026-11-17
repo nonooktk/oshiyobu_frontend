@@ -133,6 +133,19 @@
   flex-wrap: wrap;
   gap: var(--s2);
 }
+/* ② の番号の印（③ ④ の .sideNum と同じ丸。字の色は白の直書きではなく、トークンの --surface。G-14） */
+.crowdNum {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--surface);
+  font-size: 12px;
+  font-weight: 700;
+}
 .crowdLabel {
   font-size: 13px;
   font-weight: 700;

@@ -20,6 +20,10 @@ export function CrowdField() {
   };
   return (
     <div className={styles.crowd} role="group" aria-labelledby="crowd-label">
+      {/* 番号の印は、ラベルの外に置く（ラベルの中だと、入力の名前が「2集まる人数」に変わるため）。読み上げない */}
+      <span className={styles.crowdNum} aria-hidden="true" data-testid="crowd-num">
+        2
+      </span>
       <label className={styles.crowdLabel} id="crowd-label" htmlFor="crowd-in">
         {crowdText.label}
       </label>

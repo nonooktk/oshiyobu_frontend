@@ -1,6 +1,13 @@
 import { CITIES, colorStep, metricValues, radiusOf } from '../../core';
 import type { CSSProperties } from 'react';
-import { CITY_POS, MAP_VIEWBOX, RAMPS } from '../map/layout';
+import {
+  CITY_POS,
+  LABEL_HIT_CITIES,
+  MAP_VIEWBOX,
+  RAMPS,
+  labelAnchor,
+  labelBox,
+} from '../map/layout';
 import { CityRank } from './CityRank';
 import { PREF_SHAPES } from '../map/shapes';
 import styles from '../office.module.css';
@@ -116,13 +123,13 @@ export function MapPanel() {
                 const value = values[i] ?? 0;
                 const r = radiusOf(reg);
                 const fill = `var(${RAMPS[metric][colorStep(values, value)]})`;
-                const [lx, ly] =
-                  pos === 'r'
-                    ? [x + r + 5, y - 2]
-                    : pos === 'l'
-                      ? [x - r - 5, y - 2]
-                      : [x, y + r + 19];
-                const anchor = pos === 'l' ? 'end' : pos === 'r' ? 'start' : 'middle';
+                const { lx, ly, anchor } = labelAnchor(x, y, r, pos);
+                const shown =
+                  metric === 'reg' ? `${value.toLocaleString('ja-JP')}人` : String(value);
+                // 鹿児島市は、名前と数字の範囲も押せるようにする（名前は押しても反応しない字なので、下の県の形に当たっていた）
+                const box = LABEL_HIT_CITIES.includes(data.name)
+                  ? labelBox(x, y, r, pos, [data.name, shown])
+                  : null;
                 const selected = city === data.name;
                 const choose = () => pickCity(data.name);
                 return (
@@ -142,7 +149,23 @@ export function MapPanel() {
                       }
                     }}
                   >
-                    <circle className={styles.hit} cx={x} cy={y} r={Math.max(r + 4, 26)} />
+                    <circle
+                      className={styles.hit}
+                      data-hit="dot"
+                      cx={x}
+                      cy={y}
+                      r={Math.max(r + 4, 26)}
+                    />
+                    {box !== null && (
+                      <rect
+                        className={styles.hit}
+                        data-hit="label"
+                        x={box.x}
+                        y={box.y}
+                        width={box.width}
+                        height={box.height}
+                      />
+                    )}
                     <circle className={styles.selRing} cx={x} cy={y} r={r + 5} />
                     <circle className={styles.focusRing} cx={x} cy={y} r={r + 8} />
                     <circle
@@ -163,7 +186,7 @@ export function MapPanel() {
                         {data.name}
                       </tspan>
                       <tspan className={styles.v} x={0} dy="1.25em">
-                        {metric === 'reg' ? `${value.toLocaleString('ja-JP')}人` : String(value)}
+                        {shown}
                       </tspan>
                     </text>
                   </g>

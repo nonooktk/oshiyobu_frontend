@@ -1,6 +1,7 @@
 // 事務所向け（/）の ④ これまでの公演: 久留米シティプラザ Cボックス（FUK-019）の記録が出る（要件 R-07・R-16）。
-// 2026-11-16 に足した 5 件（出典は久留米シティプラザの公式の PDF）が、「記録あり」で、日の新しいものから出ることを確かめる。
-// データと比べるだけだと、データが違っていても通るため、件数・日の並び・音の森の日・確認日は、値を直に書いて確かめる。
+// 2026-11-16 に足した 4 件（出典は久留米シティプラザの公式の PDF）が、「記録あり」で、日の新しいものから出ることを確かめる。
+// データと比べるだけだと、データが違っていても通るため、件数・日の並び・先頭の公演名・確認日は、値を直に書いて確かめる。
+// 音の森ピアノコンサートは、#39 のレビューで外した（出典の名前が出演者の記載ではなく、関係者だけの催しと読めるため）。
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../../src/office/App';
@@ -28,7 +29,7 @@ const openCbox = () => {
 };
 
 /** Cボックスの公演の日（日の新しいものから。直に書く） */
-const CBOX_DATES = ['2025-08-22', '2025-08-12', '2024-11-30', '2024-07-27', '2023-09-02'];
+const CBOX_DATES = ['2025-08-22', '2024-11-30', '2024-07-27', '2023-09-02'];
 
 describe('事務所向けの ④ これまでの公演（久留米シティプラザ Cボックス）', () => {
   beforeEach(() => {
@@ -44,17 +45,17 @@ describe('事務所向けの ④ これまでの公演（久留米シティプ�
     vi.unstubAllGlobals();
   });
 
-  it('会場のデータは FUK-019 に当たり、公演は 5 件で、日の新しいものから並ぶ（データの側）', () => {
+  it('会場のデータは FUK-019 に当たり、公演は 4 件で、日の新しいものから並ぶ（データの側）', () => {
     expect(VENUE_RECORDS.find((r) => r.coreVenueId === 'cbox')?.id).toBe('FUK-019');
     const expected = eventsOf('cbox');
-    expect(expected).toHaveLength(5);
+    expect(expected).toHaveLength(4);
     expect(expected.map((e) => e.date)).toEqual(CBOX_DATES);
   });
 
-  it('久留米市 → Cボックスを選ぶと、④ に公演が 5 件、日の新しいものから出る', () => {
+  it('久留米市 → Cボックスを選ぶと、④ に公演が 4 件、日の新しいものから出る', () => {
     openCbox();
     const items = within(past()).getAllByRole('listitem');
-    expect(items).toHaveLength(5);
+    expect(items).toHaveLength(4);
     items.forEach((item, i) => {
       expect(item.textContent).toContain(eventDate(CBOX_DATES[i]!));
     });
@@ -76,13 +77,16 @@ describe('事務所向けの ④ これまでの公演（久留米シティプ�
     });
   });
 
-  it('音の森ピアノコンサート（戒重守（office音の森））は 2025年8月12日', () => {
+  it('先頭の行（2025-08-22）の公演名は「落語教育委員会ｉｎ久留米」', () => {
     openCbox();
     const items = within(past()).getAllByRole('listitem');
-    const otonomori = items.filter((item) => item.textContent?.includes('戒重守（office音の森）'));
-    expect(otonomori).toHaveLength(1);
-    expect(otonomori[0]!.textContent).toContain('2025年8月12日');
-    expect(items[1]).toBe(otonomori[0]);
+    expect(items[0]!.textContent).toContain('落語教育委員会ｉｎ久留米');
+  });
+
+  it('④ のどの行にも「音の森」は出ない（#39 のレビューで外した）', () => {
+    openCbox();
+    const items = within(past()).getAllByRole('listitem');
+    expect(items.some((item) => item.textContent?.includes('音の森'))).toBe(false);
   });
 
   it('実在の札に確認日 2026-11-16 が出て、「記録は、まだありません」は出ない', () => {

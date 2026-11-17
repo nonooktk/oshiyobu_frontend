@@ -2229,20 +2229,74 @@ button.rcard:hover {
 }
 
 /* ---------- 新しい流れ（骨組み。見た目の作り込みは、画面の担当者が行う） ---------- */
-/* ホームの背景: プランが上がるほど豪華にする（0 ＝ 最安。1 ＝ ゴールド。2 ＝ プラチナ。3 ＝ ダイヤモンド） */
+/*
+  プランの色（ここ 1 か所で決める）。値は tokens.css の名前だけ（色の値は書かない。新しい名前も足さない）。
+  data-plan（normal・front・special・top）のカードと、ホームの data-plan-tier（0〜3。同じ順）が、同じ色を引く。
+    --plan-a・--plan-b      カードの地（左上 → 右下）。文字は、どのプランも --ink（planLock の文字は、鍵のかかったカードだけ --ink-soft）
+    --plan-line             カードの線。札（プランの名前。.planChip）の線
+    --plan-tag・-ink        札の地と文字
+    --plan-wash・-wash-end  ホームの背景。上の端が --plan-wash で、下へ伸ばして、85% の位置で --bg-c か --surface に抜ける
+  ホームの背景の上に直接載る文字は、背景のいちばん濃い所（上の端）でも 4.5:1 以上にする。白い地を敷くか（.planLine の「特典を見る」）、--ink にする（メーターの上段・説明）。
+  鍵のかかった見た目（data-locked）は、プランの色を使わず、灰色（--bg-c・--ink-soft）に落とす。
+  色の差し替えは、この区画だけで済む。
+*/
+.planItem[data-plan='normal'],
+.home[data-plan-tier='0'] {
+  --plan-a: var(--surface);
+  --plan-b: var(--surface);
+  --plan-line: var(--primary);
+  --plan-tag: var(--surface);
+  --plan-tag-ink: var(--primary-dark);
+}
+.planItem[data-plan='front'],
 .home[data-plan-tier='1'] {
-  background: linear-gradient(180deg, var(--yellow-light), var(--bg-c) 45%);
+  --plan-a: var(--yellow-light);
+  --plan-b: var(--yellow);
+  --plan-line: var(--warning);
+  --plan-tag: var(--yellow);
+  --plan-tag-ink: var(--ink);
+  --plan-wash: var(--yellow-light);
+  --plan-wash-end: var(--bg-c);
 }
+.planItem[data-plan='special'],
 .home[data-plan-tier='2'] {
-  background: linear-gradient(180deg, var(--sky-light), var(--surface) 45%);
+  --plan-a: var(--surface);
+  --plan-b: var(--line);
+  --plan-line: var(--gray-300);
+  --plan-tag: var(--gray-300);
+  --plan-tag-ink: var(--ink);
+  --plan-wash: var(--gray-300);
+  --plan-wash-end: var(--bg-c);
 }
+.planItem[data-plan='top'],
 .home[data-plan-tier='3'] {
-  background: linear-gradient(
-    160deg,
-    var(--yellow-light),
-    var(--sky-light) 40%,
-    var(--surface) 75%
-  );
+  --plan-a: var(--sky-light);
+  --plan-b: var(--surface);
+  --plan-line: var(--sky);
+  --plan-tag: var(--sky-light);
+  --plan-tag-ink: var(--ink);
+  --plan-wash: var(--sky-light);
+  --plan-wash-end: var(--surface);
+}
+/* ホームの背景: プランが上がるほど豪華にする（0 ＝ ベーシック〈そのまま〉。1 ＝ ゴールド。2 ＝ プラチナ。3 ＝ ダイヤモンド） */
+.home[data-plan-tier='1'],
+.home[data-plan-tier='2'],
+.home[data-plan-tier='3'] {
+  background: linear-gradient(180deg, var(--plan-wash), var(--plan-wash-end) 85%);
+}
+/* 段 1〜3: 推しの絵の枠とセリフのカード（吹き出しの三角も）の線を、プランの線の色にする。色だけ変える（太さ・余白・高さは、そのまま） */
+.home:is([data-plan-tier='1'], [data-plan-tier='2'], [data-plan-tier='3']) .hero,
+.home:is([data-plan-tier='1'], [data-plan-tier='2'], [data-plan-tier='3']) .bubble {
+  border-color: var(--plan-line);
+}
+.home:is([data-plan-tier='1'], [data-plan-tier='2'], [data-plan-tier='3']) .bubble::before {
+  border-top-color: var(--plan-line);
+  border-left-color: var(--plan-line);
+}
+/* 段 1〜3: メーターの上段（「開催熱量」・距離のことば）は、背景に直接載る。--primary-dark だと、背景の濃い所（段 2 で 3.94:1・段 3 で 4.37:1）で 4.5:1 に足りないので、--ink にする */
+.home:is([data-plan-tier='1'], [data-plan-tier='2'], [data-plan-tier='3']) .gRow,
+.home:is([data-plan-tier='1'], [data-plan-tier='2'], [data-plan-tier='3']) .gDist {
+  color: var(--ink);
 }
 .planLine {
   display: flex;
@@ -2253,12 +2307,20 @@ button.rcard:hover {
 }
 .planChip {
   padding: 2px var(--s2);
-  border: 1px solid var(--primary);
+  border: 1px solid var(--plan-line, var(--primary));
   border-radius: var(--pill);
-  background: var(--surface);
-  color: var(--primary-dark);
+  background: var(--plan-tag, var(--surface));
+  color: var(--plan-tag-ink, var(--primary-dark));
   font-size: var(--fs-note);
   font-weight: 700;
+}
+/* 「特典を見る」は、背景の色に左右されないよう、白い地を敷く（--primary と白は 4.5:1 以上）。高さは変えない */
+.planLine .btnText {
+  border-color: var(--plan-line, var(--primary));
+  background: var(--surface);
+}
+.planLine .btnText:hover {
+  background: var(--bg-c);
 }
 .homePair {
   display: grid;
@@ -2311,12 +2373,48 @@ button.rcard:hover {
   display: grid;
   gap: var(--s2);
   padding: var(--s3);
-  border: 1px solid var(--line);
+  border: 1px solid var(--plan-line, var(--line));
   border-radius: var(--r);
-  background: var(--surface);
+  background: linear-gradient(135deg, var(--plan-a, var(--surface)), var(--plan-b, var(--surface)));
 }
+/* 選んでいるプラン・参加中のプラン: 線を太く見せる（枠の大きさは変えない） */
+.planItem[data-selected='true'],
+.planItem[data-mine='true'] {
+  box-shadow: 0 0 0 2px var(--plan-line, var(--primary));
+}
+/*
+  色つきのカードの中の、塗りのボタン（水色 → マゼンタ）は、地の色とぶつからないよう単色にする（--ink の地に --surface の文字）。
+  hover・押している間は --ink-soft（文字は 4.5:1 以上）。副（.btnSecondary）・文字（.btnText）・黄（.btnAccent）・無効（:disabled）は、そのまま。
+  カードの外のボタンは変えない。
+*/
+.planItem .btn:not(.btnSecondary, .btnText, .btnAccent):not(:disabled) {
+  background: var(--ink);
+  color: var(--surface);
+}
+.planItem .btn:not(.btnSecondary, .btnText, .btnAccent):not(:disabled):hover,
+.planItem .btn:not(.btnSecondary, .btnText, .btnAccent):not(:disabled):active {
+  background: var(--ink-soft);
+}
+/* 鍵のかかったプラン: 灰色に落として、鍵の印を出す（プランの色は、鍵が外れるまで使わない） */
+.planItem[data-locked='true'],
 .planItem[aria-disabled='true'] {
+  border-style: dashed;
+  border-color: var(--gray-300);
   background: var(--bg-c);
+  box-shadow: none;
+}
+.planItem[data-locked='true'] .planName,
+.planItem[data-locked='true'] .planFacts,
+.planItem[data-locked='true'] .planLock {
+  color: var(--ink-soft);
+}
+.planItem[data-locked='true'] .planName {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+}
+.planLockIcon {
+  flex: none;
 }
 .planName {
   margin: 0;
@@ -2328,7 +2426,7 @@ button.rcard:hover {
   margin: 0;
   font-size: var(--fs-note);
   font-weight: 700;
-  color: var(--ink-soft);
+  color: var(--ink);
 }
 .rewardFrame {
   display: grid;

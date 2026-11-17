@@ -7,6 +7,7 @@ import {
   PLAN_NAMES,
   PLAN_ORDER,
   depositTasksOf,
+  homePhaseOf,
   isUpgrade,
   rewardOf,
   taskDepositOf,
@@ -18,6 +19,7 @@ import { yen } from '../text/format';
 import { PayNote } from '../text/pay';
 import fan from '../fan.module.css';
 import { useFan } from '../store/FanProvider';
+import { LockIcon } from '../components/LockIcon';
 import { DepositCard } from './DepositCard';
 import styles from './pages.module.css';
 
@@ -26,6 +28,8 @@ export function CoursesPage() {
   const { state, view, actions } = useFan();
   const { cond } = view;
   const ups = upgradesOf(state.course);
+  // 鍵が外れるのは、預金でやることが済んで、ホームに「プランを上げる」が出てから（それまでは、上のプランに鍵）
+  const unlocked = homePhaseOf(state, cond) === 'grow';
   return (
     <>
       <div className={`${fan.card} ${fan.cardNext}`}>
@@ -68,17 +72,22 @@ export function CoursesPage() {
           const k = courseOf(cond, id);
           const mine = state.course === id;
           const r = rewardOf(id);
+          const locked =
+            state.course === null ? id !== ENTRY_PLAN : isUpgrade(state.course, id) && !unlocked;
           return (
             <li
               key={id}
               className={fan.planItem}
               data-plan={id}
               data-mine={mine ? 'true' : undefined}
+              data-locked={locked ? 'true' : undefined}
               id={`course-${id}`}
             >
               <p className={fan.planName}>
+                {locked ? <LockIcon className={fan.planLockIcon} /> : null}
                 {PLAN_NAMES[id]}
                 {mine ? '（✓ 参加中）' : ''}
+                {locked ? <span className={fan.srOnly}>（ロック中）</span> : null}
               </p>
               <dl className={fan.planFacts}>
                 <dt>確保する額</dt>

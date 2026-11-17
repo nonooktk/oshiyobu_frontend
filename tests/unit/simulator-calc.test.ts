@@ -66,19 +66,19 @@ const labels = (): string[] =>
 describe('収支シミュレーター 300 人の区分（DRUM Be-1・キャパ 300・価格 6,000円）', () => {
   beforeEach(() => api.select('FUK-012'));
 
-  it('V-15 1 数字は、経費 3 つ → 利益（希望額）→ チケット価格と 3 つのプラン。出演料・アーティストの利益・需要は無い', () => {
+  it('V-15 1 数字は、経費 3 つ → 利益 → チケット価格と 3 つのプラン。出演料・アーティストの利益・需要は無い', () => {
     expect(labels()).toEqual([
       '会場費',
       '制作費',
       '移動・宿泊',
-      '利益（希望額）',
+      '利益',
       'チケット価格',
       'シルバープランの数',
       'シルバープランの上乗せ金額',
       'ゴールドプランの数',
       'ゴールドプランの上乗せ金額',
-      'ダイヤモンドプランの数',
-      'ダイヤモンドプランの上乗せ金額',
+      'プラチナプランの数',
+      'プラチナプランの上乗せ金額',
     ]);
     const box = document.querySelector('.sim-in')?.textContent ?? '';
     for (const gone of ['出演料', 'アーティストの利益', '需要', '高い枠', '前方', 'あいさつ']) {
@@ -88,7 +88,15 @@ describe('収支シミュレーター 300 人の区分（DRUM Be-1・キャパ 3
     expect(document.querySelector<HTMLInputElement>('#s-hope')?.value).toBe('150000');
   });
 
-  it('3 つのプランは、シルバー < ゴールド < ダイヤモンド（事務所向けの ⑤ と同じ組み立て）', () => {
+  it('2026-11-18 の追加の直し: 入力の名前は「利益」（「（希望額）」を付けない）。3 つ目のプランは「プラチナプラン」（M-23・M-24）', () => {
+    const page = document.querySelector('#sim')?.textContent ?? '';
+    expect(page).not.toContain('希望額');
+    expect(page).not.toContain('ダイヤモンド');
+    expect(page).toContain('プラチナプランの数');
+    expect(page).toContain('プラチナ 1'); // 内訳の「上に積む枠（シルバー 30・ゴールド 3・プラチナ 1）」
+  });
+
+  it('3 つのプランは、シルバー < ゴールド < プラチナ（事務所向けの ⑤ と同じ組み立て）', () => {
     const value = (key: string) =>
       Number(document.querySelector<HTMLInputElement>(`#s-${key}`)?.value);
     expect([value('t1p'), value('t2p'), value('t3p')]).toEqual([12000, 94000, 294000]);
@@ -107,7 +115,7 @@ describe('収支シミュレーター 300 人の区分（DRUM Be-1・キャパ 3
     expect(document.querySelector<HTMLInputElement>('#s-fee')?.value).toBe('500000');
   });
 
-  it('V-17 利益（希望額）を 800,000円にすると、最低条件 2,222,223円・371人 × 6,000円（キャパを超える添え書き）。入りきらないは出ない', () => {
+  it('V-17 利益を 800,000円にすると、最低条件 2,222,223円・371人 × 6,000円（キャパを超える添え書き）。入りきらないは出ない', () => {
     type('hope', 800000);
     expect(text('[data-sim=line]')).toBe('2,222,223円');
     expect(text('[data-sim=need]')).toBe('371人 × 6,000円（通常の席だけではキャパ 300 を超える）');
@@ -115,7 +123,7 @@ describe('収支シミュレーター 300 人の区分（DRUM Be-1・キャパ 3
     expect(text('[data-sim=profit]')).toBe('1,262,400円');
   });
 
-  it('V-18 最低条件ちょうど集まったときの全体利益は、利益（希望額）と一致する（150,000円・800,000円）', () => {
+  it('V-18 最低条件ちょうど集まったときの全体利益は、利益（入力）と一致する（150,000円・800,000円）', () => {
     expect(text('[data-sim=profit-at-line]')).toBe('150,000円');
     type('hope', 800000);
     expect(text('[data-sim=profit-at-line]')).toBe('800,000円');

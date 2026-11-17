@@ -17,6 +17,7 @@
   （出演者の欄が、問い合わせ先の個人の名前だったため。docs/office/要件.md の M-20）。Cボックスの公演は 4 件。
   2026-11-18（同じ了承）: 1 数字・2 損益の計算と並びを変えた（docs/office/要件.md の M-11〜M-22、式は docs/office/仕様.md の 9.3）。
   見出しの下の注記「上位コースの構成は、事務所向けと違います」は外した（3 つのプランを、事務所向けの ⑤ と同じ組み立てにしたため）。
+  2026-11-18 の追加の直し: 入力の名前「利益（希望額）」を「利益」に、「ダイヤモンドプラン」を「プラチナプラン」に変えた（名前だけ。M-23・M-24）。
 -->
 <style>
   /* ===== デザイントークン（toB デザインの決まり。index.html の :root と同じ値） ===== */
@@ -274,7 +275,7 @@ const TYPES = {livehouse:'ライブハウス',hall:'ホール',cafe_bar:'カフ�
 const GENRE = {idol:'アイドル',band:'バンド',singer:'歌手',voice_actor:'声優',vtuber:'VTuber',comedy:'お笑い',enka:'演歌',jazz:'ジャズ',classical:'クラシック',other:'その他'};
 const state = {n:300, prefs:new Set(PREFS), types:new Set(Object.keys(TYPES)), onlyEv:true, sel:null, genre:'all'};
 // 仮置きの費用（区分ごと）。会場費は公開料金が分かる会場でも、まずはこの値から始める
-// fee は出演料。hope は利益（希望額）＝最低条件ちょうど集まったときの全体利益。
+// fee は出演料。hope は利益＝最低条件ちょうど集まったときの全体利益。
 // hope の初めの値は、最低条件が 2026-11-18 より前と同じ値になるよう逆算した（これまでの利益 − これまでの最低条件 × 10%。docs/office/仕様.md の 9.3）
 const COST = {30:{venue:30000,prod:30000,fee:100000,travel:80000,hope:12000,price:7000},
               100:{venue:60000,prod:100000,fee:250000,travel:120000,hope:55000,price:7000},
@@ -434,7 +435,7 @@ function simFor(v){
   if (!sim[v.venue_id]){
     const c = COST[v.capacity_tier];
     const fr = Math.max(4, Math.round(v.capacity * 0.1));
-    // 3 つのプランの上乗せ金額は、事務所向けの ⑤ と同じ組み立て（シルバー＝価格 × 2、ゴールド＝10 万円 − 価格、ダイヤモンド＝30 万円 − 価格）
+    // 3 つのプランの上乗せ金額は、事務所向けの ⑤ と同じ組み立て（シルバー＝価格 × 2、ゴールド＝10 万円 − 価格、プラチナ＝30 万円 − 価格）
     sim[v.venue_id] = {venue:c.venue, prod:c.prod, fee:c.fee, travel:c.travel, hope:c.hope, price:c.price,
       t1n: fr, t1p: c.price * 2, t2n: 3, t2p: 100000 - c.price, t3n: 1, t3p: 300000 - c.price};
   }
@@ -445,19 +446,19 @@ function renderSim(){
   const v = V.find(x => x.venue_id === state.sel);
   if (!v){ box.innerHTML = ''; return; }
   const s = simFor(v);
-  // 1 数字: 経費 → 利益（希望額）→ チケット価格と 3 つのプラン。出演料は 2 損益の入力（docs/office/要件.md の M-11〜M-16）
+  // 1 数字: 経費 → 利益→ チケット価格と 3 つのプラン。出演料は 2 損益の入力（docs/office/要件.md の M-11〜M-16）
   const E = [['venue','会場費'],['prod','制作費'],['travel','移動・宿泊']];
   const P = [['price','チケット価格'],
              ['t1n','シルバープランの数'],['t1p','シルバープランの上乗せ金額'],
              ['t2n','ゴールドプランの数'],['t2p','ゴールドプランの上乗せ金額'],
-             ['t3n','ダイヤモンドプランの数'],['t3p','ダイヤモンドプランの上乗せ金額']];
-  // 利益（希望額）とチケット価格は 1 行を使い、プランは「数｜上乗せ金額」を 1 行に並べる
+             ['t3n','プラチナプランの数'],['t3p','プラチナプランの上乗せ金額']];
+  // 利益とチケット価格は 1 行を使い、プランは「数｜上乗せ金額」を 1 行に並べる
   const inp = (k, l, note) => `<label class="inp${note || k === 'price' ? ' wide' : ''}"><span class="il">${l}</span><input id="s-${k}" type="number" min="0" step="1000" value="${s[k]}">${note ? `<span class="inote">${note}</span>` : ''}</label>`;
   box.innerHTML = `<div class="sim">
     <section class="jcard sim-in">
       <p class="jlabel"><i>1</i>数字</p>
       <div class="grp">経費</div><div class="inputs">${E.map(([k,l]) => inp(k,l)).join('')}</div>
-      <div class="grp">利益</div><div class="inputs">${inp('hope','利益（希望額）','最低条件ちょうど集まったとき、全体利益がこの額になります')}</div>
+      <div class="grp">利益</div><div class="inputs">${inp('hope','利益','最低条件ちょうど集まったとき、全体利益がこの額になります')}</div>
       <div class="grp">チケット価格</div><div class="inputs">${P.map(([k,l]) => inp(k,l)).join('')}</div>
       <details class="fold-s"><summary>前提</summary>
       <div class="hint">数字はすべて仮置き。アーティスト側と話しながら、実際の値に書き換えて使う。${v.fee_note ? '<br>公開されている会場の料金：' + esc(v.fee_note) : ''}<br>集まる人数は、いまは満席（キャパ）として数える（仮）。3 つのプランは、通常の席の上に積む枠（クラファンの上位の枠）。</div></details>
@@ -472,10 +473,10 @@ function renderSim(){
   simOut(v, s);
 }
 // 損益の計算（docs/office/仕様.md の 9.3）。画面の外からも呼べるよう、数字だけを返す
-//   最低条件 ＝ 切り上げ（（経費 ＋ 出演料 ＋ 利益（希望額））÷（1 − 手数料率））
+//   最低条件 ＝ 切り上げ（（経費 ＋ 出演料 ＋ 利益）÷（1 − 手数料率））
 //   手数料   ＝ 切り上げ（集まる合計 × 手数料率）
 //   全体利益 ＝ 集まる合計 − 手数料 − 会場費 − 制作費 − 出演料 − 移動・宿泊費
-// 最低条件と手数料をどちらも 1 円未満で切り上げるので、最低条件ちょうど集まったとき、全体利益は利益（希望額）と一致する
+// 最低条件と手数料をどちらも 1 円未満で切り上げるので、最低条件ちょうど集まったとき、全体利益は利益と一致する
 function simCalc(cap, s){
   const line = Math.ceil((s.venue + s.prod + s.travel + s.fee + s.hope) * 100 / (100 - FEE_RATE));
   const commission = total => Math.ceil(total * FEE_RATE / 100);
@@ -506,7 +507,7 @@ function simOut(v, s){
         ${seg('c1', s.venue, '会場')}${seg('c2', s.prod, '制作')}${seg('c3', s.travel, '移動')}${seg('c4', s.fee, '出演料')}${seg('p', s.hope, '利益')}${seg('m', r.line - (s.venue + s.prod + s.travel + s.fee + s.hope), '手数料')}
         <div class="line${parseFloat(w(r.line)) > 50 ? ' r' : ''}" style="left:${w(r.line)}"><span>最低条件 ${man(r.line)}</span></div></div></div>
       <div class="barrow"><span>集まるお金</span><div class="bar">
-        ${seg('f', r.reach, '通常の席 ' + r.seats.toLocaleString() + '人')}${seg('u1', r.up1, 'シルバー')}${seg('u2', r.up2, 'ゴールド')}${seg('u3', r.up3, 'ダイヤモンド')}
+        ${seg('f', r.reach, '通常の席 ' + r.seats.toLocaleString() + '人')}${seg('u1', r.up1, 'シルバー')}${seg('u2', r.up2, 'ゴールド')}${seg('u3', r.up3, 'プラチナ')}
         <div class="line" style="left:${w(r.line)}"></div></div></div>
     </div>
     <div class="kpis">
@@ -518,7 +519,7 @@ function simOut(v, s){
     <div class="sumtbl">
       <span>最低条件（All-or-Nothingの目標）</span><span class="num">${yen(r.line)}</span>
       <span>通常の席で集まる額（満席 ${r.seats.toLocaleString()}人 × ${yen(s.price)}）</span><span class="num">${yen(r.reach)}</span>
-      <span>上に積む枠（シルバー ${s.t1n}・ゴールド ${s.t2n}・ダイヤモンド ${s.t3n}）</span><span class="num">${yen(r.up)}</span>
+      <span>上に積む枠（シルバー ${s.t1n}・ゴールド ${s.t2n}・プラチナ ${s.t3n}）</span><span class="num">${yen(r.up)}</span>
       <span>集まる合計</span><span class="num">${yen(r.total)}</span>
       <span>OSHIYOBUの成立手数料（${FEE_RATE}%）</span><span class="num">${ok ? yen(r.fee10) : '0円（不成立）'}</span>
       <span>会場費・制作費・移動・宿泊</span><span class="num">${yen(s.venue + s.prod + s.travel)}</span>

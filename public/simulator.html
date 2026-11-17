@@ -15,6 +15,8 @@
   外部通信なし（出典・公式のリンクは、押したときだけ新しいタブで開く。ロゴは assets/ の相対パス）。
   2026-11-18（統括の了承「全部、勝手に直してよい」）: 公演のデータから、久留米シティプラザ Cボックスの「第41回 音の森ピアノコンサート」の 1 件を外した
   （出演者の欄が、問い合わせ先の個人の名前だったため。docs/office/要件.md の M-20）。Cボックスの公演は 4 件。
+  2026-11-18（同じ了承）: 1 数字・2 損益の計算と並びを変えた（docs/office/要件.md の M-11〜M-22、式は docs/office/仕様.md の 9.3）。
+  見出しの下の注記「上位コースの構成は、事務所向けと違います」は外した（3 つのプランを、事務所向けの ⑤ と同じ組み立てにしたため）。
 -->
 <style>
   /* ===== デザイントークン（toB デザインの決まり。index.html の :root と同じ値） ===== */
@@ -138,12 +140,19 @@
   .inp input { width: 100%; min-height: var(--tap); padding: 4px 16px; border: 1px solid var(--ink-soft); border-radius: var(--radius); background: var(--surface); color: var(--ink);
     font: inherit; font-size: 16px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
   .hint { font-size: 14px; color: var(--ink-soft); }
-  .course-note { margin: -8px 0 16px; }
+  .inp.wide { grid-column: 1 / -1; }
+  .inp.wide input { max-width: calc(50% - 8px); }
+  .inp .inote { font-size: 12px; color: var(--ink-soft); }
+  .fee-in { margin: 0 0 16px; max-width: 50%; }
   .sim-in details.fold-s { margin-top: 16px; }
-  .minline { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 16px; margin: 0 0 16px; }
-  .minline .big { font-size: 28px; font-weight: 700; line-height: 1.2; color: var(--primary); }
+  /* 最低条件: 1 行目に金額を一番大きく、2 行目に「必要人数 × 価格」（docs/office/要件.md の M-19） */
+  .minline { display: grid; gap: 4px; margin: 0 0 16px; padding: 16px; border-radius: var(--radius); background: var(--bg-c); }
+  .minline p { margin: 0; }
+  .minline .row1 { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 16px; }
+  .minline .k { font-size: 16px; font-weight: 700; color: var(--ink); }
+  .minline .big { font-size: 36px; font-weight: 700; line-height: 1.2; color: var(--primary); }
   .minline .sub { font-size: 16px; font-weight: 700; color: var(--ink-soft); }
-  /* 判定の札（Success＝損益が合う／Warning＝今の需要では届かない／Error＝この会場では入りきらない）。白地・同系色の線・左にアイコン・文字は *-ink */
+  /* 判定の札（Error＝この会場では入りきらない。届くときは札を出さない）。白地・同系色の線・左にアイコン・文字は *-ink */
   .verdict { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
   .verdict b { display: inline-flex; align-items: center; gap: 8px; padding: 4px 16px 4px 8px; border: 1px solid var(--success); border-radius: var(--radius); background: var(--surface); color: var(--success-ink); font-size: 16px; font-weight: 700; line-height: 1.4; }
   .verdict b::before { content: "✓"; content: "✓" / ""; display: grid; place-items: center; flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--success-ink); color: var(--surface); font-size: 14px; line-height: 1; }
@@ -164,6 +173,7 @@
   .seg.c3 { background: var(--sky-light); color: var(--ink); } .seg.c4 { background: var(--primary); }
   .seg.p  { background: var(--yellow); color: var(--ink); } .seg.f  { background: var(--primary); }
   .seg.u1 { background: var(--sky-light); color: var(--ink); } .seg.u2 { background: var(--primary-dark); }
+  .seg.u3 { background: var(--yellow); color: var(--ink); } .seg.m { background: var(--ink-soft); }
   .line { position: absolute; top: -8px; bottom: -8px; border-left: 2px solid var(--ink); }
   .line span { position: absolute; bottom: 100%; left: -1px; margin-bottom: 4px; font-size: 12px; font-weight: 700; color: var(--ink); white-space: nowrap; }
   .line span::before { content: "▼ "; }
@@ -188,6 +198,7 @@
     .office-bar, .controls, .map-col, .side, .sim, .fold-note { padding-left: 16px; padding-right: 16px; }
     .jcard { padding: 16px; }
     .kpis { grid-template-columns: 1fr; }
+    .fee-in, .inp.wide input { max-width: none; }
     .part-h { font-size: 20px; }
     .minline .big { font-size: 28px; }
     .vrow { grid-template-columns: 56px minmax(0, 1fr); gap: 8px 16px; }
@@ -209,7 +220,6 @@
 
 <div class="wrap">
   <h1 class="part-h">収支シミュレーター</h1>
-  <p class="hint course-note">上位コースの構成は、事務所向けと違います。</p>
 
   <div class="office">
     <div class="office-bar">
@@ -264,11 +274,14 @@ const TYPES = {livehouse:'ライブハウス',hall:'ホール',cafe_bar:'カフ�
 const GENRE = {idol:'アイドル',band:'バンド',singer:'歌手',voice_actor:'声優',vtuber:'VTuber',comedy:'お笑い',enka:'演歌',jazz:'ジャズ',classical:'クラシック',other:'その他'};
 const state = {n:300, prefs:new Set(PREFS), types:new Set(Object.keys(TYPES)), onlyEv:true, sel:null, genre:'all'};
 // 仮置きの費用（区分ごと）。会場費は公開料金が分かる会場でも、まずはこの値から始める
-const COST = {30:{venue:30000,prod:30000,fee:100000,travel:80000,profit:40000,price:7000},
-              100:{venue:60000,prod:100000,fee:250000,travel:120000,profit:120000,price:7000},
-              300:{venue:200000,prod:300000,fee:500000,travel:200000,profit:300000,price:6000},
-              500:{venue:300000,prod:600000,fee:800000,travel:250000,profit:500000,price:7000},
-              1000:{venue:600000,prod:1200000,fee:1500000,travel:350000,profit:1000000,price:7500}};
+// fee は出演料。hope は利益（希望額）＝最低条件ちょうど集まったときの全体利益。
+// hope の初めの値は、最低条件が 2026-11-18 より前と同じ値になるよう逆算した（これまでの利益 − これまでの最低条件 × 10%。docs/office/仕様.md の 9.3）
+const COST = {30:{venue:30000,prod:30000,fee:100000,travel:80000,hope:12000,price:7000},
+              100:{venue:60000,prod:100000,fee:250000,travel:120000,hope:55000,price:7000},
+              300:{venue:200000,prod:300000,fee:500000,travel:200000,hope:150000,price:6000},
+              500:{venue:300000,prod:600000,fee:800000,travel:250000,hope:255000,price:7000},
+              1000:{venue:600000,prod:1200000,fee:1500000,travel:350000,hope:535000,price:7500}};
+const FEE_RATE = 10;   // OSHIYOBU の成立手数料（%）
 const sim = {};
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -421,9 +434,9 @@ function simFor(v){
   if (!sim[v.venue_id]){
     const c = COST[v.capacity_tier];
     const fr = Math.max(4, Math.round(v.capacity * 0.1));
-    sim[v.venue_id] = {venue:c.venue, prod:c.prod, fee:c.fee, travel:c.travel, profit:c.profit, price:c.price,
-      demand: Math.round(v.capacity * 1.3),
-      t1n: fr, t1p: c.price * 2, t2n: Math.max(2, Math.round(fr / 2)), t2p: c.price * 4};
+    // 3 つのプランの上乗せ金額は、事務所向けの ⑤ と同じ組み立て（シルバー＝価格 × 2、ゴールド＝10 万円 − 価格、ダイヤモンド＝30 万円 − 価格）
+    sim[v.venue_id] = {venue:c.venue, prod:c.prod, fee:c.fee, travel:c.travel, hope:c.hope, price:c.price,
+      t1n: fr, t1p: c.price * 2, t2n: 3, t2p: 100000 - c.price, t3n: 1, t3p: 300000 - c.price};
   }
   return sim[v.venue_id];
 }
@@ -432,67 +445,86 @@ function renderSim(){
   const v = V.find(x => x.venue_id === state.sel);
   if (!v){ box.innerHTML = ''; return; }
   const s = simFor(v);
-  const F = [['venue','会場費'],['prod','制作費'],['fee','出演料'],['travel','移動・宿泊'],['profit','アーティストの利益'],['price','チケット価格']];
-  const U = [['t1n','前方席の数'],['t1p','前方席の上乗せ'],['t2n','あいさつの数'],['t2p','あいさつの上乗せ']];
-  const inp = (k, l) => `<label class="inp"><span class="il">${l}</span><input id="s-${k}" type="number" min="0" step="1000" value="${s[k]}"></label>`;
+  // 1 数字: 経費 → 利益（希望額）→ チケット価格と 3 つのプラン。出演料は 2 損益の入力（docs/office/要件.md の M-11〜M-16）
+  const E = [['venue','会場費'],['prod','制作費'],['travel','移動・宿泊']];
+  const P = [['price','チケット価格'],
+             ['t1n','シルバープランの数'],['t1p','シルバープランの上乗せ金額'],
+             ['t2n','ゴールドプランの数'],['t2p','ゴールドプランの上乗せ金額'],
+             ['t3n','ダイヤモンドプランの数'],['t3p','ダイヤモンドプランの上乗せ金額']];
+  // 利益（希望額）とチケット価格は 1 行を使い、プランは「数｜上乗せ金額」を 1 行に並べる
+  const inp = (k, l, note) => `<label class="inp${note || k === 'price' ? ' wide' : ''}"><span class="il">${l}</span><input id="s-${k}" type="number" min="0" step="1000" value="${s[k]}">${note ? `<span class="inote">${note}</span>` : ''}</label>`;
   box.innerHTML = `<div class="sim">
     <section class="jcard sim-in">
       <p class="jlabel"><i>1</i>数字</p>
-      <div class="grp">費用と利益</div><div class="inputs">${F.map(([k,l]) => inp(k,l)).join('')}</div>
-      <div class="grp">需要（仮）</div><div class="inputs">${inp('demand','推しを登録し、預金している人')}</div>
-      <div class="grp">高い枠</div><div class="inputs">${U.map(([k,l]) => inp(k,l)).join('')}</div>
+      <div class="grp">経費</div><div class="inputs">${E.map(([k,l]) => inp(k,l)).join('')}</div>
+      <div class="grp">利益</div><div class="inputs">${inp('hope','利益（希望額）','最低条件ちょうど集まったとき、全体利益がこの額になります')}</div>
+      <div class="grp">チケット価格</div><div class="inputs">${P.map(([k,l]) => inp(k,l)).join('')}</div>
       <details class="fold-s"><summary>前提</summary>
-      <div class="hint">数字はすべて仮置き。アーティスト側と話しながら、実際の値に書き換えて使う。${v.fee_note ? '<br>公開されている会場の料金：' + esc(v.fee_note) : ''}<br>需要（デモ用の仮の数字。本番は預金つきの登録者数）。上に積む枠（クラファンの高い枠）。この街で推しを登録し、預金している人。</div></details>
+      <div class="hint">数字はすべて仮置き。アーティスト側と話しながら、実際の値に書き換えて使う。${v.fee_note ? '<br>公開されている会場の料金：' + esc(v.fee_note) : ''}<br>集まる人数は、いまは満席（キャパ）として数える（仮）。3 つのプランは、通常の席の上に積む枠（クラファンの上位の枠）。</div></details>
     </section>
-    <section class="jcard sim-out"><p class="jlabel"><i>2</i>損益<span class="vname-s">${esc(v.venue_name)}</span></p><div id="simout"></div></section>
+    <section class="jcard sim-out"><p class="jlabel"><i>2</i>損益<span class="vname-s">${esc(v.venue_name)}</span></p>
+      <div class="inputs fee-in">${inp('fee','出演料')}</div>
+      <div id="simout"></div></section>
   </div>`;
-  for (const k of [...F, ...U, ['demand']].map(x => x[0])){
+  for (const k of [...E, ['hope'], ...P, ['fee']].map(x => x[0])){
     $('#s-' + k).addEventListener('input', e => { s[k] = Math.max(0, +e.target.value || 0); simOut(v, s); });
   }
   simOut(v, s);
 }
-function simOut(v, s){
-  const cost = s.venue + s.prod + s.fee + s.travel;
-  const line = cost + s.profit;
-  const up1 = s.t1n * s.t1p, up2 = s.t2n * s.t2p, up = up1 + up2;
+// 損益の計算（docs/office/仕様.md の 9.3）。画面の外からも呼べるよう、数字だけを返す
+//   最低条件 ＝ 切り上げ（（経費 ＋ 出演料 ＋ 利益（希望額））÷（1 − 手数料率））
+//   手数料   ＝ 切り上げ（集まる合計 × 手数料率）
+//   全体利益 ＝ 集まる合計 − 手数料 − 会場費 − 制作費 − 出演料 − 移動・宿泊費
+// 最低条件と手数料をどちらも 1 円未満で切り上げるので、最低条件ちょうど集まったとき、全体利益は利益（希望額）と一致する
+function simCalc(cap, s){
+  const line = Math.ceil((s.venue + s.prod + s.travel + s.fee + s.hope) * 100 / (100 - FEE_RATE));
+  const commission = total => Math.ceil(total * FEE_RATE / 100);
+  const profitAt = total => total - commission(total) - s.venue - s.prod - s.fee - s.travel;
+  const up1 = s.t1n * s.t1p, up2 = s.t2n * s.t2p, up3 = s.t3n * s.t3p, up = up1 + up2 + up3;
   const need = s.price > 0 ? Math.ceil(line / s.price) : Infinity;   // 通常の席だけで最低条件に届く人数
-  const fits = v.capacity * s.price + up >= line;
-  const seats = Math.min(v.capacity, s.demand);
+  const seats = cap;                                                 // 集まる人数は、暫定で満席（キャパ）
   const reach = seats * s.price;
   const total = reach + up;
-  const ok = fits && total >= line;
-  const fee = total * 0.10;
-  const artistProfit = Math.max(0, total - fee - cost);
-  const max = Math.max(total, line) * 1.04;
+  const fits = total >= line;                                        // 満席と 3 つのプランを合わせて、最低条件に届くか
+  return {line, need, seats, reach, up1, up2, up3, up, total, fits,
+    fee10: commission(total), profit: profitAt(total), profitAtLine: profitAt(line)};
+}
+function simOut(v, s){
+  const r = simCalc(v.capacity, s);
+  const ok = r.fits;
+  const max = Math.max(r.total, r.line) * 1.04;
   const w = x => (100 * x / max).toFixed(2) + '%';
   const seg = (cls, x, lab) => x > 0 ? `<div class="seg ${cls}" style="width:${w(x)}" title="${lab} ${man(x)}">${lab}</div>` : '';
-  const verdict = !fits
-    ? `<div class="verdict err"><b>この会場では入りきらない</b><span>満席と上の枠を合わせても、最低条件に届かない。価格を上げるか、大きい会場へ</span></div>`
-    : ok ? `<div class="verdict ok"><b>損益が合う：All-or-Nothingで提案できる</b><span>通常の席が ${Math.min(need, v.capacity).toLocaleString()}人（収容の${Math.min(100, Math.round(100*need/v.capacity))}%）埋まれば、最低条件に届く。需要は ${s.demand.toLocaleString()}人</span></div>`
-         : `<div class="verdict warn"><b>今の需要では届かない</b><span>最低条件まで あと ${man(line - total)}。届かなければ不成立で、誰も損をしない</span></div>`;
-  $('#simout').innerHTML = `<div class="minline"><span class="k">最低条件</span><span class="big num">${yen(line)}</span>${Number.isFinite(need) ? `<span class="sub num">${need.toLocaleString()}人 × ${yen(s.price)}</span>` : ''}</div>
+  const verdict = ok ? ''
+    : `<div class="verdict err"><b>この会場では入りきらない</b><span>満席と 3 つのプランを合わせても、最低条件に届かない。価格を上げるか、大きい会場へ</span></div>`;
+  const over = Number.isFinite(r.need) && r.need > v.capacity ? `（通常の席だけではキャパ ${v.capacity.toLocaleString()} を超える）` : '';
+  $('#simout').innerHTML = `<div class="minline"><p class="row1"><span class="k">最低条件</span><span class="big num" data-sim="line">${yen(r.line)}</span></p>
+      ${Number.isFinite(r.need) ? `<p class="sub num" data-sim="need">${r.need.toLocaleString()}人 × ${yen(s.price)}${over}</p>` : ''}</div>
     ${verdict}
     <div class="bars">
       <div class="barrow"><span>費用と目標</span><div class="bar">
-        ${seg('c1', s.venue, '会場')}${seg('c2', s.prod, '制作')}${seg('c3', s.fee, '出演料')}${seg('c4', s.travel, '移動')}${seg('p', s.profit, '利益')}
-        <div class="line${parseFloat(w(line)) > 50 ? ' r' : ''}" style="left:${w(line)}"><span>最低条件 ${man(line)}</span></div></div></div>
+        ${seg('c1', s.venue, '会場')}${seg('c2', s.prod, '制作')}${seg('c3', s.travel, '移動')}${seg('c4', s.fee, '出演料')}${seg('p', s.hope, '利益')}${seg('m', r.line - (s.venue + s.prod + s.travel + s.fee + s.hope), '手数料')}
+        <div class="line${parseFloat(w(r.line)) > 50 ? ' r' : ''}" style="left:${w(r.line)}"><span>最低条件 ${man(r.line)}</span></div></div></div>
       <div class="barrow"><span>集まるお金</span><div class="bar">
-        ${seg('f', reach, '通常の席 ' + seats.toLocaleString() + '人')}${seg('u1', up1, '前方席')}${seg('u2', up2, 'あいさつ')}
-        <div class="line" style="left:${w(line)}"></div></div></div>
+        ${seg('f', r.reach, '通常の席 ' + r.seats.toLocaleString() + '人')}${seg('u1', r.up1, 'シルバー')}${seg('u2', r.up2, 'ゴールド')}${seg('u3', r.up3, 'ダイヤモンド')}
+        <div class="line" style="left:${w(r.line)}"></div></div></div>
     </div>
     <div class="kpis">
-      <div class="kpi"><span class="k">集まる合計</span><span class="v num">${yen(total)}</span></div>
-      <div class="kpi"><span class="k">手数料（10%）</span><span class="v num">${ok ? yen(fee) : '0円（不成立）'}</span></div>
-      <div class="kpi main"><span class="k">アーティストの利益</span><span class="v num">${ok ? yen(artistProfit) : '0円（不成立）'}</span></div>
+      <div class="kpi"><span class="k">集まる合計（満席のとき）</span><span class="v num">${yen(r.total)}</span></div>
+      <div class="kpi"><span class="k">手数料（${FEE_RATE}%）</span><span class="v num">${ok ? yen(r.fee10) : '0円（不成立）'}</span></div>
+      <div class="kpi main"><span class="k">全体利益</span><span class="v num" data-sim="profit">${ok ? yen(r.profit) : '0円（不成立）'}</span></div>
     </div>
     <details class="fold-s"><summary>内訳</summary>
     <div class="sumtbl">
-      <span>最低条件（All-or-Nothingの目標）</span><span class="num">${yen(line)}</span>
-      <span>通常の席で集まる額（${seats.toLocaleString()}人 × ${yen(s.price)}）</span><span class="num">${yen(reach)}</span>
-      <span>上に積む枠（前方席 ${s.t1n}・あいさつ ${s.t2n}）</span><span class="num">${yen(up)}</span>
-      <span>集まる合計</span><span class="num">${yen(total)}</span>
-      <span>OSHIYOBUの成立手数料（10%）</span><span class="num">${ok ? yen(fee) : '0円（不成立）'}</span>
-      <span class="tot">アーティスト側の利益</span><span class="num tot">${ok ? yen(artistProfit) : '0円（不成立）'}</span>
+      <span>最低条件（All-or-Nothingの目標）</span><span class="num">${yen(r.line)}</span>
+      <span>通常の席で集まる額（満席 ${r.seats.toLocaleString()}人 × ${yen(s.price)}）</span><span class="num">${yen(r.reach)}</span>
+      <span>上に積む枠（シルバー ${s.t1n}・ゴールド ${s.t2n}・ダイヤモンド ${s.t3n}）</span><span class="num">${yen(r.up)}</span>
+      <span>集まる合計</span><span class="num">${yen(r.total)}</span>
+      <span>OSHIYOBUの成立手数料（${FEE_RATE}%）</span><span class="num">${ok ? yen(r.fee10) : '0円（不成立）'}</span>
+      <span>会場費・制作費・移動・宿泊</span><span class="num">${yen(s.venue + s.prod + s.travel)}</span>
+      <span>出演料</span><span class="num">${yen(s.fee)}</span>
+      <span class="tot">全体利益</span><span class="num tot">${ok ? yen(r.profit) : '0円（不成立）'}</span>
+      <span>最低条件ちょうど集まったときの全体利益</span><span class="num" data-sim="profit-at-line">${yen(r.profitAtLine)}</span>
     </div></details>`;
 }
 setN(300);

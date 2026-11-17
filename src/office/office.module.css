@@ -3,8 +3,9 @@
   min-height: 100vh;
   background: var(--bg-b);
 }
+/* 本文の最大幅は 1248 px（幅 1280 で、① の地図を大きくするため。仕様 6 節の「余白が大きいときは、広げてよい」） */
 .wrap {
-  max-width: 1180px;
+  max-width: 1248px;
   margin: 0 auto;
   padding: var(--s3) var(--s3) var(--s5);
 }
@@ -112,6 +113,79 @@
   font-weight: 700;
   color: var(--ink-soft);
 }
+
+/* 条件の帯（要件 R-15）。推しの帯の下の 2 行目。高さは、会場を選ぶ前から確保する（選んだときに下の見出しが動かないように） */
+.condBand {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s4);
+  /* 境目（数字の入力。枠の線を含めて 48px）が出たときと同じ高さ（上下の余白と下の線を足して 65px） */
+  min-height: 65px;
+  padding: var(--s2) var(--s4);
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+/* ② 集まる人数（帯の中）: 名前・数字の入力・よく使う値のボタンを横 1 行に */
+.crowd {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.crowdLabel {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.crowdPresets {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--s1);
+}
+.crowdBtn {
+  min-width: var(--tap);
+  min-height: var(--tap);
+  padding: 0 var(--s2);
+  border: 1px solid var(--primary);
+  border-radius: var(--pill);
+  background: var(--surface);
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.crowdBtn[aria-pressed='true'] {
+  background: var(--primary);
+  color: #fff;
+}
+/* ③ のカードの規模感（キャパ ÷ 人数） */
+.vratio {
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.venue[aria-pressed='true'] .vratio {
+  color: var(--ink);
+}
+/* 帯の中の境目: 枠を外して、名前・スライダー・数字の入力を横 1 行に */
+.condBand .qLines {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s4);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.condBand .qLineField {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.condBand .qLineRow input[type='range'] {
+  flex: none;
+  width: 120px;
+}
 .artists {
   display: flex;
   align-items: center;
@@ -184,12 +258,14 @@
   flex-direction: column;
   padding: var(--s3) var(--s4) var(--s4);
 }
+/* ① の左右の余白は 16 px（地図の幅を空けるため。上の余白は、641 px 以上で詰める。下の @media） */
 .mapCol {
-  padding: var(--s4) var(--s4) var(--s3);
+  padding: var(--s4) var(--s3) var(--s2);
 }
-/* 地図は高さ 400 px まで（1280 × 800 で、③ の見出しまで見えるように） */
+/* 地図は高さ 480 px まで。幅 1280 では、右の市の一覧に幅を譲るので、幅で決まって 340 × 436 px ほど
+   （1280 × 800 で、③④ の見出しまで見えるように） */
 .mapCol .mapWrap svg {
-  max-height: 400px;
+  max-height: 480px;
 }
 .sideCol {
   display: grid;
@@ -425,6 +501,248 @@
   font-weight: 400;
 }
 
+/* 実在と架空の札（要件 R-16・仕様 4.3）。区別は、色と文の両方で付ける */
+.realChip,
+.fictChip {
+  display: inline-block;
+  justify-self: start;
+  padding: 1px var(--s2);
+  border-radius: var(--r);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: normal;
+}
+.realChip {
+  margin: 0 0 var(--s2);
+  border: 1px solid var(--success-ink);
+  background: var(--surface);
+  color: var(--success-ink);
+}
+.fictChip {
+  border: 1px solid var(--warning-ink);
+  background: var(--yellow-light);
+  color: var(--warning-ink);
+}
+/* ① の札は、地図の枠の左上の角に重ねる（行が折れて地図が動かないように）。⑥ の行では、見出しのすぐ右
+   （成立の見込みの札は、これまでどおり右の端） */
+.mapCol .mapWrap {
+  position: relative;
+}
+.mapFict {
+  position: absolute;
+  top: var(--s2);
+  left: var(--s2);
+  z-index: 1;
+  pointer-events: none;
+}
+.fictMid {
+  margin-right: auto;
+}
+/* ① 地図と市の一覧を横に 2 列（地図は縦長なので、幅を絞っても高さは 400 px までのまま） */
+.mapRow {
+  display: grid;
+  /* 一覧は 224 px（5 組 × 9 市で、名前と数字が切れない幅）。残りを地図に使う */
+  grid-template-columns: minmax(0, 1fr) 224px;
+  align-items: start;
+  gap: var(--s2);
+  margin-top: var(--s2);
+}
+.mapRow > .mapWrap {
+  margin-top: 0;
+}
+.rank {
+  min-width: 0;
+}
+/* 見出しと札「数字は架空」（2 行になる分は、① の上下の余白を詰めて、③④ の見出しを 800 px 以内に保つ） */
+.rankHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1);
+}
+.rankH {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--ink);
+}
+.rankList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rankBtn {
+  display: grid;
+  grid-template-columns: 1.2em minmax(0, 1fr) auto auto;
+  align-items: baseline;
+  gap: var(--s1);
+  width: 100%;
+  min-height: var(--tap);
+  padding: 0 var(--s2);
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.rankBtn:hover {
+  background: var(--bg-c);
+}
+.rankBtn[aria-pressed='true'] {
+  background: var(--yellow-light);
+}
+.rankBtn:focus-visible {
+  outline: 3px solid var(--primary-dark);
+  outline-offset: -3px;
+}
+.rankNo {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.rankName {
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.rankExp {
+  font-size: 15px;
+  font-weight: 700;
+  text-align: right;
+}
+.rankReg {
+  font-size: 12px;
+  color: var(--ink-soft);
+  text-align: right;
+  white-space: nowrap;
+}
+/* ⑤ の見出しの行（見出し・架空の札・一文） */
+.jHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s2);
+  margin: 0 0 var(--s2);
+}
+.mixNote {
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+/* 出典のリンク（新しいタブで開く） */
+.srcLink {
+  color: var(--primary);
+  font-weight: 700;
+  text-decoration: underline;
+}
+/* ③ の選んだ会場の、詳しい欄（実在の情報） */
+.facts {
+  margin: var(--s1) 0 0;
+  padding: var(--s2) var(--s3);
+  border-left: 3px solid var(--success-ink);
+  background: var(--surface);
+  font-size: 13px;
+  color: var(--ink);
+}
+.facts p {
+  margin: 0;
+}
+.factsName {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--s2);
+  font-weight: 700;
+}
+.factsK,
+.factsSub {
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 400;
+}
+.factsBasis {
+  color: var(--ink-soft);
+}
+.factsSrc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--s3);
+  color: var(--ink-soft);
+}
+.factsNone {
+  color: var(--ink-soft);
+}
+
+/* 地図の下: ③ 会場の候補と ④ これまでの公演を横に 2 列（幅 1200 未満は 1 列。下の @media） */
+.lowerRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  flex: 1;
+  border-top: 1px solid var(--line);
+}
+.lowerRow > .sideCol {
+  border-top: 0;
+}
+/* ④ これまでの公演（③ と同じ並べ方: 番号の印と見出しを横に、ほかは下に 1 行ずつ） */
+.pastCol {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: start;
+  column-gap: var(--s2);
+  padding: var(--s3) var(--s4) var(--s4);
+  border-left: 1px solid var(--line);
+}
+.pastCol > * {
+  grid-column: 1 / -1;
+}
+.pastCol > .sideNum,
+.pastCol > .sideH {
+  grid-column: auto;
+  align-self: center;
+}
+.pastNone {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 14px;
+  font-weight: 700;
+}
+.pastList {
+  display: grid;
+  gap: var(--s2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pastList li {
+  display: grid;
+  gap: 2px;
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  font-size: 13px;
+}
+.pastDate {
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+.pastArtist {
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 700;
+}
+.pastTitle {
+  color: var(--ink-soft);
+}
+.pastList .srcLink {
+  justify-self: start;
+}
+
 /* 判定 */
 .judge {
   display: grid;
@@ -650,6 +968,15 @@
   margin-right: var(--s1);
   border-radius: 2px;
   vertical-align: -1px;
+}
+/* ⑥ の凡例の下の、需要の出どころ（登録 → 預金の支えがある熱いファン）。③ の規模感と同じ 13px */
+.meetSource {
+  margin: var(--s1) 0 0;
+  font-size: 13px;
+  color: var(--ink);
+}
+.meetSource b {
+  font-weight: 700;
 }
 .meetShort {
   margin: var(--s2) 0 0;
@@ -1236,16 +1563,46 @@ div.chg > .prevVal {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+/* ③④ を 2 列にしている幅では、③ のカードが狭いので、名前・キャパ・公開料金を縦に並べる（名前が細かく折れないように） */
+@media (min-width: 1200px) {
+  .lowerRow .venue {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .lowerRow .vfee {
+    grid-row: auto;
+    grid-column: auto;
+    text-align: left;
+  }
+  .lowerRow .vfee small {
+    display: inline;
+    margin-right: var(--s1);
+  }
+}
+/* ③④ の 2 列は、左の列が広い幅（1200 以上）だけ。狭いときは ③ の下に ④ を置く */
+@media (max-width: 1199px) {
+  .lowerRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pastCol {
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+}
 @media (max-width: 640px) {
   .bar,
   .artistBar,
   .mapCol,
   .sideCol,
+  .pastCol,
   .rightCol {
     padding-right: var(--s3);
     padding-left: var(--s3);
   }
   .condIn {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* ① の市の一覧は、地図の下に置く（横スクロールを出さない） */
+  .mapRow {
     grid-template-columns: minmax(0, 1fr);
   }
   /* ⑥ の中の 2 列（図とカード・スライダー 2 本）も、狭い画面では 1 列に落とす（スライダーが潰れないように） */
@@ -1256,8 +1613,30 @@ div.chg > .prevVal {
   .ppGrid {
     grid-template-columns: minmax(0, 1fr);
   }
+  /* 狭い画面では地図が小さく、福岡市の大きい丸に重なるので、① の札は地図に重ねず、枠の中の上に置く */
+  .mapFict {
+    position: static;
+    margin: var(--s2) 0 0 var(--s2);
+  }
   .barEnd {
     margin-left: 0;
+  }
+}
+/* 641 px 以上は、地図より上の余白を詰める（1280 × 800 で、③④ の見出しに余裕を持たせる。計 40 px） */
+@media (min-width: 641px) {
+  .wrap {
+    padding-top: var(--s2);
+  }
+  .bar {
+    padding-top: var(--s1);
+    padding-bottom: var(--s1);
+  }
+  .artistBar {
+    padding-top: var(--s2);
+    padding-bottom: var(--s2);
+  }
+  .mapCol {
+    padding-top: var(--s3);
   }
 }
 @media (prefers-reduced-motion: reduce) {

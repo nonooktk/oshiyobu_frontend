@@ -1,10 +1,11 @@
 import { CITIES, colorStep, metricValues, radiusOf } from '../../core';
 import type { CSSProperties } from 'react';
 import { CITY_POS, MAP_VIEWBOX, RAMPS } from '../map/layout';
+import { CityRank } from './CityRank';
 import { PREF_SHAPES } from '../map/shapes';
 import styles from '../office.module.css';
 import { useOffice } from '../store';
-import { text } from '../text/labels';
+import { realText, text } from '../text/labels';
 
 const LEGEND_STEPS = [20000, 5000, 1000] as const;
 
@@ -73,96 +74,105 @@ export function MapPanel() {
         </div>
         {metric === 'hot' && <span className={styles.formula}>{text.formula}</span>}
       </div>
-      <div className={styles.mapWrap}>
-        <svg
-          viewBox={`0 0 ${MAP_VIEWBOX.width} ${MAP_VIEWBOX.height}`}
-          role="group"
-          aria-labelledby="map-title"
-        >
-          <title id="map-title">{text.mapTitle}</title>
-          <g aria-hidden="true">
-            {PREF_SHAPES.map((shape, i) =>
-              shape.tag === 'polygon' ? (
-                <polygon key={i} className={styles.pref} points={shape.points} />
-              ) : shape.tag === 'ellipse' ? (
-                <ellipse
-                  key={i}
-                  className={styles.pref}
-                  cx={shape.cx}
-                  cy={shape.cy}
-                  rx={shape.rx}
-                  ry={shape.ry}
-                />
-              ) : (
-                <circle key={i} className={styles.pref} cx={shape.cx} cy={shape.cy} r={shape.r} />
-              ),
-            )}
-          </g>
-          <Legend />
-          <g>
-            {order.map((i) => {
-              const data = CITIES[i];
-              if (data === undefined) return null;
-              const { x, y, pos } = CITY_POS[data.name];
-              const reg = regs[i] ?? 0;
-              const value = values[i] ?? 0;
-              const r = radiusOf(reg);
-              const fill = `var(${RAMPS[metric][colorStep(values, value)]})`;
-              const [lx, ly] =
-                pos === 'r'
-                  ? [x + r + 5, y - 2]
-                  : pos === 'l'
-                    ? [x - r - 5, y - 2]
-                    : [x, y + r + 19];
-              const anchor = pos === 'l' ? 'end' : pos === 'r' ? 'start' : 'middle';
-              const selected = city === data.name;
-              const choose = () => pickCity(data.name);
-              return (
-                <g
-                  key={data.name}
-                  className={`${styles.cityHit} ${selected ? styles.selected : ''}`}
-                  role="button"
-                  tabIndex={0}
-                  aria-pressed={selected}
-                  aria-label={`${data.name}を選ぶ。登録者 ${reg.toLocaleString('ja-JP')}人、払える熱量 ${hots[i] ?? 0}`}
-                  onClick={choose}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      choose();
-                      focusVenues(); // キーボードで選んだときは、会場の先頭へフォーカスを移す（SP-03）
-                    }
-                  }}
-                >
-                  <circle className={styles.hit} cx={x} cy={y} r={Math.max(r + 4, 26)} />
-                  <circle className={styles.selRing} cx={x} cy={y} r={r + 5} />
-                  <circle className={styles.focusRing} cx={x} cy={y} r={r + 8} />
-                  <circle
-                    className={styles.cityDot}
-                    cx={x}
-                    cy={y}
-                    r={r}
-                    style={{ fill } as CSSProperties}
+      {/* 地図は縦長なので、右の空いた所に、市の一覧を置く（高さを増やさず、1280 × 800 で ③④ の見出しが見えるように） */}
+      <div className={styles.mapRow}>
+        <div className={styles.mapWrap}>
+          {/* 登録者数・熱量は架空（仕様 4.3）。見出しの行に置くと、「払える熱量」の式と並んで行が折れ、地図が動くので、
+            地図の枠の左上の角（海で、市の丸も名前も無い所）に重ねる */}
+          <span className={`${styles.fictChip} ${styles.mapFict}`} data-testid="fict-1">
+            {realText.fiction}
+          </span>
+          <svg
+            viewBox={`0 0 ${MAP_VIEWBOX.width} ${MAP_VIEWBOX.height}`}
+            role="group"
+            aria-labelledby="map-title"
+          >
+            <title id="map-title">{text.mapTitle}</title>
+            <g aria-hidden="true">
+              {PREF_SHAPES.map((shape, i) =>
+                shape.tag === 'polygon' ? (
+                  <polygon key={i} className={styles.pref} points={shape.points} />
+                ) : shape.tag === 'ellipse' ? (
+                  <ellipse
+                    key={i}
+                    className={styles.pref}
+                    cx={shape.cx}
+                    cy={shape.cy}
+                    rx={shape.rx}
+                    ry={shape.ry}
                   />
-                  <circle className={styles.cityRing} cx={x} cy={y} r={r} />
-                  <text
-                    className={styles.cityLabel}
-                    aria-hidden="true"
-                    textAnchor={anchor}
-                    transform={`translate(${lx.toFixed(1)} ${ly.toFixed(1)})`}
+                ) : (
+                  <circle key={i} className={styles.pref} cx={shape.cx} cy={shape.cy} r={shape.r} />
+                ),
+              )}
+            </g>
+            <Legend />
+            <g>
+              {order.map((i) => {
+                const data = CITIES[i];
+                if (data === undefined) return null;
+                const { x, y, pos } = CITY_POS[data.name];
+                const reg = regs[i] ?? 0;
+                const value = values[i] ?? 0;
+                const r = radiusOf(reg);
+                const fill = `var(${RAMPS[metric][colorStep(values, value)]})`;
+                const [lx, ly] =
+                  pos === 'r'
+                    ? [x + r + 5, y - 2]
+                    : pos === 'l'
+                      ? [x - r - 5, y - 2]
+                      : [x, y + r + 19];
+                const anchor = pos === 'l' ? 'end' : pos === 'r' ? 'start' : 'middle';
+                const selected = city === data.name;
+                const choose = () => pickCity(data.name);
+                return (
+                  <g
+                    key={data.name}
+                    className={`${styles.cityHit} ${selected ? styles.selected : ''}`}
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={selected}
+                    aria-label={`${data.name}を選ぶ。登録者 ${reg.toLocaleString('ja-JP')}人、払える熱量 ${hots[i] ?? 0}`}
+                    onClick={choose}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        choose();
+                        focusVenues(); // キーボードで選んだときは、会場の先頭へフォーカスを移す（SP-03）
+                      }
+                    }}
                   >
-                    <tspan x={0} dy={0}>
-                      {data.name}
-                    </tspan>
-                    <tspan className={styles.v} x={0} dy="1.25em">
-                      {metric === 'reg' ? `${value.toLocaleString('ja-JP')}人` : String(value)}
-                    </tspan>
-                  </text>
-                </g>
-              );
-            })}
-          </g>
-        </svg>
+                    <circle className={styles.hit} cx={x} cy={y} r={Math.max(r + 4, 26)} />
+                    <circle className={styles.selRing} cx={x} cy={y} r={r + 5} />
+                    <circle className={styles.focusRing} cx={x} cy={y} r={r + 8} />
+                    <circle
+                      className={styles.cityDot}
+                      cx={x}
+                      cy={y}
+                      r={r}
+                      style={{ fill } as CSSProperties}
+                    />
+                    <circle className={styles.cityRing} cx={x} cy={y} r={r} />
+                    <text
+                      className={styles.cityLabel}
+                      aria-hidden="true"
+                      textAnchor={anchor}
+                      transform={`translate(${lx.toFixed(1)} ${ly.toFixed(1)})`}
+                    >
+                      <tspan x={0} dy={0}>
+                        {data.name}
+                      </tspan>
+                      <tspan className={styles.v} x={0} dy="1.25em">
+                        {metric === 'reg' ? `${value.toLocaleString('ja-JP')}人` : String(value)}
+                      </tspan>
+                    </text>
+                  </g>
+                );
+              })}
+            </g>
+          </svg>
+        </div>
+        <CityRank />
       </div>
     </div>
   );

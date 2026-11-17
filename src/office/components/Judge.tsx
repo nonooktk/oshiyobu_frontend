@@ -1,4 +1,4 @@
-import { COST_ITEM_IDS, demandOf } from '../../core';
+import { cityIndex, COST_ITEM_IDS, demandOf, metricValues } from '../../core';
 import styles from '../office.module.css';
 import {
   quadDots,
@@ -14,6 +14,7 @@ import { ARTIST_TEXT } from '../text/artists';
 import {
   capChip,
   COST_LABELS,
+  demandSource,
   depositText,
   heatText,
   quadLineText,
@@ -29,10 +30,11 @@ import {
   verdictText,
   warnText,
   yen,
+  realText,
 } from '../text/labels';
 import type { OfficeView } from '../view';
 import { Changed } from './Changed';
-import { QuadControls, QuadReset } from './QuadControls';
+import { QuadReset } from './QuadControls';
 
 /** 4 象限の名前 → 強調の対象の数字の名前（view.ts の CHANGE_KEYS） */
 const QUAD_CHANGE_KEY = {
@@ -197,7 +199,7 @@ function Scatter({ view }: { readonly view: OfficeView }) {
           <QuadReset />
         </div>
       </div>
-      <QuadControls />
+      {/* 境目のスライダー（QuadControls）は、条件の帯へ移した（要件 R-15）。初めの位置に戻すは、結果の横に残す */}
     </section>
   );
 }
@@ -297,10 +299,19 @@ function Summary({ view }: { readonly view: OfficeView }) {
   const rule = ruleText(condition.line, condition.min);
   return (
     <section className={styles.jcard} aria-labelledby="j5">
-      <p className={styles.jlabel} id="j5">
-        <i>5</i>
-        {text.judge1}
-      </p>
+      {/* 見出しの段落（区画の名前）の外に、架空の札と、実在と架空の混ざり方の一文を置く（仕様 4.3） */}
+      <div className={styles.jHead}>
+        <p className={styles.jlabel} id="j5" style={{ margin: 0 }}>
+          <i>5</i>
+          {text.judge1}
+        </p>
+        <span className={styles.fictChip} data-testid="fict-5">
+          {realText.fiction}
+        </span>
+        <span className={styles.mixNote} data-testid="mix-note">
+          {realText.mixNote}
+        </span>
+      </div>
       <p className={styles.condLine}>
         <span className={styles.k}>{text.lineLabel}</span>
         <Changed k="line" now={condition.line} unit="円">
@@ -349,6 +360,8 @@ function Summary({ view }: { readonly view: OfficeView }) {
         <UpRows view={view} />
       </div>
       <div className={styles.judgeFoot}>
+        {/* 条件を調整（費用・最低人数）は、⑤ に残す（条件の帯へは移さない）。既存のテスト I-07 が、
+            費用の入力の知らせを、判定の区画（data-testid="judge"）の中で探しているため（担当者の決定。R-15 は一部） */}
         <Adjust view={view} />
         <div className={styles.footBtns}>
           {condition.venue.simulatorVenueId === undefined ? (
@@ -381,6 +394,21 @@ function Summary({ view }: { readonly view: OfficeView }) {
   );
 }
 
+/** ⑥ の凡例の下の 1 行: 選んだ市の登録者数 → 預金の支えがある熱いファン（見込み）。
+    数字は core の値のまま（登録は地図の丸の面積と同じ metricValues、見込みは横棒と同じ view.expected） */
+function DemandSource({ expected }: { readonly expected: number }) {
+  const artistId = useOffice((s) => s.artistId);
+  const city = useOffice((s) => s.city);
+  if (city === null) return null;
+  const reg = metricValues(artistId, 'reg')[cityIndex(city)] ?? 0;
+  const line = demandSource(city, reg, expected);
+  return (
+    <p className={styles.meetSource} data-testid="demand-source">
+      {line.lead} <b>{line.reg}</b> {line.mid} <b>{line.expected}</b>
+    </p>
+  );
+}
+
 /** ⑥ 確度: 満たせるか（札・横棒）と、熱量と資金（4 象限・線を動かす操作） */
 function Certainty({ view }: { readonly view: OfficeView }) {
   const { condition, expected, level, low } = view;
@@ -393,6 +421,9 @@ function Certainty({ view }: { readonly view: OfficeView }) {
           <i>6</i>
           {text.judge2}
         </p>
+        <span className={`${styles.fictChip} ${styles.fictMid}`} data-testid="fict-6">
+          {realText.fiction}
+        </span>
         <Changed k="level" now={level}>
           <span className={`${styles.verdict} ${verdictClass}`} data-testid="verdict">
             {verdictText(level)}
@@ -428,6 +459,8 @@ function Certainty({ view }: { readonly view: OfficeView }) {
           {text.legendNeed}
         </span>
       </p>
+      {/* 需要の出どころ（R-03）。強調はしない（見込みの強調は、横棒の「見込み」のほう） */}
+      <DemandSource expected={expected} />
       {low && (
         <p className={styles.meetShort}>
           <Changed k="shortfall" now={view.shortfall} unit="人">

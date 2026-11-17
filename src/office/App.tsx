@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
 import { ArtistBar } from './components/ArtistBar';
 import { ChangeLive } from './components/Changed';
+import { ConditionBand } from './components/ConditionBand';
 import { Header } from './components/Header';
 import { Judge } from './components/Judge';
 import { MapPanel } from './components/MapPanel';
 import { Privacy, Proposal } from './components/Modals';
+import { PastEvents } from './components/PastEvents';
 import { SidePanel } from './components/SidePanel';
 import styles from './office.module.css';
 import { useOffice } from './store';
@@ -36,6 +38,8 @@ export function App() {
         <div className={styles.office}>
           <Header />
           <ArtistBar />
+          {/* 条件の帯（要件 R-15）: 推し以外の条件を変える入力を、ここにまとめる */}
+          <ConditionBand view={view} />
           <p className="sr-only" aria-live="polite">
             {live}
           </p>
@@ -44,7 +48,11 @@ export function App() {
           <main className={styles.board}>
             <div className={styles.leftCol}>
               <MapPanel />
-              <SidePanel />
+              {/* 地図の下は、③ 会場の候補と ④ これまでの公演を横に 2 列（1280 × 800 で、両方の見出しが見えるように） */}
+              <div className={styles.lowerRow} data-testid="lower-row">
+                <SidePanel />
+                <PastEvents venueId={venueId} />
+              </div>
             </div>
             <div className={styles.rightCol}>
               {view !== null ? (

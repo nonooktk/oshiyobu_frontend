@@ -29,6 +29,14 @@ export const text = {
   emptyBody: '地図の丸を押す',
   /** ① の見出し（すでに使っている「地図」だけ） */
   mapHead: '地図',
+  /** ① の地図の横の、市の一覧の見出し（数字は core の demandOf(推し, 市).expected） */
+  rankHead: '預金の支えがある熱いファン（見込み）',
+  /** 一覧の見出しに添える札（地図の枠の札が一覧まで届いて見えないため。全画面の札の文は使わない） */
+  rankFict: '数字は架空',
+  /** 一覧の行の読み上げで、見込みの数字の前に置く語 */
+  rankExpected: '見込み',
+  /** 一覧の行の、登録者数の前に置く語 */
+  rankReg: '登録',
   /** 会場を選ぶ前の、右の列の案内（判定は会場を選ぶまで出ない。I-01） */
   pickVenue: '会場を選ぶ',
   simulator: '収支シミュレーター',
@@ -227,4 +235,69 @@ export function sideNote(isHome: boolean): readonly [string, string] {
       : '空き日は架空です。会場名・キャパは会場データ（実在・公演の記録あり）にもとづきます。',
     '候補は、この市の会場から最大3件です。必要人数に届くかは、会場を選ぶと「満たせるか」に出ます。',
   ];
+}
+
+/** 実在と架空の見分け（要件 R-16・仕様 4.3）。③④ の実在の情報と、①⑤⑥ の架空の数字に付ける札と文言 */
+export const realText = {
+  /** ③④ の見出しの横の札。確認日は、出しているデータの確認日（いちばん新しい日） */
+  chip: (checkedOn: string): string => `実在の公開情報（出典あり・確認日 ${checkedOn}）`,
+  /** ①⑤⑥ の見出しの横の札（「デモ用の架空データ」の文は、全画面の札の 1 回だけにする。I-101） */
+  fiction: '架空（デモ用）',
+  /** ⑤ に添える一文（実在の会場に、架空の費用と見込みを重ねる所） */
+  mixNote: '会場の名前は実在・数字は架空',
+  officialName: '公式の名前',
+  source: '出典',
+  newTab: '（新しいタブで開きます）',
+  checkedOn: (date: string): string => `確認日 ${date}`,
+  noSource: '出典は、まだありません',
+  pastHead: 'これまでの公演',
+  noEvents: '記録は、まだありません',
+  pickVenueFirst: '会場を選ぶと出ます',
+} as const;
+
+/** 公演の日（YYYY-MM-DD）を「2026年8月8日」の形にする（「日付」の「付」は書体に無いので、見出しの語は付けない） */
+export function eventDate(date: string): string {
+  const [y, m, d] = date.split('-').map(Number);
+  return `${y}年${m}月${d}日`;
+}
+
+/** 条件の帯（要件 R-15）。推し以外の条件（集まる人数・境目・費用と最低人数）を、1 か所にまとめる */
+export const bandText = {
+  /** 帯の左の札（「アーティスト」と同じ形） */
+  label: '条件',
+} as const;
+
+/** ② 集まる人数（要件 R-04・R-06）。会場の候補を、キャパが人数に近い会場から出すことにだけ使う（確認 8） */
+export const crowdText = {
+  label: '集まる人数',
+  unit: '人',
+  /** よく使う値のボタン（収支シミュレーターと同じ値。仕様 1.4） */
+  presets: [30, 100, 300, 500, 1000] as const,
+  live: (n: number): string =>
+    `集まる人数を ${n}人にしました。会場の候補を、キャパが近い会場から出しています。`,
+  clearLive: '集まる人数の指定をやめました。',
+  /** 規模感（キャパ ÷ 人数）。「ちょうど良い」のような判定はしない（core に基準が無いため。仕様 1.4） */
+  ratio: (cap: number, crowd: number): string =>
+    `キャパ ${cap} ÷ ${crowd}人 = ${(cap / crowd).toFixed(2)}`,
+} as const;
+
+/** ⑥ の凡例の下の、需要の出どころ（要件 R-03）。数字は core の値のまま（区切りだけ付ける）。
+    並べると「久留米市の登録 1,380人 → 預金の支えがある熱いファン（見込み） 187人」 */
+export function demandSource(
+  city: string,
+  reg: number,
+  expected: number,
+): {
+  readonly lead: string;
+  readonly reg: string;
+  readonly mid: string;
+  readonly expected: string;
+} {
+  const people = (n: number): string => `${n.toLocaleString('ja-JP')}人`;
+  return {
+    lead: `${city}の登録`,
+    reg: people(reg),
+    mid: `→ ${text.rankHead}`,
+    expected: people(expected),
+  };
 }

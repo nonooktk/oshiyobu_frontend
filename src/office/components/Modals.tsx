@@ -5,7 +5,15 @@ import { DemoBadge } from '../../shared/components/DemoBadge';
 import styles from '../office.module.css';
 import { useOffice } from '../store';
 import { ARTIST_TEXT } from '../text/artists';
-import { COST_LABELS, privQuadLine, ruleText, text, warnText, yen } from '../text/labels';
+import {
+  COST_LABELS,
+  crowdText,
+  privQuadLine,
+  ruleText,
+  text,
+  warnText,
+  yen,
+} from '../text/labels';
 import { venueById } from '../../core';
 import type { OfficeView } from '../view';
 import { Avatar } from './ArtistBar';
@@ -181,6 +189,7 @@ export function Privacy() {
   const venueId = useOffice((s) => s.venueId);
   const costs = useOffice((s) => s.costs);
   const quadLine = useOffice((s) => s.quadLine);
+  const crowd = useOffice((s) => s.crowd);
   return (
     <Modal labelId="priv-title" onClose={closeModal}>
       <div className={styles.privHead}>
@@ -222,6 +231,9 @@ export function Privacy() {
                     .join('・')}
             </li>
             <li>{privQuadLine(quadLine.deposit, quadLine.heat)}</li>
+            <li>
+              {crowdText.label}: {crowd === null ? text.none : `${crowd}${crowdText.unit}`}
+            </li>
           </ul>
         </div>
         <div>

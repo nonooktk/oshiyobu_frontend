@@ -9,6 +9,7 @@ import type { QuadLine } from './scatter';
 import {
   COST_LABELS,
   costErrorText,
+  crowdText,
   minErrorText,
   quadLineLive,
   quadLineResetLive,
@@ -49,6 +50,11 @@ export interface OfficeState {
   venueFocus: number;
   /** 4 象限の区切り（要件 R-12）。推し・市を切り替えても残す。「最初に戻す」で初めの位置に戻る */
   quadLine: QuadLine;
+  /**
+   * ② 集まる人数（要件 R-04）。会場の候補をキャパが近い順に出すことにだけ使い、成立の最低人数とは別（確認 8）。
+   * 決めていなければ null。市を替えても残す（境目と同じ）。「最初に戻す」で消える
+   */
+  crowd: number | null;
   /** 直前の操作で変わった数字と、その前の値（要件 R-14）。次に数字が変わるまで残す */
   changes: Changes;
 }
@@ -97,8 +103,12 @@ export const initialOfficeState = (): OfficeState => ({
   band: '',
   venueFocus: 0,
   quadLine: INITIAL_QUAD_LINE,
+  crowd: null,
   changes: NO_CHANGES,
 });
+
+/** 集まる人数として受け付ける範囲（1 人〜10,000 人の整数） */
+export const CROWD_RANGE = { min: 1, max: 10000 } as const;
 
 interface OfficeActions {
   setArtist(id: ArtistId): void;
@@ -116,6 +126,8 @@ interface OfficeActions {
   /** 区切りを動かす。範囲の外・刻みに合わない値は、範囲に収めて刻みに丸める */
   setQuadLine(what: keyof QuadLine, value: number): void;
   resetQuadLine(): void;
+  /** 集まる人数を決める（null で、決めないに戻す）。範囲の外・整数でない値は受け付けない（いまの値のまま） */
+  setCrowd(value: number | null): void;
   openModal(name: Exclude<ModalName, null>): void;
   closeModal(): void;
   resetOffice(): void;
@@ -310,6 +322,17 @@ export const officeStore = createStore<OfficeState & OfficeActions>()((set, get)
     },
 
     // 事務所向けだけ戻す。ファン向けには何も送らない（F-36）
+    setCrowd(value) {
+      if (value === null) {
+        if (get().crowd === null) return;
+        set({ crowd: null, live: crowdText.clearLive });
+        return;
+      }
+      if (!Number.isInteger(value) || value < CROWD_RANGE.min || value > CROWD_RANGE.max) return;
+      if (value === get().crowd) return;
+      set({ crowd: value, live: crowdText.live(value) });
+    },
+
     resetOffice() {
       set({ ...initialOfficeState() });
       announce(text.resetOfficeDone);

@@ -1,4 +1,4 @@
-import { COST_ITEM_IDS, demandOf } from '../../core';
+import { cityIndex, COST_ITEM_IDS, demandOf, metricValues } from '../../core';
 import styles from '../office.module.css';
 import {
   quadDots,
@@ -14,6 +14,7 @@ import { ARTIST_TEXT } from '../text/artists';
 import {
   capChip,
   COST_LABELS,
+  demandSource,
   depositText,
   heatText,
   quadLineText,
@@ -33,7 +34,7 @@ import {
 } from '../text/labels';
 import type { OfficeView } from '../view';
 import { Changed } from './Changed';
-import { QuadControls, QuadReset } from './QuadControls';
+import { QuadReset } from './QuadControls';
 
 /** 4 象限の名前 → 強調の対象の数字の名前（view.ts の CHANGE_KEYS） */
 const QUAD_CHANGE_KEY = {
@@ -198,7 +199,7 @@ function Scatter({ view }: { readonly view: OfficeView }) {
           <QuadReset />
         </div>
       </div>
-      <QuadControls />
+      {/* 境目のスライダー（QuadControls）は、条件の帯へ移した（要件 R-15）。初めの位置に戻すは、結果の横に残す */}
     </section>
   );
 }
@@ -359,6 +360,8 @@ function Summary({ view }: { readonly view: OfficeView }) {
         <UpRows view={view} />
       </div>
       <div className={styles.judgeFoot}>
+        {/* 条件を調整（費用・最低人数）は、⑤ に残す（条件の帯へは移さない）。既存のテスト I-07 が、
+            費用の入力の知らせを、判定の区画（data-testid="judge"）の中で探しているため（担当者の決定。R-15 は一部） */}
         <Adjust view={view} />
         <div className={styles.footBtns}>
           {condition.venue.simulatorVenueId === undefined ? (
@@ -388,6 +391,21 @@ function Summary({ view }: { readonly view: OfficeView }) {
         </div>
       </div>
     </section>
+  );
+}
+
+/** ⑥ の凡例の下の 1 行: 選んだ市の登録者数 → 預金の支えがある熱いファン（見込み）。
+    数字は core の値のまま（登録は地図の丸の面積と同じ metricValues、見込みは横棒と同じ view.expected） */
+function DemandSource({ expected }: { readonly expected: number }) {
+  const artistId = useOffice((s) => s.artistId);
+  const city = useOffice((s) => s.city);
+  if (city === null) return null;
+  const reg = metricValues(artistId, 'reg')[cityIndex(city)] ?? 0;
+  const line = demandSource(city, reg, expected);
+  return (
+    <p className={styles.meetSource} data-testid="demand-source">
+      {line.lead} <b>{line.reg}</b> {line.mid} <b>{line.expected}</b>
+    </p>
   );
 }
 
@@ -441,6 +459,8 @@ function Certainty({ view }: { readonly view: OfficeView }) {
           {text.legendNeed}
         </span>
       </p>
+      {/* 需要の出どころ（R-03）。強調はしない（見込みの強調は、横棒の「見込み」のほう） */}
+      <DemandSource expected={expected} />
       {low && (
         <p className={styles.meetShort}>
           <Changed k="shortfall" now={view.shortfall} unit="人">

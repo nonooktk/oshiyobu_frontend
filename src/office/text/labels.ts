@@ -29,6 +29,14 @@ export const text = {
   emptyBody: '地図の丸を押す',
   /** ① の見出し（すでに使っている「地図」だけ） */
   mapHead: '地図',
+  /** ① の地図の横の、市の一覧の見出し（数字は core の demandOf(推し, 市).expected） */
+  rankHead: '預金の支えがある熱いファン（見込み）',
+  /** 一覧の見出しに添える札（地図の枠の札が一覧まで届いて見えないため。全画面の札の文は使わない） */
+  rankFict: '数字は架空',
+  /** 一覧の行の読み上げで、見込みの数字の前に置く語 */
+  rankExpected: '見込み',
+  /** 一覧の行の、登録者数の前に置く語 */
+  rankReg: '登録',
   /** 会場を選ぶ前の、右の列の案内（判定は会場を選ぶまで出ない。I-01） */
   pickVenue: '会場を選ぶ',
   simulator: '収支シミュレーター',
@@ -251,4 +259,45 @@ export const realText = {
 export function eventDate(date: string): string {
   const [y, m, d] = date.split('-').map(Number);
   return `${y}年${m}月${d}日`;
+}
+
+/** 条件の帯（要件 R-15）。推し以外の条件（集まる人数・境目・費用と最低人数）を、1 か所にまとめる */
+export const bandText = {
+  /** 帯の左の札（「アーティスト」と同じ形） */
+  label: '条件',
+} as const;
+
+/** ② 集まる人数（要件 R-04・R-06）。会場の候補を、キャパが人数に近い会場から出すことにだけ使う（確認 8） */
+export const crowdText = {
+  label: '集まる人数',
+  unit: '人',
+  /** よく使う値のボタン（収支シミュレーターと同じ値。仕様 1.4） */
+  presets: [30, 100, 300, 500, 1000] as const,
+  live: (n: number): string =>
+    `集まる人数を ${n}人にしました。会場の候補を、キャパが近い会場から出しています。`,
+  clearLive: '集まる人数の指定をやめました。',
+  /** 規模感（キャパ ÷ 人数）。「ちょうど良い」のような判定はしない（core に基準が無いため。仕様 1.4） */
+  ratio: (cap: number, crowd: number): string =>
+    `キャパ ${cap} ÷ ${crowd}人 = ${(cap / crowd).toFixed(2)}`,
+} as const;
+
+/** ⑥ の凡例の下の、需要の出どころ（要件 R-03）。数字は core の値のまま（区切りだけ付ける）。
+    並べると「久留米市の登録 1,380人 → 預金の支えがある熱いファン（見込み） 187人」 */
+export function demandSource(
+  city: string,
+  reg: number,
+  expected: number,
+): {
+  readonly lead: string;
+  readonly reg: string;
+  readonly mid: string;
+  readonly expected: string;
+} {
+  const people = (n: number): string => `${n.toLocaleString('ja-JP')}人`;
+  return {
+    lead: `${city}の登録`,
+    reg: people(reg),
+    mid: `→ ${text.rankHead}`,
+    expected: people(expected),
+  };
 }

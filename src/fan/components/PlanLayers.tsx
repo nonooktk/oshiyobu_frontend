@@ -22,7 +22,7 @@ export function ConfirmSheet({ inert }: { inert: boolean }) {
   const k = courseOf(view.cond, ENTRY_PLAN);
   const o = artistView(state.oshiId);
   return (
-    <SheetShell title="参加しますか？" inert={inert} onClose={actions.closeJoinConfirm}>
+    <SheetShell title="参加しますか？" inert={inert} onClose={actions.closeJoinConfirm} look="plan">
       <div data-layer-body="confirm">
         <p className={styles.sheetLead}>
           {o.name}を{view.cond.city}に呼ぶプロジェクトに、{PLAN_NAMES[ENTRY_PLAN]}で参加します。
@@ -67,7 +67,7 @@ export function UpgradeSheet({ inert }: { inert: boolean }) {
   }, []);
   const list = upgradesOf(state.course);
   return (
-    <SheetShell title="プランを上げる" inert={inert} onClose={actions.closeUpgrade}>
+    <SheetShell title="プランを上げる" inert={inert} onClose={actions.closeUpgrade} look="plan">
       <div data-layer-body="upgrade">
         <p className={styles.sheetNote}>
           押すと、プランの条件（預金・メイン口座）もまとめてそろえます。デモ用の操作で、実際の入出金・手続きは行われません。
@@ -146,7 +146,12 @@ export function RewardSheet({ plan, inert }: { plan: CourseId; inert: boolean })
   const media = rewardMediaOf(state.oshiId, plan);
   if (!r) return null;
   return (
-    <SheetShell title={`${PLAN_NAMES[plan]}の特典`} inert={inert} onClose={actions.closeReward}>
+    <SheetShell
+      title={`${PLAN_NAMES[plan]}の特典`}
+      inert={inert}
+      onClose={actions.closeReward}
+      look="plan"
+    >
       <div data-layer-body="reward" data-reward={r.kind}>
         <p className={styles.sheetLead}>
           {o.name}から、{r.label}が届きました。

@@ -42,28 +42,5 @@ export function CityRealChip({ venueIds }: { readonly venueIds: readonly VenueId
   return <RealChip dates={dates} />;
 }
 
-/** 選んだ会場のカードの下に出す、詳しい欄（公式の名前・住所の市区・収容人数の根拠・出典・確認日） */
-export function VenueFacts({ venueId }: { readonly venueId: VenueId }) {
-  const record = recordOf(venueId);
-  if (record === undefined) {
-    return (
-      <p className={styles.facts} data-testid="venue-facts">
-        <span className={styles.factsNone}>{realText.noSource}</span>
-      </p>
-    );
-  }
-  return (
-    <div className={styles.facts} data-testid="venue-facts">
-      <p className={styles.factsName}>
-        <span className={styles.factsK}>{realText.officialName}</span>
-        <span data-testid="official-name">{record.name}</span>
-        <span className={styles.factsSub}>{record.city}</span>
-      </p>
-      <p className={styles.factsBasis}>{record.capacityBasis}</p>
-      <p className={styles.factsSrc}>
-        <SourceLink href={record.sourceUrl} />
-        <span>{realText.checkedOn(record.checkedOn)}</span>
-      </p>
-    </div>
-  );
-}
+// 選んだ会場のカードの下の、詳しい欄（公式の名前・住所の市区・収容人数の根拠・出典・確認日。VenueFacts）は、
+// 2026-11-18 に外した（docs/office/要件.md の M-04）。見出しの横の札（CityRealChip）は残す

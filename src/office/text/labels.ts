@@ -225,19 +225,7 @@ export const shortText = (need: number, shortfall: number): string =>
 export const expectedText = (n: number): string => `見込み ${n}人`;
 export const needText = (n: number): string => `必要 ${n}人`;
 
-/**
- * ③ 会場の候補の下の注記。2 文目は、推しに関係なく正しい固定の文にする。
- * 会場の候補は、core のデータで市ごとに決まった固定の一覧で、推しによって絞り込んでいない。
- * 推しの名前や、特定の推しの見込みで「届く会場だけ」とは書かない（届くかは、会場を選ぶと「満たせるか」に出る）
- */
-export function sideNote(isHome: boolean): readonly [string, string] {
-  return [
-    isHome
-      ? '空き日は架空です。料金は公式サイトの公開情報にもとづく目安です（2026-11-12 確認）。'
-      : '空き日は架空です。会場名・キャパは会場データ（実在・公演の記録あり）にもとづきます。',
-    '候補は、この市の会場から最大3件です。必要人数に届くかは、会場を選ぶと「満たせるか」に出ます。',
-  ];
-}
+// ③ 会場の候補の下の注記（sideNote）は、2026-11-18 に外した（docs/office/要件.md の M-04）
 
 /** 実在と架空の見分け（要件 R-16・仕様 4.3）。③④ の実在の情報と、①⑤⑥ の架空の数字に付ける札と文言 */
 export const realText = {
@@ -247,11 +235,8 @@ export const realText = {
   fiction: '架空（デモ用）',
   /** ⑤ に添える一文（実在の会場に、架空の費用と見込みを重ねる所） */
   mixNote: '会場の名前は実在・数字は架空',
-  officialName: '公式の名前',
   source: '出典',
   newTab: '（新しいタブで開きます）',
-  checkedOn: (date: string): string => `確認日 ${date}`,
-  noSource: '出典は、まだありません',
   pastHead: 'これまでの公演',
   noEvents: '記録は、まだありません',
   pickVenueFirst: '会場を選ぶと出ます',

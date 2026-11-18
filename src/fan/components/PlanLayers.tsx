@@ -197,6 +197,26 @@ export function UpgradeSheet({ inert }: { inert: boolean }) {
   );
 }
 
+/** 額縁の上の真ん中に結ぶリボン（飾りだけ。読み上げない）。色は、額縁のプランの色を引く。 */
+function RibbonBow() {
+  return (
+    <svg
+      className={styles.rfBow}
+      width="64"
+      height="36"
+      viewBox="0 0 64 36"
+      strokeWidth="2"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M32 18C24 4 8 2 6 10s10 14 26 8Z" />
+      <path d="M32 18c8-14 24-16 26-8s-10 14-26 8Z" />
+      <path d="M30 19 22 34h7l3-6 3 6h7l-8-15Z" />
+      <circle cx="32" cy="18" r="5" />
+    </svg>
+  );
+}
+
 /** 特典の贈呈（プランを上げた直後と、ホームの「特典を見る」）。素材が無い間は、仮の表示。 */
 export function RewardSheet({ plan, inert }: { plan: CourseId; inert: boolean }) {
   const { state, actions } = useFan();
@@ -231,32 +251,39 @@ export function RewardSheet({ plan, inert }: { plan: CourseId; inert: boolean })
       look="plan"
     >
       <div data-layer-body="reward" data-reward={r.kind}>
-        <p className={styles.sheetLead}>
-          {o.name}から、{r.label}が届きました。
+        <p className={`${styles.sheetLead} ${styles.rfLead}`}>
+          <Wbr parts={[`${o.name}から、`, `${r.label}が`, '届きました。']} />
         </p>
-        <div className={styles.rewardFrame}>
-          {media && r.kind === 'video' ? (
-            <video
-              src={media.src}
-              aria-label={media.alt}
-              muted
-              playsInline
-              autoPlay
-              loop
-              controls
-            />
-          ) : media ? (
-            <img src={media.src} alt={media.alt} />
-          ) : (
-            <>
-              <WholeArt
-                src={o.art.imgs?.[0] ?? o.art.img ?? o.circle.src}
-                alt={`${o.name}の絵（${r.label}の仮の表示）`}
-                a={o}
-              />
-              <p className={styles.rewardWait}>{r.label}（準備中の仮の表示）</p>
-            </>
-          )}
+        {/*
+          プレゼントの額縁。縁と敷きの色は、プランごと（data-reward-plan）。
+          中の窓は縦横比を決めてあり、仮の推しの絵・画像・動画のどれも、窓いっぱいに縦横比を保って収める（素材の形が違っても、枠は崩れない）。
+        */}
+        <div className={styles.rewardFrame} data-reward-plan={plan}>
+          <div className={styles.rfBox}>
+            <RibbonBow />
+            <div className={styles.rfWindow}>
+              {media && r.kind === 'video' ? (
+                <video
+                  src={media.src}
+                  aria-label={media.alt}
+                  muted
+                  playsInline
+                  autoPlay
+                  loop
+                  controls
+                />
+              ) : media ? (
+                <img src={media.src} alt={media.alt} />
+              ) : (
+                <WholeArt
+                  src={o.art.imgs?.[0] ?? o.art.img ?? o.circle.src}
+                  alt={`${o.name}の絵（${r.label}の仮の表示）`}
+                  a={o}
+                />
+              )}
+            </div>
+          </div>
+          {media ? null : <p className={styles.rewardWait}>{r.label}（準備中の仮の表示）</p>}
         </div>
         <div className={styles.sheetBtns}>
           <button

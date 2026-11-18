@@ -2435,13 +2435,6 @@ button.rcard:hover {
   gap: var(--s2);
   justify-items: center;
 }
-.rewardFrame img,
-.rewardFrame video {
-  width: 100%;
-  max-height: 50vh;
-  object-fit: contain;
-  border-radius: var(--r);
-}
 .rewardWait {
   margin: 0;
   font-size: var(--fs-note);
@@ -2461,6 +2454,16 @@ button.rcard:hover {
   box-shadow: 0 -6px 24px color-mix(in srgb, var(--ink) 18%, transparent);
 }
 /* 取っ手: 白い窓の上で見えるよう、線・飾り用の --gray-300 より濃い --ink-soft にする（文字にも使える色なので、飾りにも使える） */
+/* 見出しを、言葉の途中で折らない（「ダイヤモンドプランの特典」など）。幅 340 以下では、1 行に収まるよう一段小さくする */
+.sheetPlan .sheetHead h2 {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+@container phone (max-width: 340px) {
+  .sheetPlan .sheetHead h2 {
+    font-size: var(--fs-lead);
+  }
+}
 .sheetGrip {
   display: block;
   width: 48px;
@@ -2652,4 +2655,87 @@ button.rcard:hover {
 .upGift {
   flex: none;
   color: var(--primary);
+}
+
+/* ---------- 特典の窓（RewardSheet）: プレゼントの額縁 ---------- */
+/*
+  額縁の色は、プランごと（data-reward-plan）。値は、イーサンさんの PR #45 の「プランの色」と同じトークン:
+    ゴールド     縁 --warning ・敷き --yellow-light ・リボン --yellow
+    プラチナ     縁 --ink-soft・敷き --line         ・リボン --line
+    ダイヤモンド 縁 --sky     ・敷き --sky-light    ・リボン --sky-light
+  「プランの色」の区画（.planItem・.home）は、特典の枠に届かないので、ここに同じ名前で書く。区画の色を変えたら、ここもそろえる。
+*/
+.rewardFrame[data-reward-plan='front'] {
+  --rf-line: var(--warning);
+  --rf-mat: var(--yellow-light);
+  --rf-bow: var(--yellow);
+}
+.rewardFrame[data-reward-plan='special'] {
+  --rf-line: var(--ink-soft);
+  --rf-mat: var(--line);
+  --rf-bow: var(--line);
+}
+.rewardFrame[data-reward-plan='top'] {
+  --rf-line: var(--sky);
+  --rf-mat: var(--sky-light);
+  --rf-bow: var(--sky-light);
+}
+/* 「（推し）から、（特典）が届きました。」を、言葉の途中で折らない */
+.rfLead {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+/* 額縁: プランの色の太い縁と、包み紙のような斜めの縞の敷き（動かない） */
+.rfBox {
+  position: relative;
+  width: 100%;
+  margin-top: var(--s3); /* リボンが上にはみ出す分 */
+  padding: var(--s3);
+  border: 4px solid var(--rf-line, var(--primary));
+  border-radius: calc(var(--r) * 2);
+  background: repeating-linear-gradient(
+    135deg,
+    var(--rf-mat, var(--bg-c)) 0 10px,
+    var(--surface) 10px 20px
+  );
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--ink) 16%, transparent);
+}
+/* リボン: 額縁の上の縁の真ん中に結ぶ */
+.rfBow {
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  z-index: 1;
+  transform: translateX(-50%);
+  fill: var(--rf-bow, var(--yellow));
+  stroke: var(--rf-line, var(--primary));
+}
+/*
+  中の窓: 縦横比 4:5。幅は、窓の高さが画面の高さの 46% を超えない所まで（縦横比は保つ）。
+  中身（仮の推しの絵・画像・動画）は、窓いっぱいに置いて、縦横比を保って収める（はみ出さず、足りない所は濃い地）。
+  横長の動画も、縦長の画像も、枠の大きさは変わらない。
+*/
+.rfWindow {
+  position: relative;
+  width: min(100%, calc(46vh * 4 / 5));
+  aspect-ratio: 4 / 5;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 3px solid var(--surface);
+  border-radius: var(--r);
+  background: var(--ink);
+}
+.rfWindow > img,
+.rfWindow > video,
+.rfWindow > .artBox {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+}
+.rfWindow > img,
+.rfWindow > video {
+  object-fit: contain;
 }

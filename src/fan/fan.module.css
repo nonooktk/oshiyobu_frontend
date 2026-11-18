@@ -2534,3 +2534,122 @@ button.rcard:hover {
   line-height: 1;
   color: var(--ink);
 }
+
+/* ---------- プランを上げるの窓（UpgradeSheet） ---------- */
+/*
+  上のプランほど特別に見せる（ゴールド → プラチナ → ダイヤモンド）。どれも動かない飾りだけ（G-05。急がせる見せ方は入れない）。
+    ゴールド:     線を 2px にする
+    プラチナ:     線を 2px にして、内側に白い細線（二重の枠）
+    ダイヤモンド: 線を 3px にして、内側に白い細線、外に線の色の細い縁、影を深くする。右上の角に飾りの光
+  色は「プランの色」の区画の変数（--plan-line など）を読むだけ（区画は変えない）。カードの中の黒いボタンも変えない。
+*/
+.upList {
+  gap: var(--s3);
+}
+.upItem {
+  position: relative;
+  gap: var(--s3);
+}
+.upItem[data-plan='front'] {
+  border-width: 2px;
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--ink) 10%, transparent);
+}
+.upItem[data-plan='special'] {
+  border-width: 2px;
+  box-shadow:
+    inset 0 0 0 3px var(--surface),
+    0 3px 10px color-mix(in srgb, var(--ink) 14%, transparent);
+}
+.upItem[data-plan='top'] {
+  border-width: 3px;
+  box-shadow:
+    inset 0 0 0 3px var(--surface),
+    0 0 0 2px color-mix(in srgb, var(--plan-line) 35%, transparent),
+    0 6px 18px color-mix(in srgb, var(--ink) 18%, transparent);
+}
+/* ダイヤモンドの右上の角の光（動かない飾り。文字には重ならない） */
+.upItem[data-plan='top']::after {
+  content: '';
+  position: absolute;
+  top: var(--s2);
+  right: var(--s2);
+  width: 28px;
+  height: 28px;
+  background: var(--plan-line);
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  opacity: 0.7;
+  pointer-events: none;
+}
+/* プランの名前: 大きくして、前に宝石の印（上のプランほど数が多い） */
+.upName {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding-right: var(--s5); /* ダイヤモンドの角の光と重ならない */
+  font-size: var(--fs-lead);
+  line-height: var(--lh-tight);
+}
+.upGems {
+  display: inline-flex;
+  gap: 2px;
+  color: var(--plan-line);
+}
+.upGems svg {
+  display: block;
+}
+/* プラチナの線の色（--gray-300）は、カードの地に近くて印が見えにくいので、印だけ --ink-soft にする */
+.upItem[data-plan='special'] .upGems {
+  color: var(--ink-soft);
+}
+.upGemShine {
+  fill: var(--surface);
+  opacity: 0.55;
+}
+/* 額と条件: 見出し（左）と中身（右）を、行ごとにそろえる */
+.upFacts {
+  display: grid;
+  gap: var(--s2);
+  margin: 0;
+  font-size: var(--fs-note);
+  line-height: var(--lh-note);
+  color: var(--ink);
+}
+.upRow {
+  display: grid;
+  grid-template-columns: 6em 1fr;
+  gap: var(--s2);
+  align-items: baseline;
+}
+.upRow dt {
+  font-weight: 700;
+}
+/* 言葉の途中で切らない（「預金 100,000円以上」は、空白の所でだけ折る） */
+.upRow dd {
+  margin: 0;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+/* 特典の行: 白い地の帯にして、箱の印と、少し大きい文字で目立たせる */
+.upReward {
+  grid-template-columns: auto 1fr;
+  gap: var(--s3);
+  align-items: center;
+  margin-top: var(--s1);
+  padding: var(--s2);
+  border: 2px solid var(--plan-line);
+  border-radius: var(--r);
+  background: var(--surface);
+}
+.upReward dt {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+}
+.upReward dd {
+  font-size: var(--fs-body);
+  font-weight: 700;
+}
+.upGift {
+  flex: none;
+  color: var(--primary);
+}

@@ -78,20 +78,6 @@ function sendLegacySelection(): void {
   });
 }
 
-/** ファン向けを、ストアの操作で、申し込む → 仲間を呼ぶ まで進める（人物ごとの違いは無い） */
-async function playFan(): Promise<void> {
-  const a = getAppStore().actions;
-  a.startNext();
-  a.startNext();
-  a.runAcct('teiki', 'home');
-  a.runAcct('deposit', 'home', 20_000);
-  a.homePrimary(); // 申し込む
-  await tick(10_000);
-  a.closeGift();
-  a.callFriends();
-  await tick(10_000);
-}
-
 describe('事務所向けで、会場・費用・最低人数を変えても、ファン向けの条件と流れは変わらない', () => {
   it('同じ会場（久留米市・Cボックス）の費用と最低人数を変えても、ファン向けの条件は、core の既定のまま', async () => {
     mountFan('?p=4');
@@ -119,31 +105,6 @@ describe('事務所向けで、会場・費用・最低人数を変えても、�
     act(() => getAppStore().actions.startNext());
     expect(screen.getByText(/会場: 久留米シティプラザ Cボックス/)).toBeTruthy();
   });
-
-  it('事務所向けで条件を変えたあとでも、ファン向けは、申し込む → 仲間を呼ぶ で、既定の最低人数（93 人）まで増えて成立する（G-02）', async () => {
-    mountFan('?p=4');
-    const office = mountOffice();
-    changeSameVenue(office); // 最低人数 80 人・到達ライン 750,000円
-    sendLegacySelection();
-    await tick(1000);
-    await playFan();
-    const view = getAppStore().view();
-    expect(view.status.established).toBe(true);
-    expect(view.status.supporters).toBe(base.min); // 80 人でも 108 人でもなく、既定の 93 人
-    expect(key(view.cond)).toEqual(key(base));
-  });
-
-  it('事務所向けで、ファン向けを進めたあとに条件を変えても、ファン向けの条件・成立は変わらない', async () => {
-    mountFan('?p=4');
-    await playFan();
-    expect(getAppStore().view().status.established).toBe(true);
-    const office = mountOffice();
-    changeSameVenue(office);
-    sendLegacySelection();
-    await tick(1000);
-    expect(key(fanCond())).toEqual(key(base));
-    expect(getAppStore().view().status.established).toBe(true);
-  });
 });
 
 describe('事務所向けは、選択をファン向けへ送らない。昔の形のメッセージが届いても、ファン向けは読まない', () => {
@@ -162,26 +123,6 @@ describe('事務所向けは、選択をファン向けへ送らない。昔の�
     changeSameVenue(office);
     await tick(1000);
     expect(seen.filter((m) => typeOf(m) === 'office')).toEqual([]);
-  });
-
-  it('昔の事務所向けが送っていた形（会場・費用・最低人数）が、別の接続から届いても、ファン向けの条件は変わらない', async () => {
-    mountFan('?p=4');
-    const old = new FakeChannel(LINK_CHANNEL_NAME);
-    await act(async () => {
-      old.postMessage({
-        type: 'office',
-        selection: {
-          venueId: FAN_VENUE_ID,
-          costs: { venue: 160000, prod: 100000, fee: 250000, travel: 120000, profit: 120000 },
-          minPeople: 80,
-        },
-      });
-      old.postMessage({ type: 'hello' });
-    });
-    await tick(1000);
-    expect(key(fanCond())).toEqual(key(base));
-    await playFan();
-    expect(getAppStore().view().status.supporters).toBe(base.min);
   });
 
   it('「デモを最初に戻す」の連動は、残っている。事務所向けで押すと、resetAll が、同じ端末の別のタブへ流れる', async () => {

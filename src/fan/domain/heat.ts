@@ -1,6 +1,6 @@
 // 開催熱量（ファン向けの見せ方。統括の決定）。人数の割合 p（支援者 ÷ 最低人数）を、数字を出さずに、
 // 「ゲージの長さ・段階の名前・距離のことば」へ変える。画面に出すのは、ここが返すものだけ。
-// ひとり体験（既定）は、人数でなく、自分の行動の進みから段階を決める（soloHeatOf。行動のたびに段階が 1 つずつ上がる）。
+// ひとり体験（既定）は、「FEVER 目前」・ゲージ 8 割付近のまま動かさない（soloHeatOf。統括の決定 2026-11-16）。
 // 共有メーターあり（VITE_SHARED_METER=on）は、これまでどおり、人数の割合から決める（heatOf）。どちらも、境目・曲線・名前は、このファイル 1 か所。
 // 人数・最低人数・残りの人数・達成率・金額は、ファン向けの画面に出さない（G-08）。
 // 計算の元は core の supportStatus（人数と金額の判定。ここでは変えない）。曲線の式・境目・名前は、このファイル 1 か所。
@@ -74,7 +74,7 @@ export function heatOf(
   return heatFromP(min >= 1 ? status.supporters / min : 0, status.established);
 }
 
-/** ひとり体験で、段階を決める「自分の行動の進み」。 */
+/** ひとり体験の「自分の行動の進み」（いまは熱量に使わない。呼ぶ側の形を変えないために残す）。 */
 export interface SoloProgress {
   /** 成立した（core の判定。人数と金額の両方）。FEVER は、このときだけ。 */
   readonly established: boolean;
@@ -89,37 +89,12 @@ export interface SoloProgress {
 }
 
 /**
- * ひとり体験の、行動の進み → 段階（統括の決定 2026-11-14）。行動のたびに、段階が 1 つずつ上がる:
- * 開く＝点火 → 推し活定期をはじめる＝あたたまってきた → 条件に届く積み増し＝ヒートアップ → 申し込む＝FEVER 目前 → 仲間を呼ぶ＝FEVER。
- * 届かない額の積み増し・メイン口座は、段階は上げず、段階の中でゲージを少し伸ばす（どの行動でも、ゲージが伸びる）。
- * p は、人数の割合と同じ尺（境目・曲線は heatOf と同じ）。FEVER（段階 5）は、成立のときだけ。
+ * ひとり体験のゲージの長さ（統括の決定 2026-11-16）。1 人の利用者の場面を切り取るデモなので、
+ * 開催熱量は「FEVER 目前」のまま動かさない（行動で段階は上がらない。数字は出さない）。
  */
-const SOLO_P = {
-  /** 開いた直後（点火）。ゲージが見える長さ。 */
-  open: STAGE_BOUNDS[0] * 0.6,
-  /** 推し活定期をはじめた（あたたまってきた）。 */
-  started: STAGE_BOUNDS[0],
-  /** 条件がそろった（ヒートアップ）。 */
-  ready: STAGE_BOUNDS[1],
-  /** 申し込んだ（FEVER 目前）。 */
-  joined: (STAGE_BOUNDS[2] + 1) / 2,
-  /** 仲間を呼んだが成立に届かないとき（FEVER 目前の中で、もう少し伸ばす）。 */
-  called: STAGE_BOUNDS[2] + (1 - STAGE_BOUNDS[2]) * 0.75,
-} as const;
-/** 条件の達成度に比例して、段階 2（あたたまってきた）の中で伸ばす割合（残りは、条件がそろった瞬間に、段階 3 へ上げる）。 */
-const SOLO_ROOM = 0.95;
+export const SOLO_FILL = 0.8;
 
-export function soloHeatOf(s: SoloProgress): Heat {
-  if (s.established) return heatFromP(1, true);
-  const ready = Math.min(1, Math.max(0, s.ready));
-  const p = s.called
-    ? SOLO_P.called
-    : s.joined
-      ? SOLO_P.joined
-      : !s.started
-        ? SOLO_P.open
-        : ready >= 1
-          ? SOLO_P.ready
-          : SOLO_P.started + ready * (SOLO_P.ready - SOLO_P.started) * SOLO_ROOM;
-  return heatFromP(p, false);
+export function soloHeatOf(_s: SoloProgress): Heat {
+  // ゲージの長さ ＝ p の HEAT_EXPONENT 乗なので、長さから p を逆算する（境目・名前は heatFromP と共有）
+  return heatFromP(SOLO_FILL ** (1 / HEAT_EXPONENT), false);
 }

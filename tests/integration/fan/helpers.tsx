@@ -3,6 +3,7 @@
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { App } from '../../../src/fan/App';
+import { taskDepositOf } from '../../../src/fan/domain/plan';
 import { setupFanPrefetch } from '../../../src/fan/prefetch';
 import {
   getAppStore,
@@ -82,39 +83,47 @@ export const click = (name: string | RegExp): void => {
   fireEvent.click(btn(name));
 };
 
-/** はじめの画面を進めて、ホームへ（目指すコースは通常の席。まだ申し込めない: 口座なし・預金 0円）。 */
+/**
+ * はじめの画面を進めて、参加するところまで（推し → 最安のプラン → 参加の確認 →「参加する」→ ホーム）。
+ * 参加の称賛の演出は、出たままにしない（終わるまで待つ）。預金でやることは、まだ済んでいない。
+ */
+/** プランの一覧（はじめの画面 2/2）から、参加の確認 →「参加する」→ ホーム（称賛が終わるまで待つ）。 */
+export function joinFromPlans(): void {
+  click(/で参加する$/);
+  click('参加する');
+  act(() => {
+    vi.advanceTimersByTime(2600);
+  });
+}
 export function passStartOnly(): void {
   click('次へ');
-  click('このコースを目指して始める');
+  joinFromPlans();
 }
 
 /**
- * ホームから、申し込むところまで（主のボタンの流れ）。推し活定期をはじめる → 預金を積み増す（条件にちょうど届く額）→ 申し込む。
- * 預金の入力のシートは、別のテスト（heat-flow）で、画面の操作として確かめる。ここでは、ストアの操作で足す。
+ * 預金でやること 2 つ（推し活定期をはじめる・預金を積み増す）を、ストアの操作で済ませる。
+ * 画面の操作としては、flow.test.tsx が確かめる。
  */
 export function fundAndApply(): void {
-  click(/^推し活定期をはじめる/);
   act(() => {
     const store = getAppStore();
-    const t = store.view().target;
-    if (t?.mainAccount) store.actions.runAcct('main', 'home');
-    const gap = t ? Math.max(0, t.deposit - store.getState().acct.deposit) : 0;
+    store.actions.runAcct('teiki', 'home');
+    const gap = Math.max(0, taskDepositOf(store.view().cond) - store.getState().acct.deposit);
     if (gap > 0) store.actions.runAcct('deposit', 'home', gap);
     store.actions.clearAch();
   });
-  click(/^申し込む/);
 }
 
-/** はじめの画面を進めて、申し込むところまで（人物ごとの違いは無い）。 */
+/** はじめの画面を進めて、参加し、預金でやることを済ませるところまで（ホームに「SNSで広める」「プランを上げる」が出る）。 */
 export function passStart(): void {
   passStartOnly();
   fundAndApply();
 }
 
-/** 特典の絵（層）を閉じる。 */
+/** 称賛の演出が終わるまで待ち、短い称賛の札も消す（古い作りでは、ここで特典の絵を閉じていた。いまは、絵の層は出ない）。 */
 export async function closeGiftAfterFx(): Promise<void> {
   await tick(700 + 2600);
-  click('閉じる');
+  act(() => getAppStore().actions.clearAch());
 }
 
 export const layer = (name: string): HTMLElement | null =>

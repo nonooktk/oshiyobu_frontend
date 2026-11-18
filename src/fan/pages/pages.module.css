@@ -712,3 +712,18 @@
     animation: none;
   }
 }
+
+/* 預金でやること（新しい流れ。骨組み） */
+.taskList {
+  display: grid;
+  gap: var(--s1);
+  margin: var(--s2) 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-body);
+  font-weight: 700;
+  color: var(--ink);
+}
+.taskList li[data-ok='true'] {
+  color: var(--success-ink);
+}

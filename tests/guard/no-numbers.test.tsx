@@ -1,6 +1,6 @@
 // G-08 の歯止め（docs/守ること.md）。ファン向けの画面の文と読み上げ用の文に、
 // 人数・割合・最低人数・達成率・到達ライン・目標の金額が出ない。出してよい数字は、自分が払うコースの金額・預金・席数・日付・特典の n/3・ステップの 1 / 3 だけ。
-// 巡回する画面: はじめの画面 3 つ・ホーム（申し込む前・後・FEVER。主のボタンと副のボタン）・演出（申し込み・投稿・届いた！・ゲージが伸びている最中・FEVER の瞬間・仲間に知らせる）・共有のシート・やめる確認・メニューの下の全画面。推し 5 組（人物 4・10・12・14・15）
+// 巡回する画面: はじめの画面 2 つ・参加の確認・ホーム（参加の直後・預金でやること・SNSで広める／プランを上げる・各プラン）・演出（参加・広めた・プランを上げた）・預金でやることのページ・共有のシート・プランを上げるシート・特典の贈呈・次のアクション・やめる確認・メニューの下の全画面。推し 5 組（人物 4・10・12・14・15）
 // 起動条件: 巡回した場面の数が、決めた数以上であること（0 件で通る空振りを防ぐ）。
 // 置き場: tests/guard/（2026-11-14 に tests/integration/fan/ から移した。管理者の側だけが変える。ソースの語を見る検査は heat.test.ts）。
 // 画面の部品は tests/integration/fan/ の helpers を使う（共有の部品は本物・サーバーだけ偽物）。
@@ -90,86 +90,65 @@ describe('ファン向けの画面に、人数・達成率・目標の金額の�
     click(OSHI_NAME[oshiId] as string); // 推しは、はじめの画面で選ぶ（人物の番号では決まらない）
     look('はじめの画面 1/2');
     click('次へ');
-    look('はじめの画面 2/2（コースと会場）');
-    click('このコースを目指して始める');
-    look('ホーム（申し込む前・推し活定期をはじめる）');
-    // 推し活定期をはじめる → 短い称賛の札 → 預金を積み増す（額の入力のシート）→ 条件に届く → 申し込む
-    fireEvent.click(screen.getByRole('button', { name: /^推し活定期をはじめる/ }));
+    look('はじめの画面 2/2（プランの一覧。上のプランは選べない）');
+    click(/で参加する$/);
+    look('参加の確認の枠', layer('sheet') as HTMLElement);
+    click('参加する');
+    look('ホーム（参加した直後）');
+    if (layer('fx')) look('参加の称賛の演出', layer('fx') as HTMLElement);
+    await tick(2600);
+    look('ホーム（預金でやることが残っている）');
+    openNextPage(); // いまできること の一覧（ストアの操作で開く）
+    look('次のアクション（預金でやること）');
+    click('‹ ホーム');
+    click(/^預金でやることへ/);
+    await settle();
+    look('預金でやることのページ（まだ）');
+    click('推し活定期をはじめる');
     look('推し活定期をはじめた直後（短い称賛の札）');
     fireEvent.pointerDown(document.body);
-    look('ホーム（預金を積み増す）');
-    fireEvent.click(screen.getByRole('button', { name: /^預金を積み増す/ }));
-    await settle();
-    look(
-      '預金を積み増す額の入力（初めから条件にちょうど届く額が入っている）',
-      layer('sheet') as HTMLElement,
-    );
-    fireEvent.click(screen.getByRole('button', { name: '積み増す' }));
-    look('積み増して条件に届いた直後（短い称賛の札）');
+    look('預金でやることのページ（推し活定期が済んだ）');
+    click('積み増す'); // 初めから、ちょうど届く額が入っている
+    look('積み増して、すべて済んだ直後（短い称賛の札）');
     fireEvent.pointerDown(document.body);
-    look('ホーム（申し込む）');
-    fireEvent.click(screen.getByRole('button', { name: /^申し込む/ }));
-    look('ホーム（申し込んだ直後）');
-    await tick(700);
-    const fx = layer('fx');
-    if (fx) look('演出', fx);
-    await tick(2600);
-    if (layer('gift')) {
-      look('特典の絵', layer('gift') as HTMLElement);
-      fireEvent.click(within(layer('gift') as HTMLElement).getByRole('button', { name: '閉じる' }));
-    }
-    look('ホーム（主のボタンが見える）');
-    openNextPage(); // いまできること の一覧（ホームからは移らない。ストアの操作で開く）
-    look('次のアクション');
+    look('預金でやることのページ（すべて済んだ）');
+    click('ホームへもどる');
+    look('ホーム（SNSで広める・プランを上げる）');
+    openNextPage();
+    look('次のアクション（SNSで広める・プランを上げる）');
     click('‹ ホーム');
-    {
-      // 副のボタン → 共有のシート → 投稿した直後の称賛 → 特典 2/3
-      click(/^SNSに投稿する（任意）/);
-      look('共有のシート', layer('share') as HTMLElement);
-      fireEvent.click(btn('X'));
-      look('投稿の称賛の演出', layer('fx') as HTMLElement);
-      await tick(2600 + 2300);
-      if (layer('gift'))
-        fireEvent.click(
-          within(layer('gift') as HTMLElement).getByRole('button', { name: '閉じる' }),
-        );
-      fireEvent.click(
-        within(layer('share') as HTMLElement).getByRole('button', { name: '閉じる' }),
-      );
-      look('ホーム（投稿したあと）');
-      // 主のボタン「仲間を呼ぶ」→ 届いた！（ゲージが伸びている最中）→ FEVER の瞬間 → 特典 3/3
-      fireEvent.click(screen.getByRole('button', { name: /^仲間を呼ぶ/ }));
-      look('「届いた！」の演出', layer('fx') as HTMLElement);
-      look('ゲージが伸びている最中のホーム');
-      await tick(2600);
-      const reached = layer('fx');
-      if (reached) look('FEVER の瞬間の演出', reached);
-      await tick(3600 + 2300);
-      if (layer('gift'))
-        fireEvent.click(
-          within(layer('gift') as HTMLElement).getByRole('button', { name: '閉じる' }),
-        );
-      if (layer('thanks')) {
-        look('感謝のメッセージ', layer('thanks') as HTMLElement);
-        fireEvent.click(within(layer('thanks') as HTMLElement).getByRole('button'));
-      }
-      look('ホーム（FEVER のあと）');
-      // 主のボタン「仲間に知らせる」→ 短い称賛
-      fireEvent.click(screen.getByRole('button', { name: /^仲間に知らせる/ }));
-      look('仲間に知らせるの称賛の演出', layer('fx') as HTMLElement);
-      await tick(2600 + 10);
+    // SNSで広める → 共有のシート → 広めた直後の称賛
+    click(/^SNSで広める/);
+    look('共有のシート', layer('share') as HTMLElement);
+    fireEvent.click(btn('X'));
+    look('広めた直後の称賛の演出', layer('fx') as HTMLElement);
+    await tick(2600 + 400);
+    fireEvent.click(within(layer('share') as HTMLElement).getByRole('button', { name: '閉じる' }));
+    look('ホーム（広めたあと）');
+    // プランを上げる（ゴールド → プラチナ → ダイヤモンド）。シート → 特別な演出 → 特典の贈呈 → ホームの背景
+    for (const plan of ['ゴールドプラン', 'プラチナプラン', 'ダイヤモンドプラン']) {
+      click(/^プランを上げる/);
+      look(`プランを上げるシート（${plan}の前）`, layer('sheet') as HTMLElement);
+      click(`${plan}に上げる`);
+      look(`${plan}に上げた直後の演出`, layer('fx') as HTMLElement);
+      await tick(3300);
+      look(`${plan}の特典の贈呈`, layer('sheet') as HTMLElement);
+      click('閉じる');
+      look(`ホーム（${plan}）`);
     }
-    look('ホーム（FEVER のあと）');
+    click('特典を見る');
+    look('特典をもう一度見る', layer('sheet') as HTMLElement);
+    click('閉じる');
     click('メニュー');
     await settle();
     look('メニュー');
     for (const title of [
       '貢献',
-      '応援コース',
+      'プラン',
       '口座と預金',
       '支援の状況',
       'しくみ',
-      '推し・条件の変更',
+      '推しの変更',
       '情報の扱い',
     ]) {
       click(new RegExp(`^${title}`));
@@ -178,7 +157,7 @@ describe('ファン向けの画面に、人数・達成率・目標の金額の�
       click('‹ メニュー');
     }
     {
-      click('申し込みをやめる');
+      click('参加をやめる');
       await settle();
       look('やめる確認のシート', layer('sheet') as HTMLElement);
     }
@@ -229,7 +208,7 @@ describe('ファン向けの画面に、人数・達成率・目標の金額の�
   });
 });
 
-describe('行動のたびに段階が上がる進み方の各段階にも、数字が出ない（G-08）', () => {
+describe('ひとり体験の開催熱量は、どの時点でも「FEVER 目前」のまま。数字は出ない（G-02・G-08）', () => {
   beforeEach(() => {
     setMeterEngineForTest(createMeterEngine({ apiBase: '', random: () => 0.5 }));
   });
@@ -238,60 +217,32 @@ describe('行動のたびに段階が上がる進み方の各段階にも、数�
   const gauge = (): string =>
     screen.getByRole('img', { name: /^開催熱量。/ }).getAttribute('aria-label') ?? '';
 
-  it('前方の席（メイン口座・預金）: 点火 → あたたまってきた → メイン口座・届かない額（段階はそのまま）→ ヒートアップ → 申し込み', async () => {
-    const seen: { scene: string; text: string }[] = [];
-    const look = (scene: string, root?: ParentNode) => seen.push({ scene, text: collect(root) });
+  it('参加の直後 → 預金でやることのあと → ダイヤモンドプランに上げたあと、で同じ', async () => {
     const stages: string[] = [];
     mountFan('?p=4');
     click('次へ');
-    click(/前方の席/);
-    click('このコースを目指して始める');
-    look('ホーム（点火）');
+    click(/で参加する$/);
+    click('参加する');
+    await tick(2600);
     stages.push(gauge());
-    fireEvent.click(screen.getByRole('button', { name: /^推し活定期をはじめる/ }));
-    look('推し活定期の直後（段階が上がった称賛の札）');
-    fireEvent.pointerDown(document.body);
-    look('ホーム（あたたまってきた）');
+    act(() => {
+      const a = getAppStore().actions;
+      a.runAcct('teiki', 'home');
+      a.runAcct('deposit', 'home', 20_000);
+      a.clearAch();
+    });
     stages.push(gauge());
-    fireEvent.click(screen.getByRole('button', { name: /^メイン口座にする/ }));
-    look('メイン口座の直後（段階は上がらない称賛の札）');
-    fireEvent.pointerDown(document.body);
-    look('ホーム（メイン口座のあと）');
+    click(/^プランを上げる/);
+    click('ダイヤモンドプランに上げる');
+    await tick(3300);
+    click('閉じる');
     stages.push(gauge());
-    act(() => getAppStore().actions.runAcct('deposit', 'home', 1_000)); // 条件に届かない額
-    look('届かない額の直後（段階は上がらない称賛の札）');
-    fireEvent.pointerDown(document.body);
-    look('ホーム（届かない額のあと）');
-    stages.push(gauge());
-    act(() => getAppStore().actions.runAcct('deposit', 'home', 99_000)); // 条件に届く
-    look('条件に届いた直後（段階が上がった称賛の札）');
-    fireEvent.pointerDown(document.body);
-    look('ホーム（ヒートアップ）');
-    stages.push(gauge());
-    fireEvent.click(screen.getByRole('button', { name: /^申し込む/ }));
-    await tick(700);
-    look('演出（FEVER 目前）', layer('fx') as HTMLElement);
-
-    // 段階は、点火 → あたたまってきた（メイン口座・届かない額では動かない）→ ヒートアップ
-    expect(stages.map((t) => t.split('。')[1])).toEqual([
-      '点火',
-      'あたたまってきた',
-      'あたたまってきた',
-      'あたたまってきた',
-      'ヒートアップ',
-    ]);
-    expect(seen.length).toBeGreaterThanOrEqual(10);
-    const violations = seen.flatMap(({ scene, text }) =>
-      FORBIDDEN.filter(([, re]) => re.test(text)).map(
-        ([name, re]) => `${scene}: 「${name}」 ${text.match(re)?.[0] ?? ''}`,
-      ),
-    );
-    expect(
-      violations,
-      guardMessage(
-        'G-08',
-        'ファン向けの画面に、人数・最低人数・残りの人数・達成率・目標の金額の数字が出ています',
-      ),
-    ).toEqual([]);
+    expect(stages.map((t) => t.split('。')[1])).toEqual(['FEVER 目前', 'FEVER 目前', 'FEVER 目前']);
+    expect(new Set(stages).size).toBe(1);
+    for (const text of stages)
+      expect(
+        FORBIDDEN.some(([, re]) => re.test(text)),
+        text,
+      ).toBe(false);
   });
 });

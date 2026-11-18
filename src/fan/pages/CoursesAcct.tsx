@@ -1,146 +1,121 @@
-// 応援コース（SP-43）と、口座と預金（SP-44）。メニュー配下の画面（あとから読む側）。
+// プラン（SP-43）と、口座と預金（SP-44）。メニュー配下の画面（あとから読む側）。
 import { useEffect } from 'react';
 import type { CSSProperties } from 'react';
-import { TEIKI, canApply } from '../../core';
-import { artistView } from '../art/registry';
-import { CourseFace } from '../components/CourseFace';
+import { TEIKI } from '../../core';
+import {
+  ENTRY_PLAN,
+  PLAN_NAMES,
+  PLAN_ORDER,
+  depositTasksOf,
+  homePhaseOf,
+  isUpgrade,
+  rewardOf,
+  taskDepositOf,
+  upgradesOf,
+} from '../domain/plan';
 import type { AcctId } from '../domain/state';
-import { nextLocked, opensText, restText } from '../domain/view';
-import { manYen, yen } from '../text/format';
-import { MyState, PayNote } from '../text/pay';
+import { courseOf } from '../domain/view';
+import { yen } from '../text/format';
+import { PayNote } from '../text/pay';
 import fan from '../fan.module.css';
 import { useFan } from '../store/FanProvider';
+import { LockIcon } from '../components/LockIcon';
 import { DepositCard } from './DepositCard';
 import styles from './pages.module.css';
 
-/** 応援コース。4 枚のカードが、金額・手に入るもの・枠・条件・自分の状態つきで並ぶ。 */
+/** プラン。4 つのプランが、確保する額・手に入るもの・特典・自分の状態つきで並ぶ（ここからは変えない）。 */
 export function CoursesPage() {
   const { state, view, actions } = useFan();
   const { cond } = view;
-  const o = artistView(state.oshiId);
-  const { deposit, pay } = state.acct;
+  const ups = upgradesOf(state.course);
+  // 鍵が外れるのは、預金でやることが済んで、ホームに「プランを上げる」が出てから（それまでは、上のプランに鍵）
+  const unlocked = homePhaseOf(state, cond) === 'grow';
   return (
     <>
       <div className={`${fan.card} ${fan.cardNext}`}>
-        <p className={fan.bigK}>いまの申し込み</p>
+        <p className={fan.bigK}>いまのプラン</p>
         {view.my ? (
           <>
             <p className={styles.bigV}>
-              {view.my.name}（確保 {yen(view.my.price)}）
+              {PLAN_NAMES[view.my.id]}（確保 {yen(view.my.price)}）
             </p>
+            <p className={styles.dSub}>参加しています。やめるときは、メニューのいちばん下から。</p>
             <p className={styles.dSub}>
-              申し込み済みです。やめるときは、メニューのいちばん下から。
-            </p>
-            <p className={styles.demoLine}>
-              <span className={styles.demoChip}>デモ用の操作</span>
-              下の「このコースに変える」は、デモ用です。実際は、決済が通った時点で確定します
+              {ups.length
+                ? 'プランは、ホームの「プランを上げる」から上げます。'
+                : 'いちばん上のプランです。'}
             </p>
           </>
         ) : (
           <>
-            <p className={styles.bigV}>まだ申し込んでいません</p>
+            <p className={styles.bigV}>まだ参加していません</p>
             <p className={styles.dSub}>
-              条件がそろったコースで「申し込む」と、開催熱量が高まります（どのコースでも、高まり方は同じです）。
+              最初に選べるのは、{PLAN_NAMES[ENTRY_PLAN]}
+              です。上のプランは、参加のあとに上げられます。
             </p>
-            {view.target ? (
-              <p className={styles.dSub}>
-                目指すコース: <b>{view.target.name}</b>
-              </p>
-            ) : null}
+            <button
+              type="button"
+              className={`${fan.btn} ${fan.btnFull}`}
+              style={{ marginTop: 'var(--s3)' }}
+              onClick={actions.rejoin}
+            >
+              参加するプランを選ぶ
+            </button>
           </>
         )}
-        <p className={styles.dSub}>
-          <MyState deposit={deposit} pay={pay} />
-        </p>
         <p className={styles.dSub}>
           <PayNote />
         </p>
       </div>
-      <div className={styles.stack}>
-        {cond.courses.map((k) => {
-          const mine = state.course === k.id;
-          const ok = canApply(k, deposit, pay);
-          const demoChange = view.joined && !mine && ok;
-          const isAim = view.target?.id === k.id;
+      <ul className={fan.planList} aria-label="プラン">
+        {PLAN_ORDER.map((id) => {
+          const k = courseOf(cond, id);
+          const mine = state.course === id;
+          const r = rewardOf(id);
+          const locked =
+            state.course === null ? id !== ENTRY_PLAN : isUpgrade(state.course, id) && !unlocked;
           return (
-            <div
-              key={k.id}
-              className={mine ? `${fan.rcard} ${fan.sel}` : fan.rcard}
-              id={`course-${k.id}`}
+            <li
+              key={id}
+              className={fan.planItem}
+              data-plan={id}
+              data-mine={mine ? 'true' : undefined}
+              data-locked={locked ? 'true' : undefined}
+              id={`course-${id}`}
             >
-              <CourseFace
-                k={k}
-                cond={cond}
-                a={o}
-                deposit={deposit}
-                pay={pay}
-                mine={mine}
-                mark={isAim && !mine ? '目指すコース' : ''}
-              />
-              <div className={styles.rcAct}>
-                {mine ? (
-                  <p>
-                    申し込み済みです。<span className={fan.nw}>{yen(k.price)}</span>
-                    は、成立まで口座の中で確保されています。
-                  </p>
+              <p className={fan.planName}>
+                {locked ? <LockIcon className={fan.planLockIcon} /> : null}
+                {PLAN_NAMES[id]}
+                {mine ? '（✓ 参加中）' : ''}
+                {locked ? <span className={fan.srOnly}>（ロック中）</span> : null}
+              </p>
+              <dl className={fan.planFacts}>
+                <dt>確保する額</dt>
+                <dd className={fan.num}>{yen(k.price)}</dd>
+                <dt>手に入るもの</dt>
+                <dd>{k.perks.join('・')}</dd>
+                {r ? (
+                  <>
+                    <dt>特典</dt>
+                    <dd>{r.label}</dd>
+                  </>
                 ) : null}
-                {demoChange ? (
-                  <p>
-                    変えると、確保は <span className={fan.nw}>{yen(k.price)}</span>になります。
-                  </p>
-                ) : null}
-                {!view.joined && !ok ? (
-                  <div className={styles.enter}>
-                    <button
-                      type="button"
-                      className={`${fan.btn} ${fan.btnSecondary} ${fan.btnSm}`}
-                      onClick={() => actions.go('acct')}
-                    >
-                      口座と預金へ
-                    </button>
-                  </div>
-                ) : null}
-                {demoChange ? (
-                  <p className={`${styles.demoLine} ${styles.solo}`}>
-                    <span className={styles.demoChip}>デモ用の操作</span>
-                    実際は、決済が通った時点で確定します
-                  </p>
-                ) : null}
-                {mine ? (
-                  <button type="button" className={`${fan.btn} ${fan.btnFull}`} disabled>
-                    このコースで申し込み中
-                  </button>
-                ) : ok ? (
-                  <button
-                    type="button"
-                    className={`${fan.btn} ${fan.btnFull}`}
-                    onClick={() => actions.applyCourse(k.id)}
-                  >
-                    {view.joined ? 'このコースに変える（デモ用）' : '申し込む'}
-                  </button>
-                ) : view.joined ? (
-                  <button type="button" className={`${fan.btn} ${fan.btnFull}`} disabled>
-                    条件がそろうと申し込めます
-                  </button>
-                ) : isAim ? (
-                  <button type="button" className={`${fan.btn} ${fan.btnFull}`} disabled>
-                    目指すコースにしています
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className={`${fan.btn} ${fan.btnSecondary} ${fan.btnFull}`}
-                    onClick={() => actions.aimCourse(k.id)}
-                  >
-                    目指すコースにする
-                  </button>
-                )}
-              </div>
-            </div>
+              </dl>
+              {mine ? (
+                <p className={fan.planLock}>
+                  <span className={fan.nw}>{yen(k.price)}</span>
+                  は、成立まで口座の中で確保されています。
+                </p>
+              ) : isUpgrade(state.course, id) ? (
+                <p className={fan.planLock}>ホームの「プランを上げる」から上げられます</p>
+              ) : state.course === null && id !== ENTRY_PLAN ? (
+                <p className={fan.planLock}>参加のあとに、上げられます</p>
+              ) : null}
+            </li>
           );
         })}
-      </div>
-      <p className={fan.dNote}>擬似の動きです。実際のお申し込み・入出金は始まりません</p>
+      </ul>
+      <p className={fan.dNote}>擬似の動きです。実際の手続き・入出金は始まりません</p>
     </>
   );
 }
@@ -149,9 +124,9 @@ const ACCT_DEF: Record<AcctId, { title?: string; btn: string; desc: string; tag?
   main: {
     title: 'メイン口座にする',
     btn: 'メイン口座にする',
-    desc: '推し活の支払いに、この口座を使います。前方の席・特別コース・最上位コースの条件の 1 つです。',
+    desc: '推し活の支払いに、この口座を使います。',
   },
-  deposit: { btn: '預金を積み増す', desc: '預金を積み増すと、各コースの預金の条件がそろいます。' },
+  deposit: { btn: '預金を積み増す', desc: '預金を積み増すと、預金でやることが進みます。' },
   teiki: {
     title: '推し活定期をはじめる',
     btn: '推し活定期をはじめる',
@@ -160,13 +135,11 @@ const ACCT_DEF: Record<AcctId, { title?: string; btn: string; desc: string; tag?
   },
 };
 
-/** 口座と預金。3 つの行動。押す前に、すると何が開く・何が進むかを数字で出す。 */
+/** 口座と預金。参加のあとの「預金でやること」2 つ。押す前に、すると何が進むかを出す。 */
 export function AcctPage() {
   const { state, view, actions } = useFan();
   const { cond } = view;
-  const { deposit: d, pay: p } = state.acct;
-  const open = cond.courses.filter((k) => canApply(k, d, p));
-  const nx = nextLocked(cond, d, p);
+  const { deposit: d } = state.acct;
   const fresh = state.fresh;
   const delay = { '--ck-delay': `${state.ckDelay}s` } as CSSProperties;
 
@@ -178,84 +151,64 @@ export function AcctPage() {
     document.getElementById(`fan-ac-${freshAct}-h`)?.focus({ preventScroll: true });
   }, [nonce, freshAct]);
 
-  // 目盛りは 4 コースの預金。間隔をそろえて、区間ごとに直線でつなぐ（0〜2万円が 0〜20%）
-  const ths = [0, ...cond.courses.map((k) => k.deposit)];
-  const POS = [0, 20, 45, 70, 100];
-  const SHORT = ['通常', '前方', '特別', '最上位'];
-  const pos = (x: number): number => {
-    for (let i = 1; i < ths.length; i++) {
-      const lo = ths[i - 1] ?? 0;
-      const hi = ths[i] ?? 1;
-      if (x <= hi)
-        return (POS[i - 1] ?? 0) + (((POS[i] ?? 100) - (POS[i - 1] ?? 0)) * (x - lo)) / (hi - lo);
-    }
-    return 100;
-  };
   const acctDone = (id: AcctId): boolean => actions.acctDone(id);
-  // 流れは、推し活定期をはじめる → メイン口座（条件にあるコースのとき）→ 預金を積み増す。口座を使う行動は、はじめたあとから
+  // 流れは、推し活定期をはじめる → 預金を積み増す。口座を使う行動は、はじめたあとから
   const started = !!state.done.teiki;
-  const primary = (['teiki', 'main', 'deposit'] as const).find((id) =>
+  const primary = (['teiki', 'deposit'] as const).find((id) =>
     id === 'deposit' ? !state.done.deposit : !acctDone(id),
   );
-  const rowsOf = (id: AcctId): [string, string][] => {
-    if (id === 'main')
-      return [
-        ['メイン口座', 'いいえ → はい'],
-        ['開くコース', opensText(cond, d, d, p, true)],
-      ];
-    return [
-      ['口座', '使えない → 使える（デモ用）'],
-      [
-        '毎月の積立',
-        `毎月${yen(TEIKI.monthlyYen)}、${TEIKI.months}か月で${yen(TEIKI.monthlyYen * TEIKI.months)}`,
-      ],
-    ];
-  };
+  const teikiRows: [string, string][] = [
+    ['口座', '使えない → 使える（デモ用）'],
+    [
+      '毎月の積立',
+      `毎月${yen(TEIKI.monthlyYen)}、${TEIKI.months}か月で${yen(TEIKI.monthlyYen * TEIKI.months)}`,
+    ],
+  ];
+  const tasks = depositTasksOf(state, cond);
+  const allDone = tasks.every((t) => t.ok);
+  // 参加の前は、行動を出さない（預金でやることは、参加のあとに行う）
+  const ids = view.joined ? (['teiki', 'deposit'] as const) : ([] as const);
   return (
     <>
-      <div className={fan.card}>
-        <p className={fan.bigK}>いまの預金（仮）</p>
-        <p className={`${styles.bigV} ${fan.num}`}>{yen(d)}</p>
-        <div
-          className={styles.gauge}
-          role="img"
-          aria-label={
-            `預金 ${yen(d)}。` +
-            cond.courses
-              .map(
-                (k) => `${k.name}は預金${yen(k.deposit)}以上${k.mainAccount ? 'とメイン口座' : ''}`,
-              )
-              .join('、')
-          }
-        >
-          <div className={styles.track}>
-            <i style={{ width: `${pos(d).toFixed(1)}%` }} />
-          </div>
-          {cond.courses.map((k, i) => (
-            <span
-              key={k.id}
-              className={i === 3 ? `${styles.tick} ${styles.tickEnd}` : styles.tick}
-              style={{ left: `${POS[i + 1]}%` }}
-            >
-              <span>
-                {SHORT[i]}
-                <br />
-                {manYen(k.deposit)}
-              </span>
-            </span>
-          ))}
+      {view.joined ? (
+        <div className={fan.card} data-tasks={allDone ? 'done' : 'todo'}>
+          <p className={fan.bigK}>預金でやること</p>
+          <ul className={styles.taskList}>
+            {tasks.map((t) => (
+              <li key={t.id} data-task={t.id} data-ok={t.ok ? 'true' : 'false'}>
+                <span aria-hidden="true">{t.ok ? '✓' : '・'}</span>
+                {t.label}
+                {t.id === 'deposit' ? `（${yen(taskDepositOf(cond))}以上）` : ''}
+                <span className={fan.srOnly}>{t.ok ? '。済みました' : '。まだです'}</span>
+              </li>
+            ))}
+          </ul>
+          <p className={styles.actD}>いまの預金（仮）: {yen(d)}</p>
+          {allDone ? (
+            <>
+              <p className={styles.actDone}>✓ すべて済みました</p>
+              <button
+                type="button"
+                className={`${fan.btn} ${fan.btnFull}`}
+                onClick={() => actions.go('home')}
+              >
+                ホームへもどる
+              </button>
+            </>
+          ) : null}
         </div>
-        <dl className={styles.facts} style={{ marginTop: 'var(--s2)' }}>
-          <dt>メイン口座</dt>
-          <dd>{p ? 'はい' : 'いいえ'}</dd>
-          <dt>申し込めるコース</dt>
-          <dd>{open.length ? open.map((k) => k.name).join('・') : 'なし'}</dd>
-          <dt>次に開くコース</dt>
-          <dd>{nx ? `${nx.name}（残りは ${restText(nx, d, p)}）` : 'すべて開いています'}</dd>
-        </dl>
-      </div>
+      ) : (
+        <div className={fan.card} data-tasks="closed">
+          <p className={fan.bigK}>預金でやること</p>
+          <p className={styles.actD}>参加すると、預金でやることがここに出ます。</p>
+          <p className={styles.actD}>いまの預金（仮）: {yen(d)}</p>
+          <button type="button" className={`${fan.btn} ${fan.btnFull}`} onClick={actions.rejoin}>
+            参加するプランを選ぶ
+          </button>
+        </div>
+      )}
       <div className={styles.stack}>
-        {(['teiki', 'main', 'deposit'] as const).map((id) => {
+        {ids.map((id) => {
           const def = ACCT_DEF[id];
           // 口座を使う行動は、推し活定期をはじめたあとから
           if (id !== 'teiki' && !started)
@@ -287,7 +240,7 @@ export function AcctPage() {
                 <>
                   <p className={styles.before}>押すと、こうなります</p>
                   <dl className={styles.rows}>
-                    {rowsOf(id).map(([k, v]) => (
+                    {teikiRows.map(([k, v]) => (
                       <div key={k}>
                         <dt>{k}</dt>
                         <dd className={fan.num}>{v}</dd>

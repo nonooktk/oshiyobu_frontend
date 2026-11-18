@@ -5,15 +5,7 @@ import { CITY_NAMES } from '../../../src/core';
 import { CITY_MARK, THANKS, thanksOf } from '../../../src/fan/text/thanks';
 import { VOICES } from '../../../src/fan/text/voices';
 
-const FORBIDDEN = [
-  '新しい口座を開く',
-  '口座開設',
-  '確約',
-  '参加',
-  '応援レース',
-  '応募資格',
-  '上位の体験',
-];
+const FORBIDDEN = ['新しい口座を開く', '口座開設', '確約', '応援レース', '応募資格'];
 // 約束・煽り・金額に読める語（感謝の文に入れない。マイメロディの案の自己点検と同じ）
 const PROMISE = [
   '会おう',

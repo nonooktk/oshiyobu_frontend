@@ -12,15 +12,7 @@ const files = import.meta.glob(
   { query: '?raw', import: 'default', eager: true },
 ) as Record<string, string>;
 
-const FORBIDDEN_WORDS = [
-  '新しい口座を開く',
-  '口座開設',
-  '確約',
-  '参加',
-  '応援レース',
-  '応募資格',
-  '上位の体験',
-];
+const FORBIDDEN_WORDS = ['新しい口座を開く', '口座開設', '確約', '応援レース', '応募資格'];
 
 describe('使わない語', () => {
   it('検査の対象が見つかり、中身を読めている（空振りしていない）', () => {

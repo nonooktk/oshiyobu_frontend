@@ -4,7 +4,7 @@
 export type Praise = { title: string; small: string; sub: string };
 
 /** 申し込んだ直後。段階が上がったとき（stage）は、上がった先の名前で伝える。 */
-export const PRAISE_JOIN_SMALL = '申し込みありがとう。あなたの一歩で、';
+export const PRAISE_JOIN_SMALL = '参加ありがとう。あなたの一歩で、';
 export const praiseJoinStage = (stageName: string): Praise => ({
   title: `${stageName}！`,
   small: PRAISE_JOIN_SMALL,
@@ -19,7 +19,7 @@ export const PRAISE_JOIN: Praise = {
 /** 申し込んだ直後に、そのまま成立に届いたとき（人数も金額もそろった公演）。 */
 export const PRAISE_JOIN_FEVER: Praise = {
   title: 'FEVER！',
-  small: '申し込みありがとう。',
+  small: '参加ありがとう。',
   sub: 'あなたの声が届いて、開催が決まりました',
 };
 
@@ -34,7 +34,7 @@ export const PRAISE_SHARE: Praise = {
 export const PRAISE_NOTIFY: Praise = {
   title: '届いた！',
   small: '知らせてくれてありがとう。',
-  sub: 'あなたの声が、仲間に届きました',
+  sub: 'あなたの声が、みんなに届きました',
 };
 
 /** 仲間を呼んだ直後（ゲージが伸びている最中）。 */
@@ -50,3 +50,17 @@ export const PRAISE_FEVER: Praise = {
   small: '仲間を呼んでくれてありがとう。',
   sub: 'あなたの声が届いて、開催が決まりました',
 };
+
+/** 最安のプランで、プロジェクトに参加した直後（新しい流れ）。 */
+export const PRAISE_JOIN_PLAN: Praise = {
+  title: 'ようこそ！',
+  small: '参加してくれてありがとう。',
+  sub: 'あなたの一歩で、プロジェクトが動き出しました',
+};
+
+/** プランを上げた直後（特別な演出）。褒めるのは、上げたという行動だけ。 */
+export const praiseUpgrade = (planName: string): Praise => ({
+  title: 'プランアップ！',
+  small: `${planName}に上げてくれてありがとう。`,
+  sub: 'あなたの応援が、もっと大きく届きます',
+});

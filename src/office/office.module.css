@@ -129,7 +129,7 @@
 /* ② 集まる人数（帯の中）: 名前・数字の入力・よく使う値のボタンを横 1 行に */
 /* ② 集まる人数の行（① 地図のすぐ下。M-02） */
 .crowdRow {
-  padding: var(--s2) var(--s4);
+  padding: var(--s1) var(--s4);
   border-top: 1px solid var(--line);
 }
 .crowd {
@@ -278,7 +278,8 @@
 }
 /* ① の左右の余白は 16 px（地図の幅を空けるため。上の余白は、641 px 以上で詰める。下の @media） */
 .mapCol {
-  padding: var(--s4) var(--s3) var(--s2);
+  /* 下の余白は 0（すぐ下の ② の行が、線と余白を持つ。2026-11-18。V-14） */
+  padding: var(--s4) var(--s3) 0;
 }
 /* 地図は高さ 480 px まで。幅 1280 では、右の市の一覧に幅を譲るので、幅で決まって 340 × 436 px ほど
    （1280 × 800 で、③④ の見出しまで見えるように） */
@@ -291,7 +292,8 @@
   align-content: start;
   column-gap: var(--s2);
   flex: 1;
-  padding: var(--s3) var(--s4) var(--s4);
+  /* 上の余白は 8 px（2026-11-18 に ② を地図の下へ移したぶんを詰めて、③④ の見出しを 800 px 以内に保つ。V-14） */
+  padding: var(--s2) var(--s4) var(--s4);
   border-top: 1px solid var(--line);
 }
 .sideCol > * {
@@ -548,8 +550,8 @@
 /* ① 地図と市の一覧を横に 2 列（地図は縦長なので、幅を絞っても高さは 400 px までのまま） */
 .mapRow {
   display: grid;
-  /* 一覧は 224 px（5 組 × 9 市で、名前と数字が切れない幅）。残りを地図に使う */
-  grid-template-columns: minmax(0, 1fr) 224px;
+  /* 一覧は 248 px（5 組 × 9 市で、名前と数字と割合が切れない幅。2026-11-18 に割合を足して 224 → 248 px。M-01）。残りを地図に使う */
+  grid-template-columns: minmax(0, 1fr) 248px;
   align-items: start;
   gap: var(--s2);
   margin-top: var(--s2);
@@ -624,6 +626,7 @@
 /* 見込みの下に、登録の何 % か（M-01）。行の高さ（--tap）の中に収める */
 .rankShare {
   display: block;
+  margin-top: 2px;
   font-size: 12px;
   font-weight: 700;
   line-height: 1.2;
@@ -672,7 +675,8 @@
   grid-template-columns: auto minmax(0, 1fr);
   align-content: start;
   column-gap: var(--s2);
-  padding: var(--s3) var(--s4) var(--s4);
+  /* 上の余白は ③ と同じ 8 px（2026-11-18。V-14） */
+  padding: var(--s2) var(--s4) var(--s4);
   border-left: 1px solid var(--line);
 }
 .pastCol > * {
@@ -1244,6 +1248,11 @@ div.chg > .prevVal {
   flex: 1;
   min-width: 280px;
 }
+/* 閉じている間は、ボタン 2 つと同じ行に並べて、⑤ の高さを詰める（2026-11-18。⑤ を ⑥ の上にしたぶん。M-06・V-14） */
+.adjust:not([open]) {
+  flex: 0 0 auto;
+  min-width: 0;
+}
 .adjust summary {
   display: inline-flex;
   align-items: center;
@@ -1349,6 +1358,13 @@ div.chg > .prevVal {
   align-items: center;
   flex-wrap: wrap;
   gap: var(--s3);
+}
+/* ⑤ の下の端の注記の行（シミュレーターに無い会場の注記・提案できない理由）。ボタンの組の外に、1 行で並べる（2026-11-18。V-14） */
+.footNotes {
+  display: flex;
+  flex-basis: 100%;
+  flex-wrap: wrap;
+  gap: 0 var(--s3);
 }
 .ppNg {
   margin: 0;

@@ -65,16 +65,15 @@ export function CityRank() {
                   {n + 1}
                 </span>
                 <span className={styles.rankName}>{row.name}</span>
-                <span className={styles.rankExp}>
-                  {people(row.expected)}
+                <span className={styles.rankExp}>{people(row.expected)}</span>
+                {/* 割合（M-01）は、登録の人数の下。見込みの欄を広げないので、市の名前が切れない */}
+                <span className={styles.rankReg}>
+                  {text.rankReg} {people(row.reg)}
                   {share !== null && (
                     <small className={styles.rankShare} data-testid="rank-share">
                       {text.shareOfReg(share)}
                     </small>
                   )}
-                </span>
-                <span className={styles.rankReg}>
-                  {text.rankReg} {people(row.reg)}
                 </span>
               </button>
             </li>

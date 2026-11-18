@@ -18,6 +18,7 @@
   2026-11-18（同じ了承）: 1 数字・2 損益の計算と並びを変えた（docs/office/要件.md の M-11〜M-22、式は docs/office/仕様.md の 9.3）。
   見出しの下の注記「上位コースの構成は、事務所向けと違います」は外した（3 つのプランを、事務所向けの ⑤ と同じ組み立てにしたため）。
   2026-11-18 の追加の直し: 入力の名前「利益（希望額）」を「利益」に、「ダイヤモンドプラン」を「プラチナプラン」に変えた（名前だけ。M-23・M-24）。
+  2026-11-18 の追加の直し（2）: 出演料を外した（出演料は利益に含まれる。M-26）。利益の初めの値は「出演料 ＋ それまでの利益」で、最低条件は変わらない。
 -->
 <style>
   /* ===== デザイントークン（toB デザインの決まり。index.html の :root と同じ値） ===== */
@@ -144,7 +145,6 @@
   .inp.wide { grid-column: 1 / -1; }
   .inp.wide input { max-width: calc(50% - 8px); }
   .inp .inote { font-size: 12px; color: var(--ink-soft); }
-  .fee-in { margin: 0 0 16px; max-width: 50%; }
   .sim-in details.fold-s { margin-top: 16px; }
   /* 最低条件: 1 行目に金額を一番大きく、2 行目に「必要人数 × 価格」（docs/office/要件.md の M-19） */
   .minline { display: grid; gap: 4px; margin: 0 0 16px; padding: 16px; border-radius: var(--radius); background: var(--bg-c); }
@@ -199,7 +199,7 @@
     .office-bar, .controls, .map-col, .side, .sim, .fold-note { padding-left: 16px; padding-right: 16px; }
     .jcard { padding: 16px; }
     .kpis { grid-template-columns: 1fr; }
-    .fee-in, .inp.wide input { max-width: none; }
+    .inp.wide input { max-width: none; }
     .part-h { font-size: 20px; }
     .minline .big { font-size: 28px; }
     .vrow { grid-template-columns: 56px minmax(0, 1fr); gap: 8px 16px; }
@@ -275,13 +275,14 @@ const TYPES = {livehouse:'ライブハウス',hall:'ホール',cafe_bar:'カフ�
 const GENRE = {idol:'アイドル',band:'バンド',singer:'歌手',voice_actor:'声優',vtuber:'VTuber',comedy:'お笑い',enka:'演歌',jazz:'ジャズ',classical:'クラシック',other:'その他'};
 const state = {n:300, prefs:new Set(PREFS), types:new Set(Object.keys(TYPES)), onlyEv:true, sel:null, genre:'all'};
 // 仮置きの費用（区分ごと）。会場費は公開料金が分かる会場でも、まずはこの値から始める
-// fee は出演料。hope は利益＝最低条件ちょうど集まったときの全体利益。
+// hope は利益＝最低条件ちょうど集まったときの全体利益。出演料は利益に含まれる（2026-11-18 の追加の直しで、出演料の入力を外した。M-26）。
 // hope の初めの値は、最低条件が 2026-11-18 より前と同じ値になるよう逆算した（これまでの利益 − これまでの最低条件 × 10%。docs/office/仕様.md の 9.3）
-const COST = {30:{venue:30000,prod:30000,fee:100000,travel:80000,hope:12000,price:7000},
-              100:{venue:60000,prod:100000,fee:250000,travel:120000,hope:55000,price:7000},
-              300:{venue:200000,prod:300000,fee:500000,travel:200000,hope:150000,price:6000},
-              500:{venue:300000,prod:600000,fee:800000,travel:250000,hope:255000,price:7000},
-              1000:{venue:600000,prod:1200000,fee:1500000,travel:350000,hope:535000,price:7500}};
+// M-26 で、hope の初めの値を「出演料 ＋ それまでの hope」にした（300 人の区分は 500,000 ＋ 150,000 ＝ 650,000円）。最低条件は変わらない
+const COST = {30:{venue:30000,prod:30000,travel:80000,hope:112000,price:7000},
+              100:{venue:60000,prod:100000,travel:120000,hope:305000,price:7000},
+              300:{venue:200000,prod:300000,travel:200000,hope:650000,price:6000},
+              500:{venue:300000,prod:600000,travel:250000,hope:1055000,price:7000},
+              1000:{venue:600000,prod:1200000,travel:350000,hope:2035000,price:7500}};
 const FEE_RATE = 10;   // OSHIYOBU の成立手数料（%）
 const sim = {};
 const $ = s => document.querySelector(s);
@@ -436,7 +437,7 @@ function simFor(v){
     const c = COST[v.capacity_tier];
     const fr = Math.max(4, Math.round(v.capacity * 0.1));
     // 3 つのプランの上乗せ金額は、事務所向けの ⑤ と同じ組み立て（シルバー＝価格 × 2、ゴールド＝10 万円 − 価格、プラチナ＝30 万円 − 価格）
-    sim[v.venue_id] = {venue:c.venue, prod:c.prod, fee:c.fee, travel:c.travel, hope:c.hope, price:c.price,
+    sim[v.venue_id] = {venue:c.venue, prod:c.prod, travel:c.travel, hope:c.hope, price:c.price,
       t1n: fr, t1p: c.price * 2, t2n: 3, t2p: 100000 - c.price, t3n: 1, t3p: 300000 - c.price};
   }
   return sim[v.venue_id];
@@ -446,7 +447,7 @@ function renderSim(){
   const v = V.find(x => x.venue_id === state.sel);
   if (!v){ box.innerHTML = ''; return; }
   const s = simFor(v);
-  // 1 数字: 経費 → 利益→ チケット価格と 3 つのプラン。出演料は 2 損益の入力（docs/office/要件.md の M-11〜M-16）
+  // 1 数字: 経費 → 利益 → チケット価格と 3 つのプラン（docs/office/要件.md の M-11〜M-16）。出演料は利益に含まれ、入力は無い（M-26）
   const E = [['venue','会場費'],['prod','制作費'],['travel','移動・宿泊']];
   const P = [['price','チケット価格'],
              ['t1n','シルバープランの数'],['t1p','シルバープランの上乗せ金額'],
@@ -464,23 +465,22 @@ function renderSim(){
       <div class="hint">数字はすべて仮置き。アーティスト側と話しながら、実際の値に書き換えて使う。${v.fee_note ? '<br>公開されている会場の料金：' + esc(v.fee_note) : ''}<br>集まる人数は、いまは満席（キャパ）として数える（仮）。3 つのプランは、通常の席の上に積む枠（クラファンの上位の枠）。</div></details>
     </section>
     <section class="jcard sim-out"><p class="jlabel"><i>2</i>損益<span class="vname-s">${esc(v.venue_name)}</span></p>
-      <div class="inputs fee-in">${inp('fee','出演料')}</div>
       <div id="simout"></div></section>
   </div>`;
-  for (const k of [...E, ['hope'], ...P, ['fee']].map(x => x[0])){
+  for (const k of [...E, ['hope'], ...P].map(x => x[0])){
     $('#s-' + k).addEventListener('input', e => { s[k] = Math.max(0, +e.target.value || 0); simOut(v, s); });
   }
   simOut(v, s);
 }
 // 損益の計算（docs/office/仕様.md の 9.3）。画面の外からも呼べるよう、数字だけを返す
-//   最低条件 ＝ 切り上げ（（経費 ＋ 出演料 ＋ 利益）÷（1 − 手数料率））
+//   最低条件 ＝ 切り上げ（（経費 ＋ 利益）÷（1 − 手数料率））。出演料は利益に含まれる（M-26）
 //   手数料   ＝ 切り上げ（集まる合計 × 手数料率）
-//   全体利益 ＝ 集まる合計 − 手数料 − 会場費 − 制作費 − 出演料 − 移動・宿泊費
+//   全体利益 ＝ 集まる合計 − 手数料 − 会場費 − 制作費 − 移動・宿泊費
 // 最低条件と手数料をどちらも 1 円未満で切り上げるので、最低条件ちょうど集まったとき、全体利益は利益と一致する
 function simCalc(cap, s){
-  const line = Math.ceil((s.venue + s.prod + s.travel + s.fee + s.hope) * 100 / (100 - FEE_RATE));
+  const line = Math.ceil((s.venue + s.prod + s.travel + s.hope) * 100 / (100 - FEE_RATE));
   const commission = total => Math.ceil(total * FEE_RATE / 100);
-  const profitAt = total => total - commission(total) - s.venue - s.prod - s.fee - s.travel;
+  const profitAt = total => total - commission(total) - s.venue - s.prod - s.travel;
   const up1 = s.t1n * s.t1p, up2 = s.t2n * s.t2p, up3 = s.t3n * s.t3p, up = up1 + up2 + up3;
   const need = s.price > 0 ? Math.ceil(line / s.price) : Infinity;   // 通常の席だけで最低条件に届く人数
   const seats = cap;                                                 // 集まる人数は、暫定で満席（キャパ）
@@ -504,7 +504,7 @@ function simOut(v, s){
     ${verdict}
     <div class="bars">
       <div class="barrow"><span>費用と目標</span><div class="bar">
-        ${seg('c1', s.venue, '会場')}${seg('c2', s.prod, '制作')}${seg('c3', s.travel, '移動')}${seg('c4', s.fee, '出演料')}${seg('p', s.hope, '利益')}${seg('m', r.line - (s.venue + s.prod + s.travel + s.fee + s.hope), '手数料')}
+        ${seg('c1', s.venue, '会場')}${seg('c2', s.prod, '制作')}${seg('c3', s.travel, '移動')}${seg('m', r.line - (s.venue + s.prod + s.travel + s.hope), '手数料')}${seg('p', s.hope, '利益')}
         <div class="line${parseFloat(w(r.line)) > 50 ? ' r' : ''}" style="left:${w(r.line)}"><span>最低条件 ${man(r.line)}</span></div></div></div>
       <div class="barrow"><span>集まるお金</span><div class="bar">
         ${seg('f', r.reach, '通常の席 ' + r.seats.toLocaleString() + '人')}${seg('u1', r.up1, 'シルバー')}${seg('u2', r.up2, 'ゴールド')}${seg('u3', r.up3, 'プラチナ')}
@@ -523,7 +523,6 @@ function simOut(v, s){
       <span>集まる合計</span><span class="num">${yen(r.total)}</span>
       <span>OSHIYOBUの成立手数料（${FEE_RATE}%）</span><span class="num">${ok ? yen(r.fee10) : '0円（不成立）'}</span>
       <span>会場費・制作費・移動・宿泊</span><span class="num">${yen(s.venue + s.prod + s.travel)}</span>
-      <span>出演料</span><span class="num">${yen(s.fee)}</span>
       <span class="tot">全体利益</span><span class="num tot">${ok ? yen(r.profit) : '0円（不成立）'}</span>
       <span>最低条件ちょうど集まったときの全体利益</span><span class="num" data-sim="profit-at-line">${yen(r.profitAtLine)}</span>
     </div></details>`;

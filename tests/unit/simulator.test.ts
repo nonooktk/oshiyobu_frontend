@@ -15,8 +15,9 @@ const outside = html.replace(script, '');
 // 元（mock/simulator.html。2026-11-13 時点）は c081c662503f88d89957c860021276fc87bbfce96cbba98aa173a2d8aceb22e7。
 // 2026-11-18、統括の了承（「全部、勝手に直してよい」）で、公演のデータから音の森の 1 件を外した版（aeb5e64b…）に替え、
 // 続けて 1 数字・2 損益の計算と並びを変えた版（3159ef80…。M-11〜M-22）に替え、
-// 追加の直しで、入力の名前「利益」とプラン名「プラチナプラン」にした版に替えた（M-23・M-24。計算の検査は simulator-calc.test.ts）
-const APPROVED_SCRIPT_SHA256 = '6ad7e684dbb99a65280c7a14a117a0a16cff164fe2a8bd5c0fab10f5ff19439a';
+// 追加の直しで、入力の名前「利益」とプラン名「プラチナプラン」にした版（6ad7e684…。M-23・M-24）に替え、
+// 追加の直し（2）で、出演料を外した版に替えた（M-26。計算の検査は simulator-calc.test.ts・simulator-no-fee.test.ts）
+const APPROVED_SCRIPT_SHA256 = 'b4e00c3dc9649e14778f67800e539253490845591a352469657a3eade8b00772';
 
 describe('収支シミュレーター', () => {
   it('計算とデータ（script）が、統括の了承した版のまま（ハッシュが一致する。2026-11-18）', () => {

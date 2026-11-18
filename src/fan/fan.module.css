@@ -1811,10 +1811,12 @@ button.rcard:hover {
   text-align: left;
   word-break: keep-all;
   overflow-wrap: anywhere;
-  animation: subIn 0.45s cubic-bezier(0.2, 1.3, 0.4, 1) 0.85s both;
+  /* 出始めは、褒めことばのカード（.fxSub。0.45 秒）の 0.15 秒あと。演出の長さ（ストアが決める）は変えずに、長く見せる */
+  animation: subIn 0.45s cubic-bezier(0.2, 1.3, 0.4, 1) 0.6s both;
 }
 .fxStrong .fxSay {
-  animation-delay: 1.7s;
+  /* 派手のときも同じ考え方で、.fxSub（1.1 秒）の 0.15 秒あと */
+  animation-delay: 1.25s;
 }
 /* 「タップで閉じます」。暗くした範囲の下の端に置く */
 .fxHint {
@@ -2473,16 +2475,307 @@ button.rcard:hover {
   gap: var(--s2);
   justify-items: center;
 }
-.rewardFrame img,
-.rewardFrame video {
-  width: 100%;
-  max-height: 50vh;
-  object-fit: contain;
-  border-radius: var(--r);
-}
 .rewardWait {
   margin: 0;
   font-size: var(--fs-note);
   font-weight: 700;
   color: var(--ink);
+}
+
+/* ---------- 窓の作り込み（参加の確認・プランを上げる・特典。SheetShell の look="plan"） ---------- */
+/*
+  下から出てくる窓だと分かる形: 上の角を大きく丸め（--r の 3 倍）、上の真ん中に取っ手を付け、上の縁に薄い影を落とす。
+  取っ手は飾りだけ（引っぱって閉じる動きは無い。閉じるのは、ボタン・背面を押す・Esc のまま）。
+  ほかの窓（やめる確認・引き継ぎ・預金・共有）は、いままでの .sheet のまま。
+*/
+.sheetPlan {
+  padding-top: var(--s2);
+  border-radius: calc(var(--r) * 3) calc(var(--r) * 3) 0 0;
+  box-shadow: 0 -6px 24px color-mix(in srgb, var(--ink) 18%, transparent);
+}
+/* 取っ手: 白い窓の上で見えるよう、線・飾り用の --gray-300 より濃い --ink-soft にする（文字にも使える色なので、飾りにも使える） */
+/* 見出しを、言葉の途中で折らない（「ダイヤモンドプランの特典」など）。幅 340 以下では、1 行に収まるよう一段小さくする */
+.sheetPlan .sheetHead h2 {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+@container phone (max-width: 340px) {
+  .sheetPlan .sheetHead h2 {
+    font-size: var(--fs-lead);
+  }
+}
+.sheetGrip {
+  display: block;
+  width: 48px;
+  height: 6px;
+  margin: 0 auto var(--s3);
+  border-radius: var(--pill);
+  background: var(--ink-soft);
+}
+
+/* ---------- 参加の確認の窓（ConfirmSheet） ---------- */
+/* 推しの小さな絵（左）と、ひとことの説明（右） */
+.cfHead {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin: 0 0 var(--s3);
+}
+.cfAv {
+  width: 48px;
+  height: 48px;
+  border-width: 2px;
+}
+/* 言葉の途中で切らない（切ってよいのは <wbr> の所だけ。収まらない長い語だけは、はみ出さずに折る） */
+.cfLead {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+/* 下の注意の一文も、言葉の途中で切らない（余白は .sheetNote のまま） */
+.cfNote {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+/* プランの名前の札と、確保する額のカード。線と札の色は、ベーシックプランの色（プランの色の区画と同じ既定の値） */
+.cfCard {
+  display: grid;
+  gap: var(--s3);
+  margin: 0;
+  padding: var(--s3);
+  border: 2px solid var(--primary);
+  border-radius: calc(var(--r) * 2);
+  background: var(--bg-c);
+  color: var(--ink);
+}
+.cfRow {
+  display: grid;
+  gap: var(--s1);
+  justify-items: start;
+}
+.cfLabel {
+  font-size: var(--fs-note);
+  font-weight: 700;
+  line-height: var(--lh-tight);
+  color: var(--ink);
+}
+.cfRow dd {
+  margin: 0;
+}
+.cfChip {
+  display: inline-block;
+  padding: var(--s1) var(--s3);
+  border-width: 2px;
+  font-size: var(--fs-body);
+  white-space: nowrap;
+}
+.cfYen {
+  font-size: var(--fs-figure);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ink);
+}
+
+/* ---------- プランを上げるの窓（UpgradeSheet） ---------- */
+/*
+  上のプランほど特別に見せる（ゴールド → プラチナ → ダイヤモンド）。どれも動かない飾りだけ（G-05。急がせる見せ方は入れない）。
+    ゴールド:     線を 2px にする
+    プラチナ:     線を 2px にして、内側に白い細線（二重の枠）
+    ダイヤモンド: 線を 3px にして、内側に白い細線、外に線の色の細い縁、影を深くする。右上の角に飾りの光
+  色は「プランの色」の区画の変数（--plan-line など）を読むだけ（区画は変えない）。カードの中の黒いボタンも変えない。
+*/
+.upList {
+  gap: var(--s3);
+}
+.upItem {
+  position: relative;
+  gap: var(--s3);
+}
+.upItem[data-plan='front'] {
+  border-width: 2px;
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--ink) 10%, transparent);
+}
+.upItem[data-plan='special'] {
+  border-width: 2px;
+  box-shadow:
+    inset 0 0 0 3px var(--surface),
+    0 3px 10px color-mix(in srgb, var(--ink) 14%, transparent);
+}
+.upItem[data-plan='top'] {
+  border-width: 3px;
+  box-shadow:
+    inset 0 0 0 3px var(--surface),
+    0 0 0 2px color-mix(in srgb, var(--plan-line) 35%, transparent),
+    0 6px 18px color-mix(in srgb, var(--ink) 18%, transparent);
+}
+/* ダイヤモンドの右上の角の光（動かない飾り。文字には重ならない） */
+.upItem[data-plan='top']::after {
+  content: '';
+  position: absolute;
+  top: var(--s2);
+  right: var(--s2);
+  width: 28px;
+  height: 28px;
+  background: var(--plan-line);
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  opacity: 0.7;
+  pointer-events: none;
+}
+/* プランの名前: 大きくして、前に宝石の印（上のプランほど数が多い） */
+.upName {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding-right: var(--s5); /* ダイヤモンドの角の光と重ならない */
+  font-size: var(--fs-lead);
+  line-height: var(--lh-tight);
+}
+.upGems {
+  display: inline-flex;
+  gap: 2px;
+  color: var(--plan-line);
+}
+.upGems svg {
+  display: block;
+}
+/* プラチナの線の色（--gray-300）は、カードの地に近くて印が見えにくいので、印だけ --ink-soft にする */
+.upItem[data-plan='special'] .upGems {
+  color: var(--ink-soft);
+}
+.upGemShine {
+  fill: var(--surface);
+  opacity: 0.55;
+}
+/* 額と条件: 見出し（左）と中身（右）を、行ごとにそろえる */
+.upFacts {
+  display: grid;
+  gap: var(--s2);
+  margin: 0;
+  font-size: var(--fs-note);
+  line-height: var(--lh-note);
+  color: var(--ink);
+}
+.upRow {
+  display: grid;
+  grid-template-columns: 6em 1fr;
+  gap: var(--s2);
+  align-items: baseline;
+}
+.upRow dt {
+  font-weight: 700;
+}
+/* 言葉の途中で切らない（「預金 100,000円以上」は、空白の所でだけ折る） */
+.upRow dd {
+  margin: 0;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+/* 特典の行: 白い地の帯にして、箱の印と、少し大きい文字で目立たせる */
+.upReward {
+  grid-template-columns: auto 1fr;
+  gap: var(--s3);
+  align-items: center;
+  margin-top: var(--s1);
+  padding: var(--s2);
+  border: 2px solid var(--plan-line);
+  border-radius: var(--r);
+  background: var(--surface);
+}
+.upReward dt {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+}
+.upReward dd {
+  font-size: var(--fs-body);
+  font-weight: 700;
+}
+.upGift {
+  flex: none;
+  color: var(--primary);
+}
+
+/* ---------- 特典の窓（RewardSheet）: プレゼントの額縁 ---------- */
+/*
+  額縁の色は、プランごと（data-reward-plan）。値は、イーサンさんの PR #45 の「プランの色」と同じトークン:
+    ゴールド     縁 --warning ・敷き --yellow-light ・リボン --yellow
+    プラチナ     縁 --ink-soft・敷き --line         ・リボン --line
+    ダイヤモンド 縁 --sky     ・敷き --sky-light    ・リボン --sky-light
+  「プランの色」の区画（.planItem・.home）は、特典の枠に届かないので、ここに同じ名前で書く。区画の色を変えたら、ここもそろえる。
+*/
+.rewardFrame[data-reward-plan='front'] {
+  --rf-line: var(--warning);
+  --rf-mat: var(--yellow-light);
+  --rf-bow: var(--yellow);
+}
+.rewardFrame[data-reward-plan='special'] {
+  --rf-line: var(--ink-soft);
+  --rf-mat: var(--line);
+  --rf-bow: var(--line);
+}
+.rewardFrame[data-reward-plan='top'] {
+  --rf-line: var(--sky);
+  --rf-mat: var(--sky-light);
+  --rf-bow: var(--sky-light);
+}
+/* 「（推し）から、（特典）が届きました。」を、言葉の途中で折らない */
+.rfLead {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+/* 額縁: プランの色の太い縁と、包み紙のような斜めの縞の敷き（動かない） */
+.rfBox {
+  position: relative;
+  width: 100%;
+  margin-top: var(--s3); /* リボンが上にはみ出す分 */
+  padding: var(--s3);
+  border: 4px solid var(--rf-line, var(--primary));
+  border-radius: calc(var(--r) * 2);
+  background: repeating-linear-gradient(
+    135deg,
+    var(--rf-mat, var(--bg-c)) 0 10px,
+    var(--surface) 10px 20px
+  );
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--ink) 16%, transparent);
+}
+/* リボン: 額縁の上の縁の真ん中に結ぶ */
+.rfBow {
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  z-index: 1;
+  transform: translateX(-50%);
+  fill: var(--rf-bow, var(--yellow));
+  stroke: var(--rf-line, var(--primary));
+}
+/*
+  中の窓: 縦横比 4:5。幅は、窓の高さが画面の高さの 46% を超えない所まで（縦横比は保つ）。
+  中身（仮の推しの絵・画像・動画）は、窓いっぱいに置いて、縦横比を保って収める（はみ出さず、足りない所は濃い地）。
+  横長の動画も、縦長の画像も、枠の大きさは変わらない。
+*/
+.rfWindow {
+  position: relative;
+  width: min(100%, calc(46vh * 4 / 5));
+  aspect-ratio: 4 / 5;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 3px solid var(--surface);
+  border-radius: var(--r);
+  background: var(--ink);
+}
+.rfWindow > img,
+.rfWindow > video,
+.rfWindow > .artBox {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+}
+.rfWindow > img,
+.rfWindow > video {
+  object-fit: contain;
 }

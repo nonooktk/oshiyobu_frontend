@@ -105,11 +105,17 @@ export function SheetShell({
   title,
   inert,
   onClose,
+  look,
   children,
 }: {
   title: string;
   inert: boolean;
   onClose: () => void;
+  /**
+   * 見た目の種類。'plan' ＝ 参加の確認・プランを上げる・特典の窓（上の角を大きく丸め、取っ手を付ける）。
+   * 取っ手は飾りだけ（引っぱって閉じる動きは無い）。無ければ、いままでの形。
+   */
+  look?: 'plan';
   children: ReactNode;
 }) {
   useReturnFocus();
@@ -121,7 +127,13 @@ export function SheetShell({
       role="presentation"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className={styles.sheet} role="dialog" aria-modal="true" aria-label={title}>
+      <div
+        className={look === 'plan' ? `${styles.sheet} ${styles.sheetPlan}` : styles.sheet}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+      >
+        {look === 'plan' ? <span className={styles.sheetGrip} aria-hidden="true" /> : null}
         {/* 札は、後ろの画面が下へスクロールされていても見えるよう、シートの中に置く（C-06） */}
         <div className={styles.sheetHead}>
           <h2>{title}</h2>

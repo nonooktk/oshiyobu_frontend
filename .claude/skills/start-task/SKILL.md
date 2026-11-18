@@ -19,9 +19,11 @@ git branch --show-current
 - 変更が残っているときは、**ここで止まる**。残っている変更をどうするか（続きの作業か、別の作業か）を担当者に聞く。変更を捨てる操作（`git reset --hard`・`git checkout -f`・`git clean`）は使わない。
 - 変更が無ければ、次へ進む。
 
-### 2. 最新の dev を取る
+### 2. 最新の切り元を取る
 
-作業ブランチは、`dev` から切ります（PR の宛先も `dev`）。
+作業ブランチは、`dev` から切ります（PR の宛先も `dev`）。ただし、ファン向け（`src/fan/`・`docs/fan/`）の作業は、切り元も PR の宛先も `feat/fan-flow-v2` です。
+
+`dev` から切るとき:
 
 ```
 git fetch origin
@@ -31,18 +33,32 @@ git pull --ff-only
 
 - `git pull --ff-only` が失敗したら、**ここで止まる**。エラーを全文貼って聞く。
 
+ファン向けのとき（最新を取るだけ。ブランチは、次の手順 3 で切る）:
+
+```
+git fetch origin
+```
+
 ### 3. 作業用のブランチを切る
 
 ```
 git switch -c <種類>/<短い英語の名前>
 ```
 
+ファン向け（`src/fan/`・`docs/fan/`）の作業は、`feat/fan-flow-v2` から切ります。
+
+```
+git switch -c <種類>/<短い英語の名前> --no-track origin/feat/fan-flow-v2
+```
+
 - 種類は `feature`（機能の追加）・`fix`（不具合の修正）・`docs`（文書だけの変更）のどれか。例: `feature/add-banner`、`fix/map-label`。
-- **main・dev の上では、commit も push もしない。** 必ずブランチを切ってから作業する。
+- **main・dev・feat/fan-flow-v2 の上では、commit も push もしない。** 必ずブランチを切ってから作業する。
 
 ### 4. やることを日本語で書き出して、承認を待つ
 
-次の 5 つを、担当者に読める形で書き出す。
+書き出す前に、頼まれたことが、要求・要件・決定（D-番号）・守ること（G-番号）・固定の所（流れ・状態・プラン）を変えるものでないかを確かめる。変えるものなら、ファイルを変えずに、Issue の下書き（何を変えたいか・なぜ・当たる文書と番号・急ぎか）を出して止まる。担当者の OK のあとに、`gh issue create` で立てる（`gh` が使えないときは、下書きを渡して、担当者が GitHub の画面で立てる。公開 URL・合言葉・秘匿値は書かない）。詳しくは `docs/守ること.md` の G-33 と「3.」。
+
+変えないものなら、次の 5 つを、担当者に読める形で書き出す。
 
 1. 何を変えるか（1〜3 行）
 2. なぜ変えるか
@@ -78,4 +94,4 @@ git diff --cached --stat
 
 ### 8. 終わったら
 
-作業が終わったら、`/pre-deploy-check` を呼んで、PR を出す前の確認を行う。PR は `dev` 向けに出す（`gh pr create --base dev --web`）。出すと、統括にレビューの依頼が届く。PR の出し方と、そのあとの流れは `docs/デプロイ手順.md`。
+作業が終わったら、`/pre-deploy-check` を呼んで、PR を出す前の確認を行う。PR は `dev` 向けに出す（`gh pr create --base dev --web`）。ファン向けの作業は、`feat/fan-flow-v2` 向けに出す（`gh pr create --base feat/fan-flow-v2 --web`）。出すと、統括にレビューの依頼が届く。PR の出し方と、そのあとの流れは `docs/デプロイ手順.md`。

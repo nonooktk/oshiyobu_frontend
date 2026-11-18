@@ -9,8 +9,9 @@ import type { CourseId } from '../../core';
 import { yen } from '../text/format';
 import styles from '../fan.module.css';
 import { useFan } from '../store/FanProvider';
-import { WholeArt } from './Art';
+import { Av, WholeArt } from './Art';
 import { SheetShell } from './Frame';
+import { Wbr } from './text';
 
 /** 参加の前の確認（表示だけ。実際の決済は無い）。 */
 export function ConfirmSheet({ inert }: { inert: boolean }) {
@@ -24,17 +25,46 @@ export function ConfirmSheet({ inert }: { inert: boolean }) {
   return (
     <SheetShell title="参加しますか？" inert={inert} onClose={actions.closeJoinConfirm} look="plan">
       <div data-layer-body="confirm">
-        <p className={styles.sheetLead}>
-          {o.name}を{view.cond.city}に呼ぶプロジェクトに、{PLAN_NAMES[ENTRY_PLAN]}で参加します。
-        </p>
-        <dl className={styles.planFacts}>
-          <dt>プラン</dt>
-          <dd>{PLAN_NAMES[ENTRY_PLAN]}</dd>
-          <dt>参加のときに確保する額</dt>
-          <dd className={styles.num}>{yen(k.price)}</dd>
+        {/* 推しの小さな絵と、ひとことの説明。言葉の途中で切れないよう、切ってよい所にだけ <wbr> を入れる */}
+        <div className={styles.cfHead}>
+          <Av a={o} className={styles.cfAv} />
+          <p className={`${styles.sheetLead} ${styles.cfLead}`}>
+            <Wbr
+              parts={[
+                `${o.name}を`,
+                `${view.cond.city}に呼ぶ`,
+                'プロジェクトに、',
+                `${PLAN_NAMES[ENTRY_PLAN]}で`,
+                '参加します。',
+              ]}
+            />
+          </p>
+        </div>
+        {/* プランの名前の札と、確保する額を大きく見せるカード */}
+        <dl className={styles.cfCard}>
+          <div className={styles.cfRow}>
+            <dt className={styles.cfLabel}>プラン</dt>
+            <dd className={styles.cfPlan}>
+              <span className={`${styles.planChip} ${styles.cfChip}`}>
+                {PLAN_NAMES[ENTRY_PLAN]}
+              </span>
+            </dd>
+          </div>
+          <div className={styles.cfRow}>
+            <dt className={styles.cfLabel}>参加のときに確保する額</dt>
+            <dd className={`${styles.num} ${styles.cfYen}`}>{yen(k.price)}</dd>
+          </div>
         </dl>
-        <p className={styles.sheetNote}>
-          確認のための表示です。デモのため、実際の決済・入出金は行われません。
+        <p className={`${styles.sheetNote} ${styles.cfNote}`}>
+          <Wbr
+            parts={[
+              '確認のための表示です。',
+              'デモのため、',
+              '実際の決済・',
+              '入出金は',
+              '行われません。',
+            ]}
+          />
         </p>
         <div className={styles.sheetBtns}>
           <button

@@ -2469,3 +2469,68 @@ button.rcard:hover {
   border-radius: var(--pill);
   background: var(--ink-soft);
 }
+
+/* ---------- 参加の確認の窓（ConfirmSheet） ---------- */
+/* 推しの小さな絵（左）と、ひとことの説明（右） */
+.cfHead {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin: 0 0 var(--s3);
+}
+.cfAv {
+  width: 48px;
+  height: 48px;
+  border-width: 2px;
+}
+/* 言葉の途中で切らない（切ってよいのは <wbr> の所だけ。収まらない長い語だけは、はみ出さずに折る） */
+.cfLead {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+/* 下の注意の一文も、言葉の途中で切らない（余白は .sheetNote のまま） */
+.cfNote {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+/* プランの名前の札と、確保する額のカード。線と札の色は、ベーシックプランの色（プランの色の区画と同じ既定の値） */
+.cfCard {
+  display: grid;
+  gap: var(--s3);
+  margin: 0;
+  padding: var(--s3);
+  border: 2px solid var(--primary);
+  border-radius: calc(var(--r) * 2);
+  background: var(--bg-c);
+  color: var(--ink);
+}
+.cfRow {
+  display: grid;
+  gap: var(--s1);
+  justify-items: start;
+}
+.cfLabel {
+  font-size: var(--fs-note);
+  font-weight: 700;
+  line-height: var(--lh-tight);
+  color: var(--ink);
+}
+.cfRow dd {
+  margin: 0;
+}
+.cfChip {
+  display: inline-block;
+  padding: var(--s1) var(--s3);
+  border-width: 2px;
+  font-size: var(--fs-body);
+  white-space: nowrap;
+}
+.cfYen {
+  font-size: var(--fs-figure);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ink);
+}

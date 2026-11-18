@@ -313,13 +313,20 @@ function Summary({ view }: { readonly view: OfficeView }) {
           {realText.mixNote}
         </span>
       </div>
-      <p className={styles.condLine}>
+      {/* 1 行目に「<到達ライン>で開催できます」を一番大きく、2 行目に「<必要人数> × <価格>」とキャパの札
+          （2026-11-18。docs/office/要件.md の M-07）。data-testid="line" の中は、金額だけのまま */}
+      <p className={styles.condLine} data-testid="cond-line">
         <span className={styles.k}>{text.lineLabel}</span>
-        <Changed k="line" now={condition.line} unit="円">
-          <span className={styles.res} data-testid="line">
-            {yen(condition.line)}
-          </span>
-        </Changed>
+        <span className={styles.lineCan}>
+          <Changed k="line" now={condition.line} unit="円">
+            <span className={styles.res} data-testid="line">
+              {yen(condition.line)}
+            </span>
+          </Changed>
+          {text.lineCan}
+        </span>
+      </p>
+      <p className={styles.condSubLine} data-testid="cond-sub">
         <span className={styles.sub}>
           <Changed k="need" now={condition.need} unit="人">
             <span data-testid="need">{condition.need}人</span>
@@ -329,10 +336,10 @@ function Summary({ view }: { readonly view: OfficeView }) {
             <span data-testid="price">{yen(condition.price)}</span>
           </Changed>
         </span>
+        <span className={`${styles.capChip} ${view.overCapacity ? styles.over : ''}`}>
+          {capChip(condition.need, cap, unit)}
+        </span>
       </p>
-      <span className={`${styles.capChip} ${view.overCapacity ? styles.over : ''}`}>
-        {capChip(condition.need, cap, unit)}
-      </span>
       <p className={styles.condMore}>
         <span className={styles.k}>{text.ruleLabel}</span>
         <span data-testid="rule">

@@ -723,6 +723,35 @@
     height: 24px;
   }
 }
+/* 背が低い端末（高さ 640px 未満。幅 320 × 高さ 568 など）: 絵を潰さず、下の説明まで 1 画面に収める。
+   セリフの名前を本文の行頭に寄せ、吹き出し・絵の下の帯・メーターの上の隙間を詰める */
+@container phone (max-height: 639px) {
+  .home > .hero {
+    min-height: 150px;
+  }
+  .heroWho {
+    padding: 0 var(--s2);
+    font-size: var(--fs-note);
+    line-height: var(--lh-note);
+  }
+  .bubble {
+    margin-top: var(--s2);
+    padding: var(--s1) var(--s2);
+    font-size: var(--fs-note);
+    line-height: var(--lh-note);
+  }
+  .who {
+    display: inline;
+    margin-right: var(--s2);
+    font-size: var(--fs-note);
+  }
+  .gauge {
+    padding-top: 0;
+  }
+  .slotNote {
+    line-height: var(--lh-tight);
+  }
+}
 
 /* ---------- はじめの画面 ---------- */
 .stBar {
@@ -2252,22 +2281,25 @@ button.rcard:hover {
 }
 .planItem[data-plan='front'],
 .home[data-plan-tier='1'] {
-  --plan-a: var(--yellow-light);
-  --plan-b: var(--yellow);
+  /* ゴールド: 金は、線・札・上の端の淡い光だけに絞る（地いちめんを黄色にしない） */
+  --plan-a: var(--surface);
+  --plan-b: var(--yellow-light);
   --plan-line: var(--warning);
   --plan-tag: var(--yellow);
   --plan-tag-ink: var(--ink);
   --plan-wash: var(--yellow-light);
   --plan-wash-end: var(--bg-c);
+  --plan-wash-stop: 22%;
 }
 .planItem[data-plan='special'],
 .home[data-plan-tier='2'] {
+  /* プラチナ: 地は淡い灰、線は濃い灰（地と線が同じ色だと、枠が見えない） */
   --plan-a: var(--surface);
   --plan-b: var(--line);
-  --plan-line: var(--gray-300);
-  --plan-tag: var(--gray-300);
+  --plan-line: var(--ink-soft);
+  --plan-tag: var(--line);
   --plan-tag-ink: var(--ink);
-  --plan-wash: var(--gray-300);
+  --plan-wash: var(--line);
   --plan-wash-end: var(--bg-c);
 }
 .planItem[data-plan='top'],
@@ -2284,7 +2316,15 @@ button.rcard:hover {
 .home[data-plan-tier='1'],
 .home[data-plan-tier='2'],
 .home[data-plan-tier='3'] {
-  background: linear-gradient(180deg, var(--plan-wash), var(--plan-wash-end) 85%);
+  background: linear-gradient(
+    180deg,
+    var(--plan-wash),
+    var(--plan-wash-end) var(--plan-wash-stop, 85%)
+  );
+}
+/* ゴールド: いちばん上の帯（音のボタン・札 2 枚）は黄色にしない。淡い金の光は、ロゴの行の下から始まる */
+.home[data-plan-tier='1'] .strip {
+  background: var(--bg-c);
 }
 /* 段 1〜3: 推しの絵の枠とセリフのカード（吹き出しの三角も）の線を、プランの線の色にする。色だけ変える（太さ・余白・高さは、そのまま） */
 .home:is([data-plan-tier='1'], [data-plan-tier='2'], [data-plan-tier='3']) .hero,

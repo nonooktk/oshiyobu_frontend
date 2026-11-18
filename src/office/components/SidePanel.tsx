@@ -1,10 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { venuesOf } from '../../core';
-import { HOME_CITY } from '../../core';
 import styles from '../office.module.css';
 import { useOffice } from '../store';
-import { crowdText, sideNote, text, yen } from '../text/labels';
-import { CityRealChip, VenueFacts } from './VenueFacts';
+import { crowdText, text, yen } from '../text/labels';
+import { CityRealChip } from './VenueFacts';
 
 /** 会場の候補（市を選ぶと出る）。市を選ぶまでは、案内と収支シミュレーターへの入口 */
 export function SidePanel() {
@@ -43,7 +42,6 @@ export function SidePanel() {
     crowd === null
       ? venuesOf(city)
       : [...venuesOf(city)].sort((a, b) => Math.abs(a.cap - crowd) - Math.abs(b.cap - crowd));
-  const [first, second] = sideNote(city === HOME_CITY);
   return (
     <div className={styles.sideCol}>
       {/* 番号の印は、見出しの外（同じ親の中）に置く。見出しの名前は「<市>の会場」のまま（I-03・C-05 が、見出しの親の中の会場を探す） */}
@@ -80,16 +78,11 @@ export function SidePanel() {
                 </span>
               )}
             </button>
-            {/* 選んだ会場だけ、詳しい欄（実在の情報と出典）。ボタンの外に置く（押せる物を入れ子にしない。
-                ボタンの名前は core の名前のまま） */}
-            {venue.id === venueId && <VenueFacts venueId={venue.id} />}
           </li>
         ))}
       </ul>
-      <p className={styles.dummyNote}>
-        <span>{first}</span>
-        <span className={styles.sub}>{second}</span>
-      </p>
+      {/* 選んだ会場の詳しい欄（公式の名前〜出典・確認日）と、候補の下の注記は、2026-11-18 に外した（M-04）。
+          実在の情報であることは、見出しの横の札（CityRealChip）で示す */}
     </div>
   );
 }

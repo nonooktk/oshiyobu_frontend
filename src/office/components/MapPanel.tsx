@@ -1,4 +1,4 @@
-import { CITIES, colorStep, metricValues, radiusOf } from '../../core';
+import { CITIES, colorStep, demandOf, metricValues, radiusOf } from '../../core';
 import type { CSSProperties } from 'react';
 import {
   CITY_POS,
@@ -124,8 +124,12 @@ export function MapPanel() {
                 const r = radiusOf(reg);
                 const fill = `var(${RAMPS[metric][colorStep(values, value)]})`;
                 const { lx, ly, anchor } = labelAnchor(x, y, r, pos);
+                // 「払える熱量」のときは、丸の色は払える熱量の段のまま、数字は見込みの人数（core の demandOf(推し, 市).expected）。
+                // 払える熱量（0〜100 の指数）は人数ではないので、「人」を付けて出さない（2026-11-18。docs/office/要件.md の M-03）
                 const shown =
-                  metric === 'reg' ? `${value.toLocaleString('ja-JP')}人` : String(value);
+                  metric === 'reg'
+                    ? `${value.toLocaleString('ja-JP')}人`
+                    : `${demandOf(artistId, data.name).expected.toLocaleString('ja-JP')}人`;
                 // 鹿児島市は、名前と数字の範囲も押せるようにする（名前は押しても反応しない字なので、下の県の形に当たっていた）
                 const box = LABEL_HIT_CITIES.includes(data.name)
                   ? labelBox(x, y, r, pos, [data.name, shown])

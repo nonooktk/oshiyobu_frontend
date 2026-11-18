@@ -9,6 +9,7 @@ import {
   xOfDeposit,
   yOfHeat,
 } from '../scatter';
+import { shareOfReg } from '../share';
 import { useOffice } from '../store';
 import { ARTIST_TEXT } from '../text/artists';
 import {
@@ -312,13 +313,20 @@ function Summary({ view }: { readonly view: OfficeView }) {
           {realText.mixNote}
         </span>
       </div>
-      <p className={styles.condLine}>
+      {/* 1 行目に「<到達ライン>で開催できます」を一番大きく、2 行目に「<必要人数> × <価格>」とキャパの札
+          （2026-11-18。docs/office/要件.md の M-07）。data-testid="line" の中は、金額だけのまま */}
+      <p className={styles.condLine} data-testid="cond-line">
         <span className={styles.k}>{text.lineLabel}</span>
-        <Changed k="line" now={condition.line} unit="円">
-          <span className={styles.res} data-testid="line">
-            {yen(condition.line)}
-          </span>
-        </Changed>
+        <span className={styles.lineCan}>
+          <Changed k="line" now={condition.line} unit="円">
+            <span className={styles.res} data-testid="line">
+              {yen(condition.line)}
+            </span>
+          </Changed>
+          {text.lineCan}
+        </span>
+      </p>
+      <p className={styles.condSubLine} data-testid="cond-sub">
         <span className={styles.sub}>
           <Changed k="need" now={condition.need} unit="人">
             <span data-testid="need">{condition.need}人</span>
@@ -328,10 +336,10 @@ function Summary({ view }: { readonly view: OfficeView }) {
             <span data-testid="price">{yen(condition.price)}</span>
           </Changed>
         </span>
+        <span className={`${styles.capChip} ${view.overCapacity ? styles.over : ''}`}>
+          {capChip(condition.need, cap, unit)}
+        </span>
       </p>
-      <span className={`${styles.capChip} ${view.overCapacity ? styles.over : ''}`}>
-        {capChip(condition.need, cap, unit)}
-      </span>
       <p className={styles.condMore}>
         <span className={styles.k}>{text.ruleLabel}</span>
         <span data-testid="rule">
@@ -364,10 +372,7 @@ function Summary({ view }: { readonly view: OfficeView }) {
             費用の入力の知らせを、判定の区画（data-testid="judge"）の中で探しているため（担当者の決定。R-15 は一部） */}
         <Adjust view={view} />
         <div className={styles.footBtns}>
-          {condition.venue.simulatorVenueId === undefined ? (
-            // シミュレーターに無い会場（RISE UP）は、入口を出さず注記だけ（押したあとに会場を探して迷わせない。D-21）
-            <p className={styles.simNone}>{text.simulatorNone}</p>
-          ) : (
+          {condition.venue.simulatorVenueId !== undefined && (
             <a className={`${styles.btn} ${styles.secondary}`} href="/simulator.html">
               {text.simulator}
             </a>
@@ -383,12 +388,22 @@ function Summary({ view }: { readonly view: OfficeView }) {
           >
             {text.proposal}
           </button>
-          {low && (
-            <p className={styles.ppNg} id="pp-ng">
-              {text.proposalNg}
-            </p>
-          )}
         </div>
+        {/* シミュレーターに無い会場（RISE UP）の注記と、提案できない理由は、ボタンの組の外の 1 行ずつに置く
+            （組の中に置くと、組ごと折り返して ⑤ が高くなる。2026-11-18。⑤ を ⑥ の上にしたぶん。V-14）。
+            シミュレーターに無い会場は、入口を出さず注記だけ（押したあとに会場を探して迷わせない。D-21） */}
+        {(condition.venue.simulatorVenueId === undefined || low) && (
+          <div className={styles.footNotes}>
+            {condition.venue.simulatorVenueId === undefined && (
+              <p className={styles.simNone}>{text.simulatorNone}</p>
+            )}
+            {low && (
+              <p className={styles.ppNg} id="pp-ng">
+                {text.proposalNg}
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );
@@ -402,10 +417,19 @@ function DemandSource({ expected }: { readonly expected: number }) {
   if (city === null) return null;
   const reg = metricValues(artistId, 'reg')[cityIndex(city)] ?? 0;
   const line = demandSource(city, reg, expected);
+  const share = shareOfReg(expected, reg);
+  // 割合（M-01）は、出どころの文（data-testid="demand-source"）の外に並べる。文そのものは core の値のまま
   return (
-    <p className={styles.meetSource} data-testid="demand-source">
-      {line.lead} <b>{line.reg}</b> {line.mid} <b>{line.expected}</b>
-    </p>
+    <div className={styles.meetSourceRow}>
+      <p className={styles.meetSource} data-testid="demand-source">
+        {line.lead} <b>{line.reg}</b> {line.mid} <b>{line.expected}</b>
+      </p>
+      {share !== null && (
+        <span className={styles.meetShare} data-testid="demand-share">
+          （{text.shareOfReg(share)}）
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -473,12 +497,13 @@ function Certainty({ view }: { readonly view: OfficeView }) {
   );
 }
 
-/** 判定（会場を選ぶと出る）: ⑥ 確度 と ⑤ 開催条件。会場を選ぶまでは出さない（I-01） */
+/** 判定（会場を選ぶと出る）: ⑤ 開催条件 と ⑥ 確度。会場を選ぶまでは出さない（I-01）。
+    2026-11-18 に、⑤ を上・⑥ を下にした（docs/office/要件.md の M-06・M-25） */
 export function Judge({ view }: { readonly view: OfficeView }) {
   return (
     <div data-testid="judge" className={styles.judge}>
-      <Certainty view={view} />
       <Summary view={view} />
+      <Certainty view={view} />
     </div>
   );
 }

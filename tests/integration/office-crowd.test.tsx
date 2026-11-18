@@ -22,8 +22,9 @@ const nearest = (city: Parameters<typeof venuesOf>[0], crowd: number) =>
     .sort((a, b) => Math.abs(a.cap - crowd) - Math.abs(b.cap - crowd))
     .map((v) => v.name);
 const crowdInput = () => screen.getByRole('spinbutton', { name: '集まる人数' }) as HTMLInputElement;
+// 2026-11-18（M-02）: ② は条件の帯から ① 地図の下（data-testid="crowd-row"）へ移した
 const preset = (n: number) =>
-  within(screen.getByTestId('cond-band')).getByRole('button', { name: String(n) });
+  within(screen.getByTestId('crowd-row')).getByRole('button', { name: String(n) });
 
 describe('事務所向けの ② 集まる人数', () => {
   beforeEach(() => {
@@ -39,9 +40,10 @@ describe('事務所向けの ② 集まる人数', () => {
     vi.unstubAllGlobals();
   });
 
-  it('② は条件の帯の中にあり、初めは決めていない。③ は core の順のまま、規模感は出ない', () => {
+  it('② は ① 地図の下にあり（2026-11-18。M-02）、初めは決めていない。③ は core の順のまま、規模感は出ない', () => {
     render(<App />);
-    expect(within(screen.getByTestId('cond-band')).getByText('集まる人数')).toBeTruthy();
+    expect(within(screen.getByTestId('crowd-row')).getByText('集まる人数')).toBeTruthy();
+    expect(within(screen.getByTestId('cond-band')).queryByText('集まる人数')).toBeNull();
     expect(crowdInput().value).toBe('');
     choose('福岡市');
     expect(shown('福岡市')).toEqual(venuesOf('福岡市').map((v) => v.name));

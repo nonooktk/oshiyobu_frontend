@@ -127,6 +127,11 @@
   border-bottom: 1px solid var(--line);
 }
 /* ② 集まる人数（帯の中）: 名前・数字の入力・よく使う値のボタンを横 1 行に */
+/* ② 集まる人数の行（① 地図のすぐ下。M-02） */
+.crowdRow {
+  padding: var(--s1) var(--s4);
+  border-top: 1px solid var(--line);
+}
 .crowd {
   display: flex;
   align-items: center;
@@ -273,7 +278,8 @@
 }
 /* ① の左右の余白は 16 px（地図の幅を空けるため。上の余白は、641 px 以上で詰める。下の @media） */
 .mapCol {
-  padding: var(--s4) var(--s3) var(--s2);
+  /* 下の余白は 0（すぐ下の ② の行が、線と余白を持つ。2026-11-18。V-14） */
+  padding: var(--s4) var(--s3) 0;
 }
 /* 地図は高さ 480 px まで。幅 1280 では、右の市の一覧に幅を譲るので、幅で決まって 340 × 436 px ほど
    （1280 × 800 で、③④ の見出しまで見えるように） */
@@ -286,7 +292,8 @@
   align-content: start;
   column-gap: var(--s2);
   flex: 1;
-  padding: var(--s3) var(--s4) var(--s4);
+  /* 上の余白は 8 px（2026-11-18 に ② を地図の下へ移したぶんを詰めて、③④ の見出しを 800 px 以内に保つ。V-14） */
+  padding: var(--s2) var(--s4) var(--s4);
   border-top: 1px solid var(--line);
 }
 .sideCol > * {
@@ -501,19 +508,6 @@
 .venue[aria-pressed='true'] .vfee {
   color: var(--ink);
 }
-.dummyNote {
-  margin: var(--s2) 0 0;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--warning-ink);
-}
-.dummyNote span {
-  display: block;
-}
-.dummyNote .sub {
-  color: var(--ink-soft);
-  font-weight: 400;
-}
 
 /* 実在と架空の札（要件 R-16・仕様 4.3）。区別は、色と文の両方で付ける */
 .realChip,
@@ -556,8 +550,8 @@
 /* ① 地図と市の一覧を横に 2 列（地図は縦長なので、幅を絞っても高さは 400 px までのまま） */
 .mapRow {
   display: grid;
-  /* 一覧は 224 px（5 組 × 9 市で、名前と数字が切れない幅）。残りを地図に使う */
-  grid-template-columns: minmax(0, 1fr) 224px;
+  /* 一覧は 248 px（5 組 × 9 市で、名前と数字と割合が切れない幅。2026-11-18 に割合を足して 224 → 248 px。M-01）。残りを地図に使う */
+  grid-template-columns: minmax(0, 1fr) 248px;
   align-items: start;
   gap: var(--s2);
   margin-top: var(--s2);
@@ -629,6 +623,16 @@
   font-weight: 700;
   text-align: right;
 }
+/* 見込みの下に、登録の何 % か（M-01）。行の高さ（--tap）の中に収める */
+.rankShare {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
 .rankReg {
   font-size: 12px;
   color: var(--ink-soft);
@@ -654,43 +658,6 @@
   font-weight: 700;
   text-decoration: underline;
 }
-/* ③ の選んだ会場の、詳しい欄（実在の情報） */
-.facts {
-  margin: var(--s1) 0 0;
-  padding: var(--s2) var(--s3);
-  border-left: 3px solid var(--success-ink);
-  background: var(--surface);
-  font-size: 13px;
-  color: var(--ink);
-}
-.facts p {
-  margin: 0;
-}
-.factsName {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0 var(--s2);
-  font-weight: 700;
-}
-.factsK,
-.factsSub {
-  color: var(--ink-soft);
-  font-size: 12px;
-  font-weight: 400;
-}
-.factsBasis {
-  color: var(--ink-soft);
-}
-.factsSrc {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 var(--s3);
-  color: var(--ink-soft);
-}
-.factsNone {
-  color: var(--ink-soft);
-}
 
 /* 地図の下: ③ 会場の候補と ④ これまでの公演を横に 2 列（幅 1200 未満は 1 列。下の @media） */
 .lowerRow {
@@ -708,7 +675,8 @@
   grid-template-columns: auto minmax(0, 1fr);
   align-content: start;
   column-gap: var(--s2);
-  padding: var(--s3) var(--s4) var(--s4);
+  /* 上の余白は ③ と同じ 8 px（2026-11-18。V-14） */
+  padding: var(--s2) var(--s4) var(--s4);
   border-left: 1px solid var(--line);
 }
 .pastCol > * {
@@ -808,22 +776,36 @@
   font-size: 14px;
   color: var(--ink-soft);
 }
+/* 1 行目「<金額>で開催できます」（M-07）。金額を一番大きく、続く言葉は少し小さく */
+.lineCan {
+  color: var(--primary);
+  font-size: 20px;
+}
 .condLine .res {
   color: var(--primary);
-  font-size: 28px;
+  font-size: 32px;
 }
-.condLine .sub {
+/* 2 行目「<必要人数> × <価格>」とキャパの札 */
+.condSubLine {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s3);
+  margin: var(--s1) 0 0;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.condSubLine .sub {
   display: inline-flex;
   align-items: baseline;
   gap: var(--s1);
-  font-size: 20px;
+  font-size: 18px;
 }
-.condLine .op {
+.condSubLine .op {
   color: var(--ink-soft);
 }
 .capChip {
   display: inline-block;
-  margin-top: var(--s2);
   padding: 0 var(--s2);
   border-radius: var(--r);
   background: var(--bg-c);
@@ -984,6 +966,22 @@
   vertical-align: -1px;
 }
 /* ⑥ の凡例の下の、需要の出どころ（登録 → 預金の支えがある熱いファン）。③ の規模感と同じ 13px */
+/* 需要の出どころの文と、その横の割合（M-01） */
+.meetSourceRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--s1);
+  margin: var(--s1) 0 0;
+}
+.meetSourceRow > .meetSource {
+  margin: 0;
+}
+.meetShare {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
 .meetSource {
   margin: var(--s1) 0 0;
   font-size: 13px;
@@ -1250,6 +1248,11 @@ div.chg > .prevVal {
   flex: 1;
   min-width: 280px;
 }
+/* 閉じている間は、ボタン 2 つと同じ行に並べて、⑤ の高さを詰める（2026-11-18。⑤ を ⑥ の上にしたぶん。M-06・V-14） */
+.adjust:not([open]) {
+  flex: 0 0 auto;
+  min-width: 0;
+}
 .adjust summary {
   display: inline-flex;
   align-items: center;
@@ -1355,6 +1358,13 @@ div.chg > .prevVal {
   align-items: center;
   flex-wrap: wrap;
   gap: var(--s3);
+}
+/* ⑤ の下の端の注記の行（シミュレーターに無い会場の注記・提案できない理由）。ボタンの組の外に、1 行で並べる（2026-11-18。V-14） */
+.footNotes {
+  display: flex;
+  flex-basis: 100%;
+  flex-wrap: wrap;
+  gap: 0 var(--s3);
 }
 .ppNg {
   margin: 0;

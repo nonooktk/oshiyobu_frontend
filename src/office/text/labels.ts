@@ -37,6 +37,8 @@ export const text = {
   rankExpected: '見込み',
   /** 一覧の行の、登録者数の前に置く語 */
   rankReg: '登録',
+  /** 見込みが登録の何 % か（M-01。割合は share.ts の shareOfReg）。一覧の行と、⑥ の需要の出どころの行に出す */
+  shareOfReg: (share: string): string => `登録の ${share}`,
   /** 会場を選ぶ前の、右の列の案内（判定は会場を選ぶまで出ない。I-01） */
   pickVenue: '会場を選ぶ',
   simulator: '収支シミュレーター',
@@ -56,6 +58,8 @@ export const text = {
   judge2: '満たせるか',
   judge3: '熱量と資金',
   lineLabel: '到達ライン',
+  /** ⑤ の 1 行目、到達ラインの金額のあと（M-07）。「650,000円で開催できます」 */
+  lineCan: 'で開催できます',
   ruleLabel: '成立の条件',
   minNote:
     '最低人数は、事務所と相談して決める値です。上位コースの金額は、金額の条件に数えます（人数は 1 人ぶん）。',
@@ -223,19 +227,7 @@ export const shortText = (need: number, shortfall: number): string =>
 export const expectedText = (n: number): string => `見込み ${n}人`;
 export const needText = (n: number): string => `必要 ${n}人`;
 
-/**
- * ③ 会場の候補の下の注記。2 文目は、推しに関係なく正しい固定の文にする。
- * 会場の候補は、core のデータで市ごとに決まった固定の一覧で、推しによって絞り込んでいない。
- * 推しの名前や、特定の推しの見込みで「届く会場だけ」とは書かない（届くかは、会場を選ぶと「満たせるか」に出る）
- */
-export function sideNote(isHome: boolean): readonly [string, string] {
-  return [
-    isHome
-      ? '空き日は架空です。料金は公式サイトの公開情報にもとづく目安です（2026-11-12 確認）。'
-      : '空き日は架空です。会場名・キャパは会場データ（実在・公演の記録あり）にもとづきます。',
-    '候補は、この市の会場から最大3件です。必要人数に届くかは、会場を選ぶと「満たせるか」に出ます。',
-  ];
-}
+// ③ 会場の候補の下の注記（sideNote）は、2026-11-18 に外した（docs/office/要件.md の M-04）
 
 /** 実在と架空の見分け（要件 R-16・仕様 4.3）。③④ の実在の情報と、①⑤⑥ の架空の数字に付ける札と文言 */
 export const realText = {
@@ -245,11 +237,8 @@ export const realText = {
   fiction: '架空（デモ用）',
   /** ⑤ に添える一文（実在の会場に、架空の費用と見込みを重ねる所） */
   mixNote: '会場の名前は実在・数字は架空',
-  officialName: '公式の名前',
   source: '出典',
   newTab: '（新しいタブで開きます）',
-  checkedOn: (date: string): string => `確認日 ${date}`,
-  noSource: '出典は、まだありません',
   pastHead: 'これまでの公演',
   noEvents: '記録は、まだありません',
   pickVenueFirst: '会場を選ぶと出ます',

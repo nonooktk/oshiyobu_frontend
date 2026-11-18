@@ -22,7 +22,6 @@ import {
   quadLineValues,
   minHelp,
   minResetLabel,
-  needText,
   QUAD_NAMES,
   QUAD_STACK,
   ruleText,
@@ -436,7 +435,6 @@ function DemandSource({ expected }: { readonly expected: number }) {
 /** ⑥ 確度: 満たせるか（札・横棒）と、熱量と資金（4 象限・線を動かす操作） */
 function Certainty({ view }: { readonly view: OfficeView }) {
   const { condition, expected, level, low } = view;
-  const max = Math.max(expected, condition.need) * 1.12;
   const verdictClass = level === '高' ? '' : level === '中' ? styles.mid : styles.low;
   return (
     <section className={styles.jcard} aria-labelledby="j6">
@@ -448,42 +446,21 @@ function Certainty({ view }: { readonly view: OfficeView }) {
         <span className={`${styles.fictChip} ${styles.fictMid}`} data-testid="fict-6">
           {realText.fiction}
         </span>
+        {/* core の見込み。線を動かしても変わらない（札の元）。2026-11-19 に横棒を外し、判定の札の横へ移した（N-7） */}
+        <span className={styles.meetExp}>
+          見込み{' '}
+          <Changed k="expected" now={expected} unit="人">
+            <span data-testid="expected">{expected}人</span>
+          </Changed>
+        </span>
         <Changed k="level" now={level}>
           <span className={`${styles.verdict} ${verdictClass}`} data-testid="verdict">
             {verdictText(level)}
           </span>
         </Changed>
       </div>
-      <div
-        className={styles.meet}
-        role="img"
-        aria-label={`払える熱いファンの見込みは${expected}人、必要なのは${condition.need}人。${verdictText(level)}`}
-      >
-        <span className={styles.needMark} style={{ left: `${(condition.need / max) * 100}%` }}>
-          <span>{needText(condition.need)}</span>
-        </span>
-        <div className={styles.track}>
-          <i style={{ width: `${(expected / max) * 100}%` }} />
-        </div>
-        <span className={styles.expMark} style={{ left: `max(7.5em, ${(expected / max) * 100}%)` }}>
-          {/* core の見込み。線を動かしても変わらない（札の元） */}
-          見込み{' '}
-          <Changed k="expected" now={expected} unit="人">
-            <span data-testid="expected">{expected}人</span>
-          </Changed>
-        </span>
-      </div>
-      <p className={styles.meetLegend} aria-hidden="true">
-        <span>
-          <i style={{ background: 'var(--primary)' }} />
-          {text.legendExpected}
-        </span>
-        <span>
-          <i style={{ background: 'var(--ink)', width: 3 }} />
-          {text.legendNeed}
-        </span>
-      </p>
-      {/* 需要の出どころ（R-03）。強調はしない（見込みの強調は、横棒の「見込み」のほう） */}
+      {/* ⑥ の横棒（必要 ／ 見込み）と凡例は、2026-11-19 に外した（統括の追加の修正依頼の N-7）。4 象限の図は残す */}
+      {/* 需要の出どころ（R-03）。強調はしない（見込みの強調は、判定の札の横の「見込み」のほう） */}
       <DemandSource expected={expected} />
       {low && (
         <p className={styles.meetShort}>

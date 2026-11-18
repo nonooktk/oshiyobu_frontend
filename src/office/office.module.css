@@ -901,70 +901,12 @@
   background: var(--error-ink);
   color: #fff;
 }
-.meet {
-  position: relative;
-  height: 88px;
-  margin-top: var(--s2);
-}
-.track {
-  position: absolute;
-  top: 32px;
-  right: 0;
-  left: 0;
-  height: 24px;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  background: var(--bg-c);
-}
-.track > i {
-  display: block;
-  height: 100%;
-  background: var(--primary);
-  transition: width 0.5s ease;
-}
-.needMark {
-  position: absolute;
-  top: 28px;
-  width: 0;
-  height: 32px;
-  border-left: 3px solid var(--ink);
-  transition: left 0.5s ease;
-}
-.needMark span {
-  position: absolute;
-  bottom: 100%;
-  left: 0;
-  padding-bottom: var(--s1);
-  transform: translateX(-50%);
-  font-size: 14px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-.expMark {
-  position: absolute;
-  top: 60px;
-  transform: translateX(-100%);
+/* ⑥ の見出しの行の、見込みの数字（2026-11-19 に横棒を外して、ここへ移した。N-7） */
+.meetExp {
+  margin-left: auto;
   font-size: 16px;
   font-weight: 700;
   white-space: nowrap;
-  transition: left 0.5s ease;
-}
-.meetLegend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s3);
-  margin: 0;
-  font-size: 12px;
-  color: var(--ink-soft);
-}
-.meetLegend i {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  margin-right: var(--s1);
-  border-radius: 2px;
-  vertical-align: -1px;
 }
 /* ⑥ の凡例の下の、需要の出どころ（登録 → 預金の支えがある熱いファン）。③ の規模感と同じ 13px */
 /* 需要の出どころの文と、その横の割合（M-01） */
@@ -1669,10 +1611,5 @@ div.chg > .prevVal {
   .chg {
     animation: none;
     background-color: var(--yellow-light);
-  }
-  .track > i,
-  .needMark,
-  .expMark {
-    transition: none;
   }
 }

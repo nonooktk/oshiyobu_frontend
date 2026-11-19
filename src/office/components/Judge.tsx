@@ -371,8 +371,13 @@ function Summary({ view }: { readonly view: OfficeView }) {
             費用の入力の知らせを、判定の区画（data-testid="judge"）の中で探しているため（担当者の決定。R-15 は一部） */}
         <Adjust view={view} />
         <div className={styles.footBtns}>
+          {/* 選んだ会場の ID を付けて渡す。シミュレーターは、その会場の規模の人数から始め、その会場を一番上で選ぶ
+              （Issue #50・N-11。ID はシミュレーターの側で、会場の一覧と照らして、合ったときだけ使う） */}
           {condition.venue.simulatorVenueId !== undefined && (
-            <a className={`${styles.btn} ${styles.secondary}`} href="/simulator.html">
+            <a
+              className={`${styles.btn} ${styles.secondary}`}
+              href={`/simulator.html?venue=${encodeURIComponent(condition.venue.simulatorVenueId)}`}
+            >
               {text.simulator}
             </a>
           )}

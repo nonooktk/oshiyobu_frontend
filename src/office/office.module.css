@@ -1162,7 +1162,20 @@ div.chg > .prevVal {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--s2) var(--s3);
   max-width: 640px;
-  margin-top: var(--s3);
+  margin-top: var(--s1);
+}
+/* 「条件を調整」の組の見出し（費用・利益。シミュレーターの「1 数字」と同じ組み分け。N-13） */
+.adjustGrp {
+  margin: var(--s3) 0 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+/* 利益の欄の添え書き。欄の右の 2 列ぶんに置き、入力の高さにそろえる（狭い画面では、欄の下。下の @media） */
+.condIn > .hopeNote {
+  grid-column: 2 / -1;
+  align-self: end;
+  margin: 0 0 var(--s3);
 }
 .field label,
 .minIn label {
@@ -1208,7 +1221,6 @@ div.chg > .prevVal {
   font-weight: 700;
   color: var(--error-ink);
 }
-.hint,
 .help {
   margin: var(--s2) 0 0;
   font-size: 12px;
@@ -1493,6 +1505,11 @@ div.chg > .prevVal {
   }
   .condIn {
     grid-template-columns: minmax(0, 1fr);
+  }
+  /* 1 列のときは、利益の添え書きを欄の下に置く */
+  .condIn > .hopeNote {
+    grid-column: auto;
+    margin: 0;
   }
   /* ① の市の一覧は、地図の下に置く（横スクロールを出さない） */
   .mapRow {

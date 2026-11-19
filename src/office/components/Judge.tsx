@@ -1,4 +1,5 @@
-import { cityIndex, COST_ITEM_IDS, demandOf, metricValues } from '../../core';
+import { cityIndex, demandOf, metricValues } from '../../core';
+import type { AdjustId } from '../adjust';
 import styles from '../office.module.css';
 import {
   quadDots,
@@ -12,8 +13,8 @@ import {
 import { useOffice } from '../store';
 import { ARTIST_TEXT } from '../text/artists';
 import {
+  ADJUST_LABELS,
   capChip,
-  COST_LABELS,
   demandSource,
   depositText,
   heatText,
@@ -203,10 +204,58 @@ function Scatter({ view }: { readonly view: OfficeView }) {
   );
 }
 
+/** 「条件を調整」の金額の欄 1 つ（会場費・制作費・移動・宿泊・利益） */
+function CostField({
+  id,
+  value,
+  input,
+  error,
+  onInput,
+  onBlur,
+  noteId,
+}: {
+  readonly id: AdjustId;
+  readonly value: number;
+  readonly input: string | undefined;
+  readonly error: string | undefined;
+  readonly onInput: (id: AdjustId, raw: string) => void;
+  readonly onBlur: (id: AdjustId) => void;
+  /** 欄の外に置いた添え書きの id（読み上げで欄に結び付ける） */
+  readonly noteId?: string;
+}) {
+  const described = [noteId ?? null, error !== undefined ? `err-${id}` : null]
+    .filter((x) => x !== null)
+    .join(' ');
+  return (
+    <div className={styles.field}>
+      <label htmlFor={`in-${id}`}>{ADJUST_LABELS[id]}</label>
+      <div className={styles.yenIn}>
+        <input
+          id={`in-${id}`}
+          inputMode="numeric"
+          autoComplete="off"
+          value={input ?? value.toLocaleString('ja-JP')}
+          aria-invalid={error !== undefined}
+          aria-describedby={described === '' ? undefined : described}
+          onChange={(event) => onInput(id, event.target.value)}
+          onBlur={() => onBlur(id)}
+        />
+        <span>円</span>
+      </div>
+      {error !== undefined && (
+        <p className={styles.err} id={`err-${id}`} role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function Adjust({ view }: { readonly view: OfficeView }) {
   const open = useOffice((s) => s.adjustOpen);
   const setOpen = useOffice((s) => s.setAdjustOpen);
   const costs = useOffice((s) => s.costs);
+  const hope = useOffice((s) => s.hope);
   const costInputs = useOffice((s) => s.costInputs);
   const costErrors = useOffice((s) => s.costErrors);
   const setCostInput = useOffice((s) => s.setCostInput);
@@ -226,35 +275,38 @@ function Adjust({ view }: { readonly view: OfficeView }) {
       onToggle={(event) => setOpen(event.currentTarget.open)}
     >
       <summary>{text.adjust}</summary>
+      {/* 入力は、収支シミュレーターの「1 数字」と同じ項目（2026-11-20。N-13・Issue #53）。出演料とアーティストの利益は「利益」に
+          まとめた（シミュレーターの M-26 と同じ考え方）。利益は手数料 10% を引いたあとの額で、core には adjust.ts で組み替えて渡す（案 X） */}
+      <p className={styles.adjustGrp}>{text.adjustCostGroup}</p>
       <div className={styles.condIn}>
-        {COST_ITEM_IDS.map((id) => {
-          const error = costErrors[id];
-          return (
-            <div key={id} className={styles.field}>
-              <label htmlFor={`in-${id}`}>{COST_LABELS[id]}</label>
-              <div className={styles.yenIn}>
-                <input
-                  id={`in-${id}`}
-                  inputMode="numeric"
-                  autoComplete="off"
-                  value={costInputs[id] ?? costs[id].toLocaleString('ja-JP')}
-                  aria-invalid={error !== undefined}
-                  aria-describedby={error !== undefined ? `err-${id}` : undefined}
-                  onChange={(event) => setCostInput(id, event.target.value)}
-                  onBlur={() => blurCost(id)}
-                />
-                <span>円</span>
-              </div>
-              {error !== undefined && (
-                <p className={styles.err} id={`err-${id}`} role="alert">
-                  {error}
-                </p>
-              )}
-            </div>
-          );
-        })}
+        {(['venue', 'prod', 'travel'] as const).map((id) => (
+          <CostField
+            key={id}
+            id={id}
+            value={costs[id]}
+            input={costInputs[id]}
+            error={costErrors[id]}
+            onInput={setCostInput}
+            onBlur={blurCost}
+          />
+        ))}
       </div>
-      <p className={styles.hint}>{text.adjustHint}</p>
+      <p className={styles.adjustGrp}>{text.adjustHopeGroup}</p>
+      <div className={styles.condIn}>
+        <CostField
+          id="hope"
+          value={hope}
+          input={costInputs.hope}
+          error={costErrors.hope}
+          onInput={setCostInput}
+          onBlur={blurCost}
+          noteId="note-hope"
+        />
+        {/* 添え書きは、欄の右の空いた所に置く（欄の幅だと 3 行に折れるため） */}
+        <p className={`${styles.help} ${styles.hopeNote}`} id="note-hope">
+          {text.adjustHopeNote}
+        </p>
+      </div>
       <div className={styles.minIn}>
         <label htmlFor="in-min">{text.minLabel}</label>
         <div className={styles.minRow}>

@@ -1,5 +1,6 @@
 import { MAX_COST_YEN } from '../../core';
 import type { CostItemId, ParseResult } from '../../core';
+import type { AdjustId } from '../adjust';
 import type { ChangeKey, Snapshot } from '../view';
 
 // 事務所向けの画面の文言（出典: モック index.html と 文言の校正.md。決まった言い方は仕様の「文言」）。
@@ -11,6 +12,17 @@ export const COST_LABELS: Readonly<Record<CostItemId, string>> = {
   fee: '出演料',
   travel: '移動・宿泊',
   profit: 'アーティストの利益',
+};
+
+/**
+ * ⑤「条件を調整」の入力の名前（2026-11-20。N-13・Issue #53。収支シミュレーターの「1 数字」と同じ項目）。
+ * 提案の 1 枚の内訳は、COST_LABELS（core の 5 項目）のまま
+ */
+export const ADJUST_LABELS: Readonly<Record<AdjustId, string>> = {
+  venue: '会場費',
+  prod: '制作費',
+  travel: '移動・宿泊',
+  hope: '利益',
 };
 
 export const yen = (n: number): string => `${n.toLocaleString('ja-JP')}円`;
@@ -50,7 +62,11 @@ export const text = {
   resetOfficeDone: '事務所向けを最初に戻しました',
   close: '閉じる',
   adjust: '条件を調整',
-  adjustHint: '費用は仮の金額です。会場の公開料金とは別です。',
+  /** 「条件を調整」の組の見出し（シミュレーターの「経費」の「経」は、事務所向けの書体に無いので「費用」。N-13） */
+  adjustCostGroup: '費用',
+  adjustHopeGroup: '利益',
+  /** 利益の欄の添え書き（シミュレーターと同じ意味。事務所向けの呼び方の「到達ライン」にした。N-13） */
+  adjustHopeNote: '到達ラインちょうど集まったとき、全体利益がこの額になります',
   minLabel: '最低人数',
   proposal: '提案を見る',
   proposalNg: 'この条件では提案できません',

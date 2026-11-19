@@ -1,13 +1,15 @@
 import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 import { ARTIST_IDS, costsOfTier, parseCost, parseMinPeople, venueById, venuesOf } from '../core';
-import type { ArtistId, CityName, CostItemId, CostValues, VenueId } from '../core';
+import type { ArtistId, CityName, CostValues, VenueId } from '../core';
+import { coreCostsOf, fitsCore, hopeOf } from './adjust';
+import type { AdjustId, AdjustValues } from './adjust';
 import { broadcastResetAll } from '../shared/link';
 import { ARTIST_TEXT } from './text/artists';
 import { INITIAL_QUAD_LINE, QUAD_LINE_RANGE, quadPeopleAt } from './scatter';
 import type { QuadLine } from './scatter';
 import {
-  COST_LABELS,
+  ADJUST_LABELS,
   costErrorText,
   crowdText,
   minErrorText,
@@ -30,11 +32,16 @@ export interface OfficeState {
   metric: Metric;
   city: CityName | null;
   venueId: VenueId | null;
-  /** 費用 5 項目のうち、反映済み（検査を通った）値 */
+  /**
+   * core に渡す費用 5 項目（反映済み）。会場を選んだときは区分の値のまま。「条件を調整」で直したあとは、
+   * 出演料 0・アーティストの利益 ＝ 到達ライン − 経費 3 項目（adjust.ts の coreCostsOf。案 X。Issue #53）
+   */
   costs: CostValues;
+  /** 「条件を調整」の利益（手数料 10% を引いたあと。シミュレーターの利益と同じ意味）。反映済みの値 */
+  hope: number;
   /** 入力の途中の文字（検査に通らないものを含む）。無い項目は、反映済みの値を整えて出す */
-  costInputs: Partial<Record<CostItemId, string>>;
-  costErrors: Partial<Record<CostItemId, string>>;
+  costInputs: Partial<Record<AdjustId, string>>;
+  costErrors: Partial<Record<AdjustId, string>>;
   /** 手で決めた最低人数。決めていなければ null（必要人数に追随する） */
   minHand: number | null;
   /** 最低人数の入力の途中の文字。null のときは、いまの最低人数を出す */
@@ -92,6 +99,7 @@ export const initialOfficeState = (): OfficeState => ({
   city: null,
   venueId: null,
   costs: EMPTY_COSTS,
+  hope: 0,
   costInputs: {},
   costErrors: {},
   minHand: null,
@@ -118,8 +126,8 @@ interface OfficeActions {
   focusVenues(): void;
   pickVenue(id: VenueId): void;
   setAdjustOpen(open: boolean): void;
-  setCostInput(id: CostItemId, raw: string): void;
-  blurCost(id: CostItemId): void;
+  setCostInput(id: AdjustId, raw: string): void;
+  blurCost(id: AdjustId): void;
   setMinInput(raw: string): void;
   blurMin(): void;
   resetMin(): void;
@@ -185,6 +193,7 @@ export const officeStore = createStore<OfficeState & OfficeActions>()((set, get)
         city,
         venueId: null,
         costs: EMPTY_COSTS,
+        hope: 0,
         costInputs: {},
         costErrors: {},
         minHand: null,
@@ -202,10 +211,13 @@ export const officeStore = createStore<OfficeState & OfficeActions>()((set, get)
     pickVenue(id) {
       const venue = venueById(id);
       const seq = get().changes.seq;
-      // 会場を選び直したら、費用は会場の区分の値、最低人数は必要人数から始める
+      // 会場を選び直したら、費用は会場の区分の値、最低人数は必要人数から始める。
+      // 利益（手数料を引いたあと）は、区分の値の到達ラインから出す（シミュレーターの初めの利益と同じ値。N-13）
+      const costs = costsOfTier(venue.tier);
       set({
         venueId: id,
-        costs: costsOfTier(venue.tier),
+        costs,
+        hope: hopeOf(costs),
         costInputs: {},
         costErrors: {},
         minHand: null,
@@ -229,19 +241,29 @@ export const officeStore = createStore<OfficeState & OfficeActions>()((set, get)
     },
 
     setCostInput(id, raw) {
-      const result = parseCost(raw);
+      const parsed = parseCost(raw);
       const errors = { ...get().costErrors };
-      if (result.ok) {
+      const { costs, hope } = get();
+      // 4 つの入力（いまの値に、この欄の値を入れたもの）。core に渡す 5 項目は、ここから組み立てる（案 X）
+      const next: AdjustValues | null = parsed.ok
+        ? { venue: costs.venue, prod: costs.prod, travel: costs.travel, hope, [id]: parsed.value }
+        : null;
+      const result =
+        next !== null && !fitsCore(next)
+          ? ({ ok: false, reason: 'too_large', input: raw.trim() } as const)
+          : parsed;
+      if (result.ok && next !== null) {
         delete errors[id];
         set({
-          costs: { ...get().costs, [id]: result.value },
+          costs: coreCostsOf(next),
+          hope: next.hope,
           costInputs: { ...get().costInputs, [id]: raw },
           costErrors: errors,
         });
         return;
       }
       // 反映せず、理由を出す。直させる（空欄は 0 円にしない。決定 13）
-      errors[id] = costErrorText(result, COST_LABELS[id]) ?? '';
+      errors[id] = costErrorText(result, ADJUST_LABELS[id]) ?? '';
       set({ costInputs: { ...get().costInputs, [id]: raw }, costErrors: errors });
     },
 

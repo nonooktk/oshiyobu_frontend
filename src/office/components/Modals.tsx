@@ -5,7 +5,9 @@ import { DemoBadge } from '../../shared/components/DemoBadge';
 import styles from '../office.module.css';
 import { useOffice } from '../store';
 import { ARTIST_TEXT } from '../text/artists';
+import { ADJUST_IDS } from '../adjust';
 import {
+  ADJUST_LABELS,
   COST_LABELS,
   crowdText,
   privQuadLine,
@@ -188,6 +190,7 @@ export function Privacy() {
   const city = useOffice((s) => s.city);
   const venueId = useOffice((s) => s.venueId);
   const costs = useOffice((s) => s.costs);
+  const hope = useOffice((s) => s.hope);
   const quadLine = useOffice((s) => s.quadLine);
   const crowd = useOffice((s) => s.crowd);
   return (
@@ -226,9 +229,10 @@ export function Privacy() {
               「条件を調整」の費用の入力値:{' '}
               {venueId === null
                 ? text.noneCost
-                : (Object.keys(COST_LABELS) as (keyof typeof COST_LABELS)[])
-                    .map((id) => `${COST_LABELS[id]} ${yen(costs[id])}`)
-                    .join('・')}
+                : // 「条件を調整」の 4 つの入力（会場費・制作費・移動・宿泊・利益。N-13）
+                  ADJUST_IDS.map(
+                    (id) => `${ADJUST_LABELS[id]} ${yen(id === 'hope' ? hope : costs[id])}`,
+                  ).join('・')}
             </li>
             <li>{privQuadLine(quadLine.deposit, quadLine.heat)}</li>
             <li>

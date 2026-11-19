@@ -349,23 +349,14 @@ function Summary({ view }: { readonly view: OfficeView }) {
           {rule.after}
         </span>
       </p>
-      <p className={styles.condNote}>{text.minNote}</p>
+      {/* 注記（最低人数・上位コースの数え方）と、上位のコースによる上乗せ（合計と内訳）は、2026-11-19 に外した
+          （Issue #48・docs/office/要件.md の N6-1）。表示だけで、判定の計算（上乗せを金額の条件に数える）と状態は変えない。
+          上乗せの内訳（UpRows）は、提案の 1 枚に残す */}
       {view.gapYen !== null && (
         <p className={styles.condWarn} role="status">
           {warnText(view.gapYen)}
         </p>
       )}
-      <div className={styles.upSum}>
-        <p className={styles.condMore} style={{ marginTop: 0 }}>
-          <span className={styles.k}>{text.upliftLabel}</span>
-          <Changed k="upliftTotal" now={view.uplift.total} unit="円">
-            <span className={styles.upTot} data-testid="uplift-total">
-              +{yen(view.uplift.total)}
-            </span>
-          </Changed>
-        </p>
-        <UpRows view={view} />
-      </div>
       <div className={styles.judgeFoot}>
         {/* 条件を調整（費用・最低人数）は、⑤ に残す（条件の帯へは移さない）。既存のテスト I-07 が、
             費用の入力の知らせを、判定の区画（data-testid="judge"）の中で探しているため（担当者の決定。R-15 は一部） */}

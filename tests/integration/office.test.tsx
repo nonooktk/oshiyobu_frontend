@@ -46,7 +46,7 @@ describe('事務所向け', () => {
     vi.useRealTimers();
   });
 
-  it('I-01 基準（tech0・久留米市・Cボックス）: 650,000円・93人 × 7,000円・見込み 187人・札「高」・上乗せ 768,000円', () => {
+  it('I-01 基準（tech0・久留米市・Cボックス）: 650,000円・93人 × 7,000円・見込み 187人・札「高」。⑤ に上乗せは出ない（N-6）', () => {
     render(<App />);
     expect(screen.queryByTestId('judge')).toBeNull(); // 会場を選ぶまで、判定は出ない
     pickBase();
@@ -55,7 +55,8 @@ describe('事務所向け', () => {
     expect(text('price')).toBe('7,000円');
     expect(text('expected')).toBe('187人');
     expect(text('verdict')).toBe('成立の見込み 高');
-    expect(text('uplift-total')).toBe('+768,000円');
+    // 2026-11-19、Issue #48 の統括の了承で、⑤ から上位のコースによる上乗せを外した（N-6。元は '+768,000円'）
+    expect(screen.queryByTestId('uplift-total')).toBeNull();
     expect(screen.getByText('キャパ 144席に収まる')).toBeTruthy();
     expect(screen.getByRole('button', { name: '提案を見る' }).getAttribute('aria-disabled')).toBe(
       'false',
@@ -75,7 +76,7 @@ describe('事務所向け', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('I-06 会場費を 100,000 円にすると、到達ライン 690,000円・必要人数 99人・札「高」。上乗せは 768,000円のまま', () => {
+  it('I-06 会場費を 100,000 円にすると、到達ライン 690,000円・必要人数 99人・札「高」。⑤ に上乗せは出ない（N-6）', () => {
     render(<App />);
     pickBase();
     openAdjust();
@@ -83,7 +84,8 @@ describe('事務所向け', () => {
     expect(text('line')).toBe('690,000円');
     expect(text('need')).toBe('99人');
     expect(text('verdict')).toBe('成立の見込み 高');
-    expect(text('uplift-total')).toBe('+768,000円');
+    // 2026-11-19、Issue #48 の統括の了承で、⑤ から上位のコースによる上乗せを外した（N-6。元は '+768,000円'）
+    expect(screen.queryByTestId('uplift-total')).toBeNull();
   });
 
   describe('I-07 費用の入力', () => {
@@ -205,12 +207,13 @@ describe('事務所向け', () => {
     expect(text('need')).toBe('129人');
   });
 
-  it('I-10・I-11 開催条件と提案の 1 枚に、上乗せの 3 行と合計 +768,000円。提案には内訳 5 項目・募集期限・成立の条件', () => {
+  it('I-10・I-11 提案の 1 枚に、上乗せの 3 行と合計 +768,000円（開催条件には出ない。N-6）。提案には内訳 5 項目・募集期限・成立の条件', () => {
     render(<App />);
     pickBase();
     const rows = (root: HTMLElement) => root.textContent ?? '';
-    expect(rows(screen.getByTestId('judge'))).toContain('前方の席');
-    expect(rows(screen.getByTestId('judge'))).toContain('+196,000円');
+    // 2026-11-19、Issue #48 の統括の了承で、⑤ 開催条件から上乗せの内訳を外した（N-6。元は、⑤ に「前方の席」「+196,000円」が出る）
+    expect(rows(screen.getByTestId('judge'))).not.toContain('前方の席');
+    expect(rows(screen.getByTestId('judge'))).not.toContain('+196,000円');
     fireEvent.click(screen.getByRole('button', { name: '提案を見る' }));
     const dialog = screen.getByRole('dialog');
     for (const expected of ['+196,000円', '+279,000円', '+293,000円']) {

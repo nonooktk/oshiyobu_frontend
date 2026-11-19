@@ -44,7 +44,8 @@ describe('事務所向けの強調: 会場を替えたとき', () => {
     expect(isChanged('expected')).toBe(false);
     expect(prevOf('expected')).toBeNull();
     expect(isChanged('verdict')).toBe(false);
-    expect(isChanged('uplift-total')).toBe(true);
+    // 2026-11-19、Issue #48 の統括の了承で、⑤ から上乗せを外した（N-6。元は、上乗せが強調される）
+    expect(screen.queryByTestId('uplift-total')).toBeNull();
     expect(screen.getByTestId('change-live').textContent).not.toContain('見込み');
   });
 

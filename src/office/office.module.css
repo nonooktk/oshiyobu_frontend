@@ -778,11 +778,6 @@
   font-weight: 700;
   color: var(--ink-soft);
 }
-.condNote {
-  margin: var(--s1) 0 0;
-  font-size: 12px;
-  color: var(--ink-soft);
-}
 .condWarn {
   margin: var(--s2) 0 0;
   padding: var(--s2) var(--s3);
@@ -791,16 +786,6 @@
   background: var(--yellow-light);
   font-size: 14px;
   font-weight: 700;
-}
-.upSum {
-  margin-top: var(--s3);
-  padding-top: var(--s2);
-  border-top: 1px solid var(--line);
-}
-.upTot {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--success-ink);
 }
 .upRows {
   display: grid;

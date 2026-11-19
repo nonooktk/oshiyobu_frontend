@@ -9,7 +9,6 @@ import {
   xOfDeposit,
   yOfHeat,
 } from '../scatter';
-import { shareOfReg } from '../share';
 import { useOffice } from '../store';
 import { ARTIST_TEXT } from '../text/artists';
 import {
@@ -407,18 +406,13 @@ function DemandSource({ expected }: { readonly expected: number }) {
   if (city === null) return null;
   const reg = metricValues(artistId, 'reg')[cityIndex(city)] ?? 0;
   const line = demandSource(city, reg, expected);
-  const share = shareOfReg(expected, reg);
-  // 割合（M-01）は、出どころの文（data-testid="demand-source"）の外に並べる。文そのものは core の値のまま
+  // 割合「（登録の 6.5%）」は、2026-11-19 に外した（Issue #48・docs/office/要件.md の N4-1）。
+  // 登録の人数と見込みの人数は、これまでどおり並べて出す（R-03）。文そのものは core の値のまま
   return (
     <div className={styles.meetSourceRow}>
       <p className={styles.meetSource} data-testid="demand-source">
         {line.lead} <b>{line.reg}</b> {line.mid} <b>{line.expected}</b>
       </p>
-      {share !== null && (
-        <span className={styles.meetShare} data-testid="demand-share">
-          （{text.shareOfReg(share)}）
-        </span>
-      )}
     </div>
   );
 }

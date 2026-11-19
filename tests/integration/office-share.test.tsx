@@ -83,11 +83,12 @@ describe('事務所向けの割合の表示', () => {
     },
   );
 
-  it('V-19 ⑥ の需要の出どころの行の横に、同じ割合が出る（出どころの文そのものは変えない）', () => {
+  it('V-32（N-4。元は V-19）⑥ の需要の出どころの行の横に、割合は出ない（出どころの文そのものは変えない）', () => {
     render(<App />);
     choose('福岡市');
     pickFirstVenue('福岡市');
-    expect(screen.getByTestId('demand-share').textContent).toBe('（登録の 6.5%）');
+    // 2026-11-19、Issue #48 の統括の了承で、⑥ の割合を外した（N-4。元は '（登録の 6.5%）' が出る）
+    expect(screen.queryByTestId('demand-share')).toBeNull();
     expect(screen.getByTestId('demand-source').textContent).not.toContain('%');
   });
 

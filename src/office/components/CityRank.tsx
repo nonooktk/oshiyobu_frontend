@@ -41,8 +41,9 @@ export function CityRank() {
   return (
     <section className={styles.rank} aria-labelledby="rank-h" data-testid="city-rank">
       <div className={styles.rankHead}>
+        {/* 見出しは、「人数」のときは「登録の人数」、「払える熱量」のときは見込みの見出し（2026-11-20。N5-3） */}
         <p className={styles.rankH} id="rank-h">
-          {text.rankHead}
+          {metric === 'reg' ? text.rankHeadReg : text.rankHead}
         </p>
         <span className={styles.fictChip} data-testid="rank-fict">
           {text.rankFict}

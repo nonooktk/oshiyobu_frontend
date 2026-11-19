@@ -300,8 +300,9 @@ function Summary({ view }: { readonly view: OfficeView }) {
     <section className={styles.jcard} aria-labelledby="j5">
       {/* 見出しの段落（区画の名前）の外に、架空の札と、実在と架空の混ざり方の一文を置く（仕様 4.3） */}
       <div className={styles.jHead}>
+        {/* 見出しの番号は 4（2026-11-20。④ を外したので付け替えた。docs/office/要件.md の N5-3）。識別子 j5 は変えない */}
         <p className={styles.jlabel} id="j5" style={{ margin: 0 }}>
-          <i>5</i>
+          <i>4</i>
           {text.judge1}
         </p>
         <span className={styles.fictChip} data-testid="fict-5">
@@ -429,8 +430,9 @@ function Certainty({ view }: { readonly view: OfficeView }) {
   return (
     <section className={styles.jcard} aria-labelledby="j6">
       <div className={styles.meetTop}>
+        {/* 見出しの番号は 5（2026-11-20。N5-3）。識別子 j6 は変えない */}
         <p className={styles.jlabel} id="j6" style={{ margin: 0 }}>
-          <i>6</i>
+          <i>5</i>
           {text.judge2}
         </p>
         <span className={`${styles.fictChip} ${styles.fictMid}`} data-testid="fict-6">

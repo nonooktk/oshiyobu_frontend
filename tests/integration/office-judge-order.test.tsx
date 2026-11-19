@@ -28,7 +28,7 @@ describe('事務所向けの ⑤⑥ の並び', () => {
     vi.unstubAllGlobals();
   });
 
-  it('V-23 ⑤ 開催条件が上、⑥ 満たせるかが下。見出しの番号は 5・6 のまま', () => {
+  it('V-23 開催条件が上、満たせるかが下。見出しの番号は 4・5（④ を外して付け替えた。N5-3）', () => {
     render(<App />);
     pick('久留米市', /久留米シティプラザ Cボックス/);
     const judge = screen.getByTestId('judge');
@@ -36,8 +36,9 @@ describe('事務所向けの ⑤⑥ の並び', () => {
     const six = within(judge).getByText('満たせるか').closest('p') as HTMLElement;
     expect(five.id).toBe('j5');
     expect(six.id).toBe('j6');
-    expect(five.textContent).toContain('5');
-    expect(six.textContent).toContain('6');
+    // 2026-11-20、画面の文字（見出しの番号）を付け替えた（G-31。docs/office/要件.md の N5-3。元は '5'・'6'）
+    expect(five.textContent).toContain('4');
+    expect(six.textContent).toContain('5');
     expect(follows(five, six)).toBe(true);
   });
 

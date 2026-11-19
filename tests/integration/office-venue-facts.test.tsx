@@ -1,6 +1,8 @@
 // 事務所向け（/）の ③ 会場の候補の、実在の情報（要件 R-05・R-16。受け入れ V-03。仕様 4.3〜4.5）。会場のボタンの名前は core の名前のまま。
 // 2026-11-18（統括の了承「全部、勝手に直してよい」。docs/office/要件.md の M-04・V-22）: 選んだ会場の詳しい欄
 // （公式の名前・住所の市区・収容人数の根拠・出典・確認日）を外した。見出しの横の実在の札は残す。出典のリンクの検査は ④ のリンクで行う
+// 2026-11-19、Issue #48 の統括の了承で、④ を外した（docs/office/要件.md の N5-1）。④ の出典のリンクを見ていた 1 件の期待値だけを、
+// 「出典のリンクは画面に出ない」に書き換えた
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../../src/office/App';
@@ -56,18 +58,12 @@ describe('事務所向けの ③ の実在の情報', () => {
     expect(button.textContent).toContain('music hall fragile');
   });
 
-  it('出典のリンク（④ これまでの公演）は、新しいタブで開く（target と rel）。読み上げ用に「新しいタブで開きます」を添える', () => {
+  it('N-5: ④ を外したので、出典のリンク（④ これまでの公演）は、画面に出ない', () => {
     render(<App />);
     choose('久留米市');
     fireEvent.click(screen.getByRole('button', { name: /久留米シティプラザ Cボックス/ }));
-    const links = within(screen.getByTestId('past-list')).getAllByRole('link', { name: /出典/ });
-    expect(links.length).toBeGreaterThan(0);
-    for (const link of links) {
-      expect(link.getAttribute('href')).toMatch(/^https:\/\//);
-      expect(link.getAttribute('target')).toBe('_blank');
-      expect(link.getAttribute('rel')).toBe('noopener noreferrer');
-      expect(link.textContent).toContain('（新しいタブで開きます）');
-    }
+    expect(screen.queryByTestId('past-list')).toBeNull();
+    expect(screen.queryAllByRole('link', { name: /出典/ })).toHaveLength(0);
   });
 
   it('データの無い会場（RISE UP・Ohana Cafe）を選んでも、③ に「出典は、まだありません」は出ない。会場が全部データに無い市（長崎市）は、札を出さない', () => {

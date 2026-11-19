@@ -1,19 +1,26 @@
-// 事務所向け（/）の ④ これまでの公演: 久留米シティプラザ Cボックス（FUK-019）の記録が出る（要件 R-07・R-16）。
-// 2026-11-16 に足した 4 件（出典は久留米シティプラザの公式の PDF）が、「記録あり」で、日の新しいものから出ることを確かめる。
-// データと比べるだけだと、データが違っていても通るため、件数・日の並び・先頭の公演名・確認日は、値を直に書いて確かめる。
+// 事務所向け（/）の ④ これまでの公演: 久留米シティプラザ Cボックス（FUK-019）の記録（要件 R-07・R-16）。
+// 2026-11-16 に足した 4 件（出典は久留米シティプラザの公式の PDF）。データと比べるだけだと、データが違っていても通るため、
+// 件数・日の並びは、値を直に書いて確かめる。
 // 音の森ピアノコンサートは、#39 のレビューで外した（出典の名前が出演者の記載ではなく、関係者だけの催しと読めるため）。
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+// 2026-11-19、Issue #48 の統括の了承で、④ を画面から外した（docs/office/要件.md の N5-1。受け入れ V-28）。
+// このファイルの、④ を表示する所の期待値だけを「④ が無い」に書き換えた（データの側の検査は、そのまま）
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../../src/office/App';
 import { PAST_EVENTS, VENUE_RECORDS } from '../../src/office/data';
 import { initialOfficeState, officeStore } from '../../src/office/store';
-import { eventDate } from '../../src/office/text/labels';
 import { resetLinkForTest } from '../../src/shared/link';
 import { FakeChannel } from '../helpers/fakeChannel';
 
 const choose = (city: string) =>
   fireEvent.click(screen.getByRole('button', { name: new RegExp(`^${city}を選ぶ`) }));
-const past = () => screen.getByRole('region', { name: 'これまでの公演' });
+/** ④ が画面に無い（見出し・公演の一覧・文・札のどれも無い）。N5-1 */
+const expectNoPast = () => {
+  expect(screen.queryByRole('region', { name: 'これまでの公演' })).toBeNull();
+  expect(screen.queryByTestId('past-head')).toBeNull();
+  expect(screen.queryByTestId('past-list')).toBeNull();
+  expect(screen.queryByTestId('past-none')).toBeNull();
+};
 /** core の会場 ID に当たる、データの公演（日の新しいものから） */
 const eventsOf = (coreId: string) => {
   const record = VENUE_RECORDS.find((r) => r.coreVenueId === coreId);
@@ -52,49 +59,30 @@ describe('事務所向けの ④ これまでの公演（久留米シティプ�
     expect(expected.map((e) => e.date)).toEqual(CBOX_DATES);
   });
 
-  it('久留米市 → Cボックスを選ぶと、④ に公演が 4 件、日の新しいものから出る', () => {
+  it('N-5: 久留米市 → Cボックスを選んでも、④ は出ない', () => {
     openCbox();
-    const items = within(past()).getAllByRole('listitem');
-    expect(items).toHaveLength(4);
-    items.forEach((item, i) => {
-      expect(item.textContent).toContain(eventDate(CBOX_DATES[i]!));
-    });
+    expectNoPast();
   });
 
-  it('1 件ずつ、出演者・日・出典のリンクが、データの値と一致する', () => {
+  it('N-5: 出演者・日・出典のリンクは、画面に出ない', () => {
     openCbox();
-    const expected = eventsOf('cbox');
-    const items = within(past()).getAllByRole('listitem');
-    expect(items).toHaveLength(expected.length);
-    items.forEach((item, i) => {
-      const event = expected[i]!;
-      expect(item.textContent).toContain(event.artist);
-      expect(item.textContent).toContain(eventDate(event.date));
-      const link = within(item).getByRole('link', { name: /出典/ });
-      expect(link.getAttribute('href')).toBe(event.sourceUrl);
-      expect(link.getAttribute('target')).toBe('_blank');
-      expect(link.getAttribute('rel')).toBe('noopener noreferrer');
-    });
+    expectNoPast();
+    expect(screen.queryAllByRole('link', { name: /出典/ })).toHaveLength(0);
   });
 
-  it('先頭の行（2025-08-22）の公演名は「落語教育委員会ｉｎ久留米」', () => {
+  it('N-5: 先頭の公演名「落語教育委員会ｉｎ久留米」は、画面に出ない', () => {
     openCbox();
-    const items = within(past()).getAllByRole('listitem');
-    expect(items[0]!.textContent).toContain('落語教育委員会ｉｎ久留米');
+    expect(document.body.textContent).not.toContain('落語教育委員会ｉｎ久留米');
   });
 
-  it('④ のどの行にも「音の森」は出ない（#39 のレビューで外した）', () => {
+  it('画面のどこにも「音の森」は出ない（#39 のレビューで外した）', () => {
     openCbox();
-    const items = within(past()).getAllByRole('listitem');
-    expect(items.some((item) => item.textContent?.includes('音の森'))).toBe(false);
+    expect(document.body.textContent).not.toContain('音の森');
   });
 
-  it('実在の札に確認日 2026-11-16 が出て、「記録は、まだありません」は出ない', () => {
+  it('N-5: ④ の札（確認日 2026-11-16）と「記録は、まだありません」は、出ない', () => {
     openCbox();
-    expect(within(past()).getByTestId('real-chip').textContent).toBe(
-      '実在の公開情報（出典あり・確認日 2026-11-16）',
-    );
-    expect(within(past()).queryByTestId('past-none')).toBeNull();
-    expect(within(past()).queryByText('記録は、まだありません')).toBeNull();
+    expectNoPast();
+    expect(screen.queryByText('記録は、まだありません')).toBeNull();
   });
 });

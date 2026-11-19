@@ -81,7 +81,8 @@ describe('事務所向けの強調: 4 象限の線を動かしたとき', () => 
     pickBase();
     moveLine('25');
     fireEvent.click(screen.getByRole('button', { name: /RISE UP/ })); // キャパが違うので、上乗せが変わる
-    expect(isChanged('uplift-total')).toBe(true);
+    // 2026-11-19、Issue #48 の統括の了承で、⑤ から上乗せを外した（N-6。元は、上乗せが強調される）
+    expect(screen.queryByTestId('uplift-total')).toBeNull();
     expect(screen.getByTestId('change-live').textContent).not.toBe('');
   });
 

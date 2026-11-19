@@ -47,7 +47,7 @@ describe('事務所向けの ① 市の一覧', () => {
   });
 
   it.each(ARTISTS.map((a) => [a.id]))(
-    '%s: 9 市を、見込みの多い市から並べ、見込みと登録者数を core の値のまま出す',
+    '%s: 9 市を、見込みの多い市から並べ、「人数」のときは登録者数だけを core の値のまま出す（見込みと割合は読み上げに。N-2）',
     (id) => {
       officeStore.setState({ artistId: id });
       render(<App />);
@@ -58,8 +58,9 @@ describe('事務所向けの ① 市の一覧', () => {
         const name = expectedOrder(id)[n] as (typeof CITIES)[number]['name'];
         const reg = regs[CITIES.findIndex((c) => c.name === name)] ?? -1;
         const expected = demandOf(id, name).expected;
-        expect(button.textContent).toContain(people(expected));
-        expect(button.textContent).toContain(`登録 ${people(reg)}`);
+        // 2026-11-19、Issue #48 の統括の了承で、「人数」（初めの指標）のときは、行に登録の人数だけを出すようにした
+        // （N-2。docs/office/要件.md の N23-1）。元は、見込みの人数（people(expected)）も行に出ていた
+        expect(button.textContent).toBe(`${n + 1}${name}登録 ${people(reg)}`);
         // 2026-11-18（M-01）: 読み上げの名前の最後に、見込みが登録の何 % か（小数 1 桁で四捨五入）を足した
         const share = `${(Math.round((expected * 1000) / reg) / 10).toFixed(1)}%`;
         expect(button.getAttribute('aria-label')).toBe(

@@ -55,29 +55,40 @@ describe('事務所向けの割合の表示', () => {
     vi.unstubAllGlobals();
   });
 
-  it('V-19 Tech0 の ① の一覧で、福岡市の行に「登録の 6.5%」が出る', () => {
+  // 2026-11-19、Issue #48 の統括の了承で、① の一覧の割合の文字（「登録の 6.5%」）を外し、「払える熱量」のときだけ、
+  // 割合をゲージで出すようにした（N-2・N-3。docs/office/要件.md の N23-1・N23-3）。この 2 件の、一覧の割合の期待値だけを書き換えた
+  it('V-19（N-3 で改め）Tech0 の ① の一覧で、福岡市の行に割合の文字は出ない。「払える熱量」のときは 6.5% のゲージが出る', () => {
     render(<App />);
-    expect(within(rowOf('福岡市')).getByTestId('rank-share').textContent).toBe('登録の 6.5%');
+    expect(rowOf('福岡市').textContent).not.toContain('%');
+    expect(within(rowOf('福岡市')).queryByTestId('rank-gauge')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '払える熱量' }));
+    expect(rowOf('福岡市').textContent).not.toContain('%');
+    expect(within(rowOf('福岡市')).getByTestId('rank-gauge').getAttribute('data-share')).toBe(
+      '6.5%',
+    );
   });
 
   it.each(ARTISTS.map((a) => [a.id]))(
-    '%s: 9 市すべての行に、core の値から出した割合が出る',
+    '%s: 「払える熱量」のとき、9 市すべての行に、core の値から出した割合のゲージが出る（N-3）',
     (id) => {
-      officeStore.setState({ artistId: id });
+      officeStore.setState({ artistId: id, metric: 'hot' });
       render(<App />);
       const regs = metricValues(id, 'reg');
       for (const { name } of CITIES) {
         const share = shareOfReg(demandOf(id, name).expected, regs[cityIndex(name)] ?? 0);
-        expect(within(rowOf(name)).getByTestId('rank-share').textContent).toBe(`登録の ${share}`);
+        expect(within(rowOf(name)).getByTestId('rank-gauge').getAttribute('data-share')).toBe(
+          share,
+        );
       }
     },
   );
 
-  it('V-19 ⑥ の需要の出どころの行の横に、同じ割合が出る（出どころの文そのものは変えない）', () => {
+  it('V-32（N-4。元は V-19）⑥ の需要の出どころの行の横に、割合は出ない（出どころの文そのものは変えない）', () => {
     render(<App />);
     choose('福岡市');
     pickFirstVenue('福岡市');
-    expect(screen.getByTestId('demand-share').textContent).toBe('（登録の 6.5%）');
+    // 2026-11-19、Issue #48 の統括の了承で、⑥ の割合を外した（N-4。元は '（登録の 6.5%）' が出る）
+    expect(screen.queryByTestId('demand-share')).toBeNull();
     expect(screen.getByTestId('demand-source').textContent).not.toContain('%');
   });
 

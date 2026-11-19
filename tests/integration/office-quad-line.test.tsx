@@ -34,14 +34,14 @@ describe('事務所向けの 4 象限の線を動かす', () => {
     vi.unstubAllGlobals();
   });
 
-  it('動かすと「目安（デモ）」が出て、右上の人数が変わり、4 つの合計は変わらない。見込み・札・上乗せは変わらない', () => {
+  it('動かすと「目安（デモ）」が出て、右上の人数が変わり、4 つの合計は変わらない。見込み・札は変わらない（上乗せは ⑤ に出ない。N-6）', () => {
     render(<App />);
     pickBase();
     expect(screen.queryByTestId('quad-estimate')).toBeNull();
+    // 2026-11-19、Issue #48 の統括の了承で、⑤ から上乗せを外した（N-6）。元は、上乗せも「動かす前と同じ」を確かめていた
     const before = {
       expected: text('expected'),
       verdict: text('verdict'),
-      uplift: text('uplift-total'),
       hotRich: num('quad-hotRich'),
     };
     fireEvent.change(slider('預金額'), { target: { value: '40' } });
@@ -57,7 +57,7 @@ describe('事務所向けの 4 象限の線を動かす', () => {
     expect(within(figure).getByText('3.5')).toBeTruthy();
     expect(text('expected')).toBe(before.expected);
     expect(text('verdict')).toBe(before.verdict);
-    expect(text('uplift-total')).toBe(before.uplift);
+    expect(screen.queryByTestId('uplift-total')).toBeNull();
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 

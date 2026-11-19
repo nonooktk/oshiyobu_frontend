@@ -7,7 +7,6 @@ import { Header } from './components/Header';
 import { Judge } from './components/Judge';
 import { MapPanel } from './components/MapPanel';
 import { Privacy, Proposal } from './components/Modals';
-import { PastEvents } from './components/PastEvents';
 import { SidePanel } from './components/SidePanel';
 import styles from './office.module.css';
 import { useOffice } from './store';
@@ -53,10 +52,10 @@ export function App() {
               <div className={styles.crowdRow} data-testid="crowd-row">
                 <CrowdField />
               </div>
-              {/* 地図の下は、③ 会場の候補と ④ これまでの公演を横に 2 列（1280 × 800 で、両方の見出しが見えるように） */}
+              {/* 地図の下は、③ 会場の候補だけ。④ これまでの公演は外し、空いた幅を ③ に使う
+                  （2026-11-19。docs/office/要件.md の N5-1・N5-2。公演のデータ src/office/data/events.ts は残す） */}
               <div className={styles.lowerRow} data-testid="lower-row">
                 <SidePanel />
-                <PastEvents venueId={venueId} />
               </div>
             </div>
             <div className={styles.rightCol}>

@@ -477,7 +477,12 @@ function DemandSource({ expected }: { readonly expected: number }) {
   return (
     <div className={styles.meetSourceRow}>
       <p className={styles.meetSource} data-testid="demand-source">
-        {line.lead} <b>{line.reg}</b> {line.mid} <b>{line.expected}</b>
+        {line.lead} <b>{line.reg}</b>{' '}
+        {/* 「→ 預金の支えがある熱いファン（見込み） 187人」はひとかたまり。折れるときは矢印の前で折れる（2026-11-20。N-10 で 16px にして、
+            「人」だけ・「187人」だけが次の行へ落ちていたため） */}
+        <span className={styles.meetTail}>
+          {line.mid} <b>{line.expected}</b>
+        </span>
       </p>
     </div>
   );
@@ -504,11 +509,14 @@ function Certainty({ view }: { readonly view: OfficeView }) {
             <span data-testid="expected">{expected}人</span>
           </Changed>
         </span>
-        <Changed k="level" now={level}>
-          <span className={`${styles.verdict} ${verdictClass}`} data-testid="verdict">
-            {verdictText(level)}
-          </span>
-        </Changed>
+        {/* 判定の札は、見出しの行の下の 1 行に置く（2026-11-20。N-10 で文字を 16px にして行が折れ、札だけが落ちていたため） */}
+        <div className={styles.verdictRow}>
+          <Changed k="level" now={level}>
+            <span className={`${styles.verdict} ${verdictClass}`} data-testid="verdict">
+              {verdictText(level)}
+            </span>
+          </Changed>
+        </div>
       </div>
       {/* ⑥ の横棒（必要 ／ 見込み）と凡例は、2026-11-19 に外した（統括の追加の修正依頼の N-7）。4 象限の図は残す */}
       {/* 需要の出どころ（R-03）。強調はしない（見込みの強調は、判定の札の横の「見込み」のほう） */}

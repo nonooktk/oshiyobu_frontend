@@ -153,7 +153,7 @@
   font-weight: 700;
 }
 .crowdLabel {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--ink);
 }
@@ -352,9 +352,9 @@
   background: var(--heat-5);
 }
 .formula {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
-  color: var(--ink-soft);
+  color: var(--ink);
 }
 .mapWrap {
   margin-top: var(--s3);
@@ -410,8 +410,8 @@
   display: inline;
 }
 .cityLabel {
-  /* layout.ts の LABEL_FONT と同じ値（名前の押せる範囲の大きさを、この値から見積もっている）。N-10 で 18 → 20 */
-  font-size: 20px;
+  /* layout.ts の LABEL_FONT と同じ値（名前の押せる範囲の大きさを、この値から見積もっている）。N-10 で 18 → 21（KKRS48 の「人数」で、22 だと久留米市と大分市の名前が重なるため） */
+  font-size: 21px;
   font-weight: 700;
   fill: var(--ink);
   paint-order: stroke;
@@ -455,8 +455,10 @@
 }
 .sideH {
   margin: 0 0 var(--s3);
-  font-size: 20px;
+  /* N-10（R 案。2026-11-20）: ③ の見出しも、①②⑤⑥ の文字と同じ 16px・--ink にそろえた（それまでは 20px） */
+  font-size: 16px;
   font-weight: 700;
+  color: var(--ink);
 }
 .venues {
   display: grid;
@@ -491,14 +493,14 @@
   font-weight: 700;
 }
 .vcap {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--ink-soft);
 }
 .vfee {
   grid-row: 1 / span 2;
   grid-column: 2;
-  font-size: 14px;
+  font-size: 16px;
   color: var(--ink-soft);
   text-align: right;
 }
@@ -532,8 +534,6 @@
 .fictChip {
   border: 1px solid var(--warning-ink);
   background: var(--yellow-light);
-  /* N-10（2026-11-20）: ①⑤⑥ の札は 14px（③ の実在の札 .realChip は 12px のまま。① の右の一覧の札は下の .rankHead .fictChip で 12px） */
-  font-size: 14px;
   color: var(--warning-ink);
 }
 /* ① の札は、地図の枠の左上の角に重ねる（行が折れて地図が動かないように）。⑥ の行では、見出しのすぐ右
@@ -573,10 +573,6 @@
   align-items: center;
   gap: var(--s1);
 }
-/* N-10（2026-11-20）: ① の右の一覧の見出しと、その横の札「数字は架空」は 12px のまま（14px にすると 2 行に折れ、②③ を押し下げる。V-14） */
-.rankHead .fictChip {
-  font-size: 12px;
-}
 .rankH {
   margin: 0;
   font-size: 12px;
@@ -615,19 +611,19 @@
   outline-offset: -3px;
 }
 .rankNo {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
-  color: var(--ink-soft);
+  color: var(--ink);
 }
 .rankName {
   overflow: hidden;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 .rankExp {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   text-align: right;
 }
@@ -649,7 +645,7 @@
 }
 /* 「人数」のときの登録の人数。行の数字はこれだけなので、「払える熱量」のときの見込みの人数（.rankExp）と同じ書き方にそろえる（2026-11-19） */
 .rankReg {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--ink);
   text-align: right;
@@ -665,7 +661,7 @@
 }
 .mixNote {
   color: var(--ink-soft);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
 }
 /* 出典のリンク（新しいタブで開く） */
@@ -713,9 +709,9 @@
   align-items: center;
   gap: var(--s2);
   margin: 0 0 var(--s2);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
-  color: var(--ink-soft);
+  color: var(--ink);
 }
 .jlabel i {
   display: inline-grid;
@@ -738,16 +734,16 @@
   line-height: 1.3;
 }
 .condLine .k {
-  font-size: 14px;
-  color: var(--ink-soft);
+  font-size: 16px;
+  color: var(--ink);
 }
 /* 1 行目「<金額>で開催できます」（M-07）。金額を一番大きく、続く言葉は少し小さく */
 .lineCan {
-  color: var(--primary);
+  color: var(--ink);
   font-size: 20px;
 }
 .condLine .res {
-  color: var(--primary);
+  color: var(--ink);
   font-size: 32px;
 }
 /* 2 行目「<必要人数> × <価格>」とキャパの札 */
@@ -767,7 +763,7 @@
   font-size: 18px;
 }
 .condSubLine .op {
-  color: var(--ink-soft);
+  color: var(--ink);
 }
 .capChip {
   display: inline-block;
@@ -787,11 +783,11 @@
   flex-wrap: wrap;
   gap: var(--s1) var(--s2);
   margin: var(--s2) 0 0;
-  font-size: 14px;
+  font-size: 16px;
 }
 .condMore .k {
   font-weight: 700;
-  color: var(--ink-soft);
+  color: var(--ink);
 }
 .condWarn {
   margin: var(--s2) 0 0;
@@ -834,6 +830,10 @@
   flex-wrap: wrap;
   gap: var(--s3);
 }
+/* N-10（R 案）: ⑥ の判定の札は、見出しの行（見出し・札・見込み）の下の 1 行に置く */
+.verdictRow {
+  flex-basis: 100%;
+}
 .verdict {
   padding: var(--s1) var(--s3);
   border-radius: var(--pill);
@@ -871,15 +871,21 @@
 }
 .meetSource {
   margin: var(--s1) 0 0;
-  font-size: 14px;
+  font-size: 16px;
   color: var(--ink);
 }
 .meetSource b {
   font-weight: 700;
+  white-space: nowrap;
+}
+/* ⑥ の出どころの文の後半（→ 見込みの名前と人数）は、ひとかたまりで折る（N-10） */
+.meetTail {
+  display: inline-block;
+  white-space: nowrap;
 }
 .meetShort {
   margin: var(--s2) 0 0;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--error-ink);
 }
@@ -910,8 +916,8 @@
   font-size: 14px;
 }
 .quadBigLabel {
-  font-size: 14px;
-  color: var(--ink-soft);
+  font-size: 16px;
+  color: var(--ink);
   text-align: right;
 }
 .quadBody {
@@ -985,7 +991,7 @@
 }
 .qName {
   overflow: hidden;
-  font-size: 14px;
+  font-size: 16px;
   white-space: nowrap;
   text-overflow: ellipsis;
   font-weight: 700;
@@ -1033,7 +1039,7 @@
 }
 /* N-10: ② 集まる人数の「人」。.qLineNum は条件の帯と共有するので、② の行の中だけ大きくする */
 .crowdRow .qLineNum {
-  font-size: 14px;
+  font-size: 16px;
 }
 .qLineField label {
   display: block;
@@ -1494,6 +1500,11 @@ div.chg > .prevVal {
   }
 }
 @media (max-width: 640px) {
+  /* ⑥ の出どころの文の後半は、狭い画面ではふつうに折る（ひとかたまりだと、幅 375 で横スクロールが出る） */
+  .meetTail {
+    display: inline;
+    white-space: normal;
+  }
   .bar,
   .artistBar,
   .mapCol,

@@ -37,9 +37,10 @@ describe('事務所向けの ① 市の一覧', () => {
     vi.unstubAllGlobals();
   });
 
-  it('見出しは「預金の支えがある熱いファン（見込み）」で、「数字は架空」を添える', () => {
+  it('見出しは、「人数」（初めの指標）のとき「登録の人数」で、「数字は架空」を添える', () => {
     render(<App />);
-    expect(within(rank()).getByText('預金の支えがある熱いファン（見込み）')).toBeTruthy();
+    // 2026-11-20、画面の文字（「人数」のときの見出し）を変えた（G-31。docs/office/要件.md の N5-3。元は「預金の支えがある熱いファン（見込み）」）
+    expect(within(rank()).getByText('登録の人数')).toBeTruthy();
     expect(screen.getByTestId('rank-fict').textContent).toBe('数字は架空');
     // 全画面の札の文と ① の札の文は、一覧の中で繰り返さない
     expect(rank().textContent).not.toContain('デモ用の架空データ');

@@ -660,70 +660,19 @@
   text-decoration: underline;
 }
 
-/* 地図の下: ③ 会場の候補と ④ これまでの公演を横に 2 列（幅 1200 未満は 1 列。下の @media） */
+/* 地図の下: ③ 会場の候補だけ（2026-11-19 に ④ これまでの公演を外した。docs/office/要件.md の N5-1・N5-2） */
 .lowerRow {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   flex: 1;
   border-top: 1px solid var(--line);
 }
 .lowerRow > .sideCol {
   border-top: 0;
 }
-/* ④ これまでの公演（③ と同じ並べ方: 番号の印と見出しを横に、ほかは下に 1 行ずつ） */
-.pastCol {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-content: start;
-  column-gap: var(--s2);
-  /* 上の余白は ③ と同じ 8 px（2026-11-18。V-14） */
-  padding: var(--s2) var(--s4) var(--s4);
-  border-left: 1px solid var(--line);
-}
-.pastCol > * {
-  grid-column: 1 / -1;
-}
-.pastCol > .sideNum,
-.pastCol > .sideH {
-  grid-column: auto;
-  align-self: center;
-}
-.pastNone {
-  margin: 0;
-  color: var(--ink-soft);
-  font-size: 14px;
-  font-weight: 700;
-}
-.pastList {
-  display: grid;
-  gap: var(--s2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.pastList li {
-  display: grid;
-  gap: 2px;
-  padding: var(--s2) var(--s3);
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  background: var(--surface);
-  font-size: 13px;
-}
-.pastDate {
-  color: var(--ink-soft);
-  font-weight: 700;
-}
-.pastArtist {
-  color: var(--ink);
-  font-size: 15px;
-  font-weight: 700;
-}
-.pastTitle {
-  color: var(--ink-soft);
-}
-.pastList .srcLink {
-  justify-self: start;
+/* ④ のあった幅を使い、会場の候補を横に並べる（幅が足りないときは、折り返して 1 列ずつ） */
+.lowerRow .venues {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 }
 
 /* 判定 */
@@ -1530,7 +1479,7 @@ div.chg > .prevVal {
     grid-template-columns: minmax(0, 1fr);
   }
 }
-/* ③④ を 2 列にしている幅では、③ のカードが狭いので、名前・キャパ・公開料金を縦に並べる（名前が細かく折れないように） */
+/* 候補を横に並べる幅では、③ のカードが狭いので、名前・キャパ・公開料金を縦に並べる（名前が細かく折れないように） */
 @media (min-width: 1200px) {
   .lowerRow .venue {
     grid-template-columns: minmax(0, 1fr);
@@ -1545,22 +1494,11 @@ div.chg > .prevVal {
     margin-right: var(--s1);
   }
 }
-/* ③④ の 2 列は、左の列が広い幅（1200 以上）だけ。狭いときは ③ の下に ④ を置く */
-@media (max-width: 1199px) {
-  .lowerRow {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .pastCol {
-    border-top: 1px solid var(--line);
-    border-left: 0;
-  }
-}
 @media (max-width: 640px) {
   .bar,
   .artistBar,
   .mapCol,
   .sideCol,
-  .pastCol,
   .rightCol {
     padding-right: var(--s3);
     padding-left: var(--s3);

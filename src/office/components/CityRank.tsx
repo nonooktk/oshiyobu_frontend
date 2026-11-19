@@ -1,7 +1,7 @@
 import { CITIES, demandOf, metricValues } from '../../core';
 import type { ArtistId, CityName } from '../../core';
 import styles from '../office.module.css';
-import { shareOfReg } from '../share';
+import { gaugeOfShare, shareOfReg } from '../share';
 import { useOffice } from '../store';
 import { text } from '../text/labels';
 
@@ -34,6 +34,9 @@ export function CityRank() {
   const city = useOffice((s) => s.city);
   const pickCity = useOffice((s) => s.pickCity);
   const focusVenues = useOffice((s) => s.focusVenues);
+  // 地図の指標に合わせて、行に出す数字を変える（2026-11-19。docs/office/要件.md の N23-1〜N23-3）。
+  // 人数: 登録の人数だけ。払える熱量: 見込みの人数と、割合のゲージ（割合の文字は出さず、読み上げに残す）。並び順は、どちらも見込みの順（N23-2）
+  const metric = useOffice((s) => s.metric);
   const rows = cityRankOf(artistId);
   return (
     <section className={styles.rank} aria-labelledby="rank-h" data-testid="city-rank">
@@ -48,6 +51,7 @@ export function CityRank() {
       <ol className={styles.rankList}>
         {rows.map((row, n) => {
           const share = shareOfReg(row.expected, row.reg);
+          const gauge = gaugeOfShare(row.expected, row.reg);
           return (
             <li key={row.name}>
               <button
@@ -65,16 +69,26 @@ export function CityRank() {
                   {n + 1}
                 </span>
                 <span className={styles.rankName}>{row.name}</span>
-                <span className={styles.rankExp}>{people(row.expected)}</span>
-                {/* 割合（M-01）は、登録の人数の下。見込みの欄を広げないので、市の名前が切れない */}
-                <span className={styles.rankReg}>
-                  {text.rankReg} {people(row.reg)}
-                  {share !== null && (
-                    <small className={styles.rankShare} data-testid="rank-share">
-                      {text.shareOfReg(share)}
-                    </small>
-                  )}
-                </span>
+                {metric === 'reg' ? (
+                  <span className={styles.rankReg}>
+                    {text.rankReg} {people(row.reg)}
+                  </span>
+                ) : (
+                  <>
+                    <span className={styles.rankExp}>{people(row.expected)}</span>
+                    {/* 割合（見込み ÷ 登録）のゲージ。目盛りは 0〜20%（N23-3）。数字は読み上げ（行の名前）にある */}
+                    {gauge !== null && (
+                      <span
+                        className={styles.rankGauge}
+                        data-testid="rank-gauge"
+                        data-share={share ?? undefined}
+                        aria-hidden="true"
+                      >
+                        <i style={{ width: `${gauge.toFixed(1)}%` }} />
+                      </span>
+                    )}
+                  </>
+                )}
               </button>
             </li>
           );

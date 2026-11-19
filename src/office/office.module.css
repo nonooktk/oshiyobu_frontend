@@ -624,15 +624,21 @@
   font-weight: 700;
   text-align: right;
 }
-/* 見込みの下に、登録の何 % か（M-01）。行の高さ（--tap）の中に収める */
-.rankShare {
+/* 「払える熱量」のときの、見込み ÷ 登録の割合のゲージ（N23-1・N23-3。目盛りは 0〜20%。色は tokens.css の既存の色） */
+.rankGauge {
   display: block;
-  margin-top: 2px;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.2;
-  color: var(--ink-soft);
-  white-space: nowrap;
+  align-self: center;
+  width: 56px;
+  height: 8px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--bg-c);
+}
+.rankGauge > i {
+  display: block;
+  height: 100%;
+  background: var(--primary);
 }
 .rankReg {
   font-size: 12px;

@@ -270,7 +270,10 @@ describe('事務所向け', () => {
       render(<App />);
       pickBase();
       // 2026-11-19、Issue #50 の統括の了承で、選んだ会場の ID を付けた形に替えた（N-11。元は '/simulator.html'）
-      expect(simulatorLink()?.getAttribute('href')).toBe('/simulator.html?venue=FUK-019');
+      // 2026-11-20、Issue #53 の統括の了承で、「条件を調整」の 4 つの値（cost）も付けた（N-15。元は '/simulator.html?venue=FUK-019'）
+      expect(simulatorLink()?.getAttribute('href')).toBe(
+        '/simulator.html?venue=FUK-019&cost=60000,100000,120000,305000',
+      );
       expect(screen.queryByText(NOTE)).toBeNull();
     });
 

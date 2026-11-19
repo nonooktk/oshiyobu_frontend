@@ -1,4 +1,5 @@
 import { cityIndex, demandOf, metricValues } from '../../core';
+import { simulatorHref } from '../adjust';
 import type { AdjustId } from '../adjust';
 import styles from '../office.module.css';
 import {
@@ -345,6 +346,8 @@ function Adjust({ view }: { readonly view: OfficeView }) {
 /** ⑤ 開催条件（損益の要約）: 到達ライン・成立の条件・上乗せ、条件を調整、収支シミュレーター・提案を見る */
 function Summary({ view }: { readonly view: OfficeView }) {
   const openModal = useOffice((s) => s.openModal);
+  const costs = useOffice((s) => s.costs);
+  const hope = useOffice((s) => s.hope);
   const { condition, low } = view;
   const { cap, unit } = condition.venue;
   const rule = ruleText(condition.line, condition.min);
@@ -414,11 +417,17 @@ function Summary({ view }: { readonly view: OfficeView }) {
         <Adjust view={view} />
         <div className={styles.footBtns}>
           {/* 選んだ会場の ID を付けて渡す。シミュレーターは、その会場の規模の人数から始め、その会場を一番上で選ぶ
-              （Issue #50・N-11。ID はシミュレーターの側で、会場の一覧と照らして、合ったときだけ使う） */}
+              （Issue #50・N-11。ID はシミュレーターの側で、会場の一覧と照らして、合ったときだけ使う）。
+              あわせて「条件を調整」の 4 つの値（cost）を渡し、移ったあとも同じ値で見せる（Issue #53・N-15） */}
           {condition.venue.simulatorVenueId !== undefined && (
             <a
               className={`${styles.btn} ${styles.secondary}`}
-              href={`/simulator.html?venue=${encodeURIComponent(condition.venue.simulatorVenueId)}`}
+              href={simulatorHref(condition.venue.simulatorVenueId, {
+                venue: costs.venue,
+                prod: costs.prod,
+                travel: costs.travel,
+                hope,
+              })}
             >
               {text.simulator}
             </a>

@@ -17,9 +17,11 @@ const outside = html.replace(script, '');
 // 続けて 1 数字・2 損益の計算と並びを変えた版（3159ef80…。M-11〜M-22）に替え、
 // 追加の直しで、入力の名前「利益」とプラン名「プラチナプラン」にした版（6ad7e684…。M-23・M-24）に替え、
 // 追加の直し（2）で、出演料を外した版（b4e00c3d…。M-26。計算の検査は simulator-calc.test.ts・simulator-no-fee.test.ts）に替え、
-// 2026-11-19、Issue #50 の統括の了承で、事務所向けから会場の ID（?venue=）を受け取る版に替えた（N-11。計算とデータは変えていない。
-// 受け取りの検査は simulator-venue-param.test.ts）
-const APPROVED_SCRIPT_SHA256 = '95fe5e702497b8118bc6151c14a9559cc5a27978bada58c1c22159608e46d477';
+// 2026-11-19、Issue #50 の統括の了承で、事務所向けから会場の ID（?venue=）を受け取る版（95fe5e70…。N-11。計算とデータは変えていない。
+// 受け取りの検査は simulator-venue-param.test.ts）に替え、
+// 2026-11-20、Issue #53 の統括の了承で、「条件を調整」の 4 つの値（?cost=）も受け取る版に替えた（N-15。計算とデータは変えていない。
+// 受け取りの検査は simulator-cost-param.test.ts）
+const APPROVED_SCRIPT_SHA256 = 'a04471025f0dc681c5b73604c8decbc631945a7ba4c7ded7f79352d48688af2d';
 
 describe('収支シミュレーター', () => {
   it('計算とデータ（script）が、統括の了承した版のまま（ハッシュが一致する。2026-11-18）', () => {

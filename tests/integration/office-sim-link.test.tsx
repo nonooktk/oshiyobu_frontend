@@ -5,7 +5,8 @@
 // - 市を選ぶ前の入口（③ の欄）は、会場が無いので ID を付けない
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { VENUES } from '../../src/core';
+import { costsOfTier, VENUES } from '../../src/core';
+import { hopeOf } from '../../src/office/adjust';
 import { App } from '../../src/office/App';
 import { initialOfficeState, officeStore } from '../../src/office/store';
 import { resetLinkForTest } from '../../src/shared/link';
@@ -40,17 +41,25 @@ describe('事務所向けの ⑤ から収支シミュレーターへ、選ん�
         seen[name] = simulatorLink()?.getAttribute('href') ?? null;
       }
     }
+    // 2026-11-20、Issue #53 の統括の了承で、「条件を調整」の 4 つの値（会場費・制作費・移動・宿泊・利益）も付けた（N-15）。
+    // 元は `/simulator.html?venue=<ID>` だけ。会場を選んだときの値は、区分の値と、そこから出した利益（シミュレーターと同じ初めの値）
+    const costOf = (venue: (typeof VENUES)[number]) => {
+      const c = costsOfTier(venue.tier);
+      return `${c.venue},${c.prod},${c.travel},${hopeOf(c)}`;
+    };
     const expected = Object.fromEntries(
       VENUES.map((venue) => [
         venue.name,
         venue.simulatorVenueId === undefined
           ? null
-          : `/simulator.html?venue=${venue.simulatorVenueId}`,
+          : `/simulator.html?venue=${venue.simulatorVenueId}&cost=${costOf(venue)}`,
       ]),
     );
     expect(seen).toEqual(expected);
     expect(Object.values(seen).filter((href) => href !== null)).toHaveLength(11);
-    expect(seen['久留米シティプラザ Cボックス']).toBe('/simulator.html?venue=FUK-019');
+    expect(seen['久留米シティプラザ Cボックス']).toBe(
+      '/simulator.html?venue=FUK-019&cost=60000,100000,120000,305000',
+    );
   });
 
   it('市を選ぶ前の入口は、会場の ID を付けない（/simulator.html のまま）', () => {

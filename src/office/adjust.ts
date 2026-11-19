@@ -50,3 +50,18 @@ export function fitsCore(v: AdjustValues): boolean {
   const costs = coreCostsOf(v);
   return costs.profit <= MAX_COST_YEN && Number.isSafeInteger(lineWithFee(v));
 }
+
+/** 収支シミュレーターが受け取る 1 項目の上限（円）。9 桁まで（public/simulator.html の costFromUrl と同じ） */
+export const SIM_COST_MAX = 999_999_999;
+
+/**
+ * ⑤ の「収支シミュレーター」のリンク（2026-11-20。Issue #53・N-15）。会場の ID に、「条件を調整」の 4 つの値を付ける
+ * （`/simulator.html?venue=FUK-019&cost=60000,100000,120000,305000`）。シミュレーターは、その会場の入力の初めの値にする。
+ * どれかがシミュレーターの受け取る範囲（0〜999,999,999 円の整数）の外なら、cost は付けない（シミュレーターは区分の初めの値から始める）
+ */
+export function simulatorHref(simulatorVenueId: string, v: AdjustValues): string {
+  const base = `/simulator.html?venue=${encodeURIComponent(simulatorVenueId)}`;
+  const values = ADJUST_IDS.map((id) => v[id]);
+  const fits = values.every((n) => Number.isInteger(n) && n >= 0 && n <= SIM_COST_MAX);
+  return fits ? `${base}&cost=${values.join(',')}` : base;
+}

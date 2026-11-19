@@ -149,11 +149,11 @@
   border-radius: 50%;
   background: var(--primary);
   color: var(--surface);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
 }
 .crowdLabel {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--ink);
 }
@@ -314,7 +314,8 @@
   border-radius: 50%;
   background: var(--primary);
   color: #fff;
-  font-size: 12px;
+  /* N-10（2026-11-20）: ③ の印も、①②④⑤ の印と同じ 14px にそろえた（60 通りで ③ の見出しの位置は変わらない。V-14） */
+  font-size: 14px;
   font-weight: 700;
 }
 .segRow {
@@ -409,8 +410,8 @@
   display: inline;
 }
 .cityLabel {
-  /* layout.ts の LABEL_FONT と同じ値（名前の押せる範囲の大きさを、この値から見積もっている） */
-  font-size: 18px;
+  /* layout.ts の LABEL_FONT と同じ値（名前の押せる範囲の大きさを、この値から見積もっている）。N-10 で 18 → 20 */
+  font-size: 20px;
   font-weight: 700;
   fill: var(--ink);
   paint-order: stroke;
@@ -531,6 +532,8 @@
 .fictChip {
   border: 1px solid var(--warning-ink);
   background: var(--yellow-light);
+  /* N-10（2026-11-20）: ①⑤⑥ の札は 14px（③ の実在の札 .realChip は 12px のまま。① の右の一覧の札は下の .rankHead .fictChip で 12px） */
+  font-size: 14px;
   color: var(--warning-ink);
 }
 /* ① の札は、地図の枠の左上の角に重ねる（行が折れて地図が動かないように）。⑥ の行では、見出しのすぐ右
@@ -570,6 +573,10 @@
   align-items: center;
   gap: var(--s1);
 }
+/* N-10（2026-11-20）: ① の右の一覧の見出しと、その横の札「数字は架空」は 12px のまま（14px にすると 2 行に折れ、②③ を押し下げる。V-14） */
+.rankHead .fictChip {
+  font-size: 12px;
+}
 .rankH {
   margin: 0;
   font-size: 12px;
@@ -608,7 +615,7 @@
   outline-offset: -3px;
 }
 .rankNo {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--ink-soft);
 }
@@ -658,7 +665,7 @@
 }
 .mixNote {
   color: var(--ink-soft);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
 }
 /* 出典のリンク（新しいタブで開く） */
@@ -718,7 +725,7 @@
   border-radius: 50%;
   background: var(--primary);
   color: #fff;
-  font-size: 12px;
+  font-size: 14px;
   font-style: normal;
 }
 .condLine {
@@ -864,7 +871,7 @@
 }
 .meetSource {
   margin: var(--s1) 0 0;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--ink);
 }
 .meetSource b {
@@ -903,7 +910,7 @@
   font-size: 14px;
 }
 .quadBigLabel {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--ink-soft);
   text-align: right;
 }
@@ -978,7 +985,7 @@
 }
 .qName {
   overflow: hidden;
-  font-size: 12px;
+  font-size: 14px;
   white-space: nowrap;
   text-overflow: ellipsis;
   font-weight: 700;
@@ -991,7 +998,7 @@
   white-space: nowrap;
 }
 .qNum small {
-  font-size: 12px;
+  font-size: 14px;
 }
 .qLineT {
   font-size: 22px;
@@ -1004,7 +1011,7 @@
   align-items: center;
   gap: var(--s2);
   margin: 0;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--ink-soft);
 }
 .qEstimateChip {
@@ -1023,6 +1030,10 @@
   padding: var(--s2) var(--s3);
   border: 1px solid var(--line);
   border-radius: var(--r);
+}
+/* N-10: ② 集まる人数の「人」。.qLineNum は条件の帯と共有するので、② の行の中だけ大きくする */
+.crowdRow .qLineNum {
+  font-size: 14px;
 }
 .qLineField label {
   display: block;
@@ -1065,7 +1076,7 @@
 }
 .qUnit {
   margin: var(--s1) 0 0;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--ink-soft);
   text-align: right;
 }
@@ -1086,7 +1097,7 @@
 /* 前の値（例: 前 187人（−67））。次に数字が変わるまで残す */
 .prevVal {
   margin-left: var(--s1);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 400;
   color: var(--ink-soft);
   white-space: nowrap;

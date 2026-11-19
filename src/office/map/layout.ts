@@ -1,21 +1,24 @@
 import type { CityName } from '../../core';
 
-// 地図の市の位置とラベルを置く向き（l 左・r 右・b 下）。出典: モックの DEMO.cities。viewBox は 0 0 460 590。
-// 久留米市と佐賀市は、丸が近すぎて押しにくいため、少し離してある
-export const MAP_VIEWBOX = { width: 460, height: 590 } as const;
+// 地図の市の位置とラベルを置く向き（l 左・r 右・b 下）。viewBox は 0 0 460 578（shapes.ts と同じ写し方。2026-11-19 の N-1）。
+// 位置の出典: 7 市は Natural Earth「Populated Places」1:10m（ne_10m_populated_places_simple.geojson。パブリックドメイン。
+//   取得日 2026-11-19）の緯度・経度。久留米市と佐賀市は、Natural Earth に無いので、public/simulator.html の会場のデータの位置
+//   （久留米市 = 久留米シティプラザ FUK-019、佐賀市 = 佐賀市松原 SAG-002）を使った。
+// 久留米市と佐賀市は、丸が近すぎて押しにくいため、これまでどおり少し離してある（実の位置から、久留米市は東へ 13、佐賀市は西へ 15）
+export const MAP_VIEWBOX = { width: 460, height: 578 } as const;
 
 export const CITY_POS: Readonly<
   Record<CityName, { readonly x: number; readonly y: number; readonly pos: 'l' | 'r' | 'b' }>
 > = {
-  福岡市: { x: 205, y: 90, pos: 'l' },
-  北九州市: { x: 312, y: 48, pos: 'r' },
-  久留米市: { x: 236, y: 170, pos: 'r' },
-  佐賀市: { x: 166, y: 158, pos: 'l' },
-  長崎市: { x: 94, y: 206, pos: 'b' },
-  熊本市: { x: 238, y: 240, pos: 'b' },
-  大分市: { x: 368, y: 158, pos: 'b' },
-  宮崎市: { x: 340, y: 392, pos: 'r' },
-  鹿児島市: { x: 240, y: 462, pos: 'r' },
+  福岡市: { x: 181, y: 84, pos: 'l' },
+  北九州市: { x: 245, y: 34, pos: 'r' },
+  久留米市: { x: 210, y: 136, pos: 'r' },
+  佐賀市: { x: 150, y: 147, pos: 'l' },
+  長崎市: { x: 100, y: 236, pos: 'b' },
+  熊本市: { x: 226, y: 229, pos: 'b' },
+  大分市: { x: 365, y: 148, pos: 'b' },
+  宮崎市: { x: 337, y: 391, pos: 'r' },
+  鹿児島市: { x: 205, y: 452, pos: 'r' },
 };
 
 /**

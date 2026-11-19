@@ -18,7 +18,8 @@ const LEGEND_STEPS = [20000, 5000, 1000] as const;
 
 function Legend() {
   const cx = 54;
-  const base = 566;
+  // 凡例は地図の左下の海に置く（地図の高さから 24 上が、丸の下の端）
+  const base = MAP_VIEWBOX.height - 24;
   const first = radiusOf(LEGEND_STEPS[0]);
   return (
     <g aria-hidden="true">

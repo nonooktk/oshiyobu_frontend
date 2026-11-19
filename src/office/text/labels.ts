@@ -64,8 +64,6 @@ export const text = {
   minNote:
     '最低人数は、事務所と相談して決める値です。上位コースの金額は、金額の条件に数えます（人数は 1 人ぶん）。',
   upliftLabel: '上位のコースによる上乗せ',
-  legendExpected: '払える熱いファン',
-  legendNeed: '必要',
   hotRichLabel: '熱量が高く、資金もある',
   deadlineLabel: '募集期限',
   proposalKick: 'ご提案',
@@ -225,7 +223,6 @@ export const verdictText = (level: string): string => `成立の見込み ${leve
 export const shortText = (need: number, shortfall: number): string =>
   `必要 ${need}人に届かない（あと ${shortfall}人）`;
 export const expectedText = (n: number): string => `見込み ${n}人`;
-export const needText = (n: number): string => `必要 ${n}人`;
 
 // ③ 会場の候補の下の注記（sideNote）は、2026-11-18 に外した（docs/office/要件.md の M-04）
 

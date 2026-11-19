@@ -265,7 +265,8 @@ describe('事務所向け', () => {
     it('シミュレーターにある会場（Cボックス）は、判定の下に入口が出て、注記は出ない', () => {
       render(<App />);
       pickBase();
-      expect(simulatorLink()?.getAttribute('href')).toBe('/simulator.html');
+      // 2026-11-19、Issue #50 の統括の了承で、選んだ会場の ID を付けた形に替えた（N-11。元は '/simulator.html'）
+      expect(simulatorLink()?.getAttribute('href')).toBe('/simulator.html?venue=FUK-019');
       expect(screen.queryByText(NOTE)).toBeNull();
     });
 

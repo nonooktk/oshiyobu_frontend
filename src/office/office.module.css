@@ -640,9 +640,11 @@
   height: 100%;
   background: var(--primary);
 }
+/* 「人数」のときの登録の人数。行の数字はこれだけなので、「払える熱量」のときの見込みの人数（.rankExp）と同じ書き方にそろえる（2026-11-19） */
 .rankReg {
-  font-size: 12px;
-  color: var(--ink-soft);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
   text-align: right;
   white-space: nowrap;
 }

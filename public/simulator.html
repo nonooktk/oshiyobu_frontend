@@ -19,6 +19,8 @@
   見出しの下の注記「上位コースの構成は、事務所向けと違います」は外した（3 つのプランを、事務所向けの ⑤ と同じ組み立てにしたため）。
   2026-11-18 の追加の直し: 入力の名前「利益（希望額）」を「利益」に、「ダイヤモンドプラン」を「プラチナプラン」に変えた（名前だけ。M-23・M-24）。
   2026-11-18 の追加の直し（2）: 出演料を外した（出演料は利益に含まれる。M-26）。利益の初めの値は「出演料 ＋ それまでの利益」で、最低条件は変わらない。
+  2026-11-19（Issue #50 の統括の了承）: 事務所向けの ⑤ のリンクから会場の ID（?venue=）を受け取り、その会場の規模の人数から始めて、
+  その会場を一覧の一番上で選んだ状態にした（N-11）。ID は会場の一覧と照らして、合ったときだけ使う。計算とデータは変えていない。
 -->
 <style>
   /* ===== デザイントークン（toB デザインの決まり。index.html の :root と同じ値） ===== */
@@ -274,6 +276,8 @@ const PREFS = ['福岡県','佐賀県','長崎県','熊本県','大分県','宮�
 const TYPES = {livehouse:'ライブハウス',hall:'ホール',cafe_bar:'カフェ・バー',hotel_banquet:'ホテル宴会場',multipurpose:'多目的',arena:'アリーナ',other:'その他'};
 const GENRE = {idol:'アイドル',band:'バンド',singer:'歌手',voice_actor:'声優',vtuber:'VTuber',comedy:'お笑い',enka:'演歌',jazz:'ジャズ',classical:'クラシック',other:'その他'};
 const state = {n:300, prefs:new Set(PREFS), types:new Set(Object.keys(TYPES)), onlyEv:true, sel:null, genre:'all'};
+// 事務所向けから受け取った会場の venue_id（一覧 V と照らして合ったものだけ。末尾の初期化で入れる）。人数を変えたら外す（setN）
+let fromId = null;
 // 仮置きの費用（区分ごと）。会場費は公開料金が分かる会場でも、まずはこの値から始める
 // hope は利益＝最低条件ちょうど集まったときの全体利益。出演料は利益に含まれる（2026-11-18 の追加の直しで、出演料の入力を外した。M-26）。
 // hope の初めの値は、最低条件が 2026-11-18 より前と同じ値になるよう逆算した（これまでの利益 − これまでの最低条件 × 10%。docs/office/仕様.md の 9.3）
@@ -304,7 +308,7 @@ function visible(v){
 }
 function ranked(){
   return V.filter(visible).map(v => ({v, s: Math.abs(Math.log(v.capacity / state.n)) + (v.capacity < state.n*0.9 ? 0.25 : 0)}))
-          .sort((a,b) => a.s - b.s).map(x => x.v);
+          .sort((a,b) => a.s - b.s || (b.v.venue_id === fromId) - (a.v.venue_id === fromId)).map(x => x.v);   // 近さが同じなら、受け取った会場を先に
 }
 
 // ---------- map ----------
@@ -360,7 +364,7 @@ for (const n of [30,100,300,500,1000]){
   }
 }
 $('#onlyev').addEventListener('click', e => { state.onlyEv = !state.onlyEv; e.currentTarget.setAttribute('aria-pressed', state.onlyEv); render(); });
-function setN(n){ n = Math.max(10, Math.min(1500, Math.round(+n || 10))); state.n = n; $('#n').value = n; $('#nr').value = toV(n); state.sel = null; render(); }
+function setN(n){ n = Math.max(10, Math.min(1500, Math.round(+n || 10))); state.n = n; $('#n').value = n; $('#nr').value = toV(n); state.sel = null; fromId = null; render(); }
 $('#n').addEventListener('change', e => setN(e.target.value));
 $('#nr').addEventListener('input', e => setN(toN(+e.target.value)));
 
@@ -527,7 +531,22 @@ function simOut(v, s){
       <span>最低条件ちょうど集まったときの全体利益</span><span class="num" data-sim="profit-at-line">${yen(r.profitAtLine)}</span>
     </div></details>`;
 }
-setN(300);
+// 事務所向けの ⑤ のリンク（/simulator.html?venue=FUK-020。Issue #50・N-11）から来たときは、その会場の規模（キャパ）の人数から始め、
+// その会場を選んで一覧の一番上に出す。venue の値は、会場の一覧 V の venue_id と照らして、合ったときだけ使う（合わなければ、今までどおり 300 人から）。
+// URL の値は画面に書き出さない（画面に出すのは、一覧の側の会場の名前だけ）
+function venueFromUrl(){
+  try { const id = new URLSearchParams(location.search).get('venue'); return id === null ? null : (V.find(v => v.venue_id === id) ?? null); }
+  catch { return null; }
+}
+const fromOffice = venueFromUrl();
+if (fromOffice){
+  if (fromOffice.event_count === 0 && state.onlyEv){ state.onlyEv = false; $('#onlyev').setAttribute('aria-pressed', 'false'); }
+  setN(fromOffice.capacity);
+  fromId = fromOffice.venue_id;
+  select(fromOffice.venue_id);
+} else {
+  setN(300);
+}
 </script>
 </body>
 </html>

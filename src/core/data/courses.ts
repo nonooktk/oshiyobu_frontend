@@ -44,7 +44,7 @@ export const COURSES: readonly CourseDef[] = [
   },
   {
     id: 'front',
-    name: '前方の席',
+    name: 'シルバー',
     deposit: 100000,
     mainAccount: true,
     price: { kind: 'venue-price', multiple: 3 },
@@ -54,7 +54,7 @@ export const COURSES: readonly CourseDef[] = [
   },
   {
     id: 'special',
-    name: '特別コース',
+    name: 'ゴールド',
     deposit: 300000,
     mainAccount: true,
     price: { kind: 'fixed', yen: 100000 },
@@ -70,7 +70,7 @@ export const COURSES: readonly CourseDef[] = [
   },
   {
     id: 'top',
-    name: '最上位コース',
+    name: 'プラチナ',
     deposit: 1000000,
     mainAccount: true,
     price: { kind: 'fixed', yen: 300000 },

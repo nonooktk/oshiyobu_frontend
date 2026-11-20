@@ -216,7 +216,8 @@ describe('事務所向け', () => {
     pickBase();
     const rows = (root: HTMLElement) => root.textContent ?? '';
     // 2026-11-19、Issue #48 の統括の了承で、⑤ 開催条件から上乗せの内訳を外した（N-6。元は、⑤ に「前方の席」「+196,000円」が出る）
-    expect(rows(screen.getByTestId('judge'))).not.toContain('前方の席');
+    // 2026-11-20、backend Issue #2 でコースの名前が「前方の席」→「シルバー」に変わったので、検査する名前を合わせた
+    expect(rows(screen.getByTestId('judge'))).not.toContain('シルバー');
     expect(rows(screen.getByTestId('judge'))).not.toContain('+196,000円');
     fireEvent.click(screen.getByRole('button', { name: '提案を見る' }));
     const dialog = screen.getByRole('dialog');

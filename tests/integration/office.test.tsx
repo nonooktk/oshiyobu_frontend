@@ -76,13 +76,15 @@ describe('事務所向け', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('I-06 会場費を 100,000 円にすると、到達ライン 690,000円・必要人数 99人・札「高」。⑤ に上乗せは出ない（N-6）', () => {
+  it('I-06 会場費を 100,000 円にすると、到達ライン 694,445円・必要人数 100人・札「高」。⑤ に上乗せは出ない（N-6）', () => {
     render(<App />);
     pickBase();
     openAdjust();
     type('会場費', '100000');
-    expect(text('line')).toBe('690,000円');
-    expect(text('need')).toBe('99人');
+    // 2026-11-20、Issue #53 の統括の了承（案 X）で、利益を手数料 10% を引いたあとの額にした（N-13）。
+    // 到達ライン ＝ ⌈（費用 320,000 ＋ 利益 305,000）÷ 0.9⌉。元は 690,000円・99人
+    expect(text('line')).toBe('694,445円');
+    expect(text('need')).toBe('100人');
     expect(text('verdict')).toBe('成立の見込み 高');
     // 2026-11-19、Issue #48 の統括の了承で、⑤ から上位のコースによる上乗せを外した（N-6。元は '+768,000円'）
     expect(screen.queryByTestId('uplift-total')).toBeNull();
@@ -110,18 +112,19 @@ describe('事務所向け', () => {
       pickBase();
       openAdjust();
       type('会場費', '0');
-      expect(text('line')).toBe('590,000円');
+      // 2026-11-20、Issue #53 の統括の了承（案 X）で、利益を手数料 10% を引いたあとの額にした（N-13）。元は 590,000円・590,120円
+      expect(text('line')).toBe('583,334円');
       type('会場費', '１２０');
-      expect(text('line')).toBe('590,120円');
+      expect(text('line')).toBe('583,467円');
       expect(screen.queryAllByRole('alert')).toHaveLength(0);
     });
 
-    it('5 項目がすべて 0 円のとき、必要人数 0・最低人数 1 で、数字が壊れない（NaN が出ない）', () => {
+    it('4 項目（費用 3 つと利益）がすべて 0 円のとき、必要人数 0・最低人数 1 で、数字が壊れない（NaN が出ない）', () => {
       render(<App />);
       pickBase();
       openAdjust();
-      for (const label of ['会場費', '制作費', '出演料', '移動・宿泊', 'アーティストの利益'])
-        type(label, '0');
+      // 2026-11-20（N-13）: 出演料とアーティストの利益の欄は「利益」にまとめた。元は 5 項目
+      for (const label of ['会場費', '制作費', '移動・宿泊', '利益']) type(label, '0');
       expect(text('need')).toBe('0人');
       expect(input('最低人数').value).toBe('1');
       expect(document.body.textContent).not.toMatch(/NaN|Infinity/);
@@ -199,7 +202,8 @@ describe('事務所向け', () => {
     render(<App />);
     pickBase();
     openAdjust();
-    type('出演料', '500000');
+    // 2026-11-20（N-13）: 出演料の欄は無くなったので、利益で同じ到達ライン（900,000円・129人）にする。元は 出演料 500,000円
+    type('利益', '530000');
     expect(text('need')).toBe('129人');
     expect(text('verdict')).toBe('成立の見込み 中');
     type('最低人数', '50');
@@ -266,7 +270,10 @@ describe('事務所向け', () => {
       render(<App />);
       pickBase();
       // 2026-11-19、Issue #50 の統括の了承で、選んだ会場の ID を付けた形に替えた（N-11。元は '/simulator.html'）
-      expect(simulatorLink()?.getAttribute('href')).toBe('/simulator.html?venue=FUK-019');
+      // 2026-11-20、Issue #53 の統括の了承で、「条件を調整」の 4 つの値（cost）も付けた（N-15。元は '/simulator.html?venue=FUK-019'）
+      expect(simulatorLink()?.getAttribute('href')).toBe(
+        '/simulator.html?venue=FUK-019&cost=60000,100000,120000,305000',
+      );
       expect(screen.queryByText(NOTE)).toBeNull();
     });
 
@@ -323,7 +330,8 @@ describe('事務所向け', () => {
     pickBase();
     openAdjust();
     // 必要人数が 158人になり、キャパ（144）を超える。札は 187 ÷ 158 で「中」
-    type('出演料', '700000');
+    // 2026-11-20（N-13）: 出演料の欄は無くなったので、利益で同じ到達ライン（1,100,000円・158人）にする。元は 出演料 700,000円
+    type('利益', '710000');
     expect(screen.getByText('キャパ 144席を超える')).toBeTruthy();
     expect(screen.queryAllByRole('alert')).toHaveLength(0);
     expect(screen.getByRole('button', { name: '提案を見る' }).getAttribute('aria-disabled')).toBe(
@@ -483,7 +491,8 @@ describe('事務所向け', () => {
       });
       expect(seen).toEqual([]); // 選択のメッセージは、1 件も流れない
       expect(screen.getByTestId('rule').textContent).toContain('80人');
-      expect(text('line')).toBe('690,000円'); // 会場費 +40,000円（60,000円 → 100,000円）
+      // 2026-11-20、Issue #53 の統括の了承（案 X）で、利益を手数料 10% を引いたあとの額にした（N-13）。元は 690,000円
+      expect(text('line')).toBe('694,445円'); // 会場費 +40,000円（60,000円 → 100,000円）
     });
 
     it('「デモを最初に戻す」は、ファン向けを戻す（resetAll）。「事務所向けだけ戻す」は、送らない', () => {

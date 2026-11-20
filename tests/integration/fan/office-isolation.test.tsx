@@ -85,8 +85,10 @@ describe('事務所向けで、会場・費用・最低人数を変えても、�
     const office = mountOffice();
     changeSameVenue(office);
     sendLegacySelection(); // 昔の連動なら、ここでファン向けに届いた
-    // 事務所向けの判定は、変えた条件で動いている（会場費 +100,000円 → 到達ライン 750,000円・最低人数 80 人）
-    expect(office.o.getByTestId('line').textContent).toBe('750,000円');
+    // 事務所向けの判定は、変えた条件で動いている（会場費 +100,000円 → 到達ライン 761,112円・最低人数 80 人）
+    // 2026-11-20、Issue #53 の統括の了承（案 X）で、事務所向けの到達ラインに手数料 10% を含めた（N-13）。
+    // 到達ライン ＝ ⌈（費用 380,000 ＋ 利益 305,000）÷ 0.9⌉。元は 750,000円。ファン向けの条件の期待値は変えていない
+    expect(office.o.getByTestId('line').textContent).toBe('761,112円');
     expect(office.o.getByTestId('rule').textContent).toContain('80人');
     await tick(1000); // 以前の連動が送っていた間（100 ms）を、十分に過ぎる
     expect(key(fanCond())).toEqual(key(base)); // ファン向けの条件は、変わらない

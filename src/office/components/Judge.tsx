@@ -1,4 +1,6 @@
-import { cityIndex, COST_ITEM_IDS, demandOf, metricValues } from '../../core';
+import { cityIndex, demandOf, metricValues } from '../../core';
+import { simulatorHref } from '../adjust';
+import type { AdjustId } from '../adjust';
 import styles from '../office.module.css';
 import {
   quadDots,
@@ -12,8 +14,8 @@ import {
 import { useOffice } from '../store';
 import { ARTIST_TEXT } from '../text/artists';
 import {
+  ADJUST_LABELS,
   capChip,
-  COST_LABELS,
   demandSource,
   depositText,
   heatText,
@@ -203,10 +205,58 @@ function Scatter({ view }: { readonly view: OfficeView }) {
   );
 }
 
+/** 「条件を調整」の金額の欄 1 つ（会場費・制作費・移動・宿泊・利益） */
+function CostField({
+  id,
+  value,
+  input,
+  error,
+  onInput,
+  onBlur,
+  noteId,
+}: {
+  readonly id: AdjustId;
+  readonly value: number;
+  readonly input: string | undefined;
+  readonly error: string | undefined;
+  readonly onInput: (id: AdjustId, raw: string) => void;
+  readonly onBlur: (id: AdjustId) => void;
+  /** 欄の外に置いた添え書きの id（読み上げで欄に結び付ける） */
+  readonly noteId?: string;
+}) {
+  const described = [noteId ?? null, error !== undefined ? `err-${id}` : null]
+    .filter((x) => x !== null)
+    .join(' ');
+  return (
+    <div className={styles.field}>
+      <label htmlFor={`in-${id}`}>{ADJUST_LABELS[id]}</label>
+      <div className={styles.yenIn}>
+        <input
+          id={`in-${id}`}
+          inputMode="numeric"
+          autoComplete="off"
+          value={input ?? value.toLocaleString('ja-JP')}
+          aria-invalid={error !== undefined}
+          aria-describedby={described === '' ? undefined : described}
+          onChange={(event) => onInput(id, event.target.value)}
+          onBlur={() => onBlur(id)}
+        />
+        <span>円</span>
+      </div>
+      {error !== undefined && (
+        <p className={styles.err} id={`err-${id}`} role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function Adjust({ view }: { readonly view: OfficeView }) {
   const open = useOffice((s) => s.adjustOpen);
   const setOpen = useOffice((s) => s.setAdjustOpen);
   const costs = useOffice((s) => s.costs);
+  const hope = useOffice((s) => s.hope);
   const costInputs = useOffice((s) => s.costInputs);
   const costErrors = useOffice((s) => s.costErrors);
   const setCostInput = useOffice((s) => s.setCostInput);
@@ -226,35 +276,38 @@ function Adjust({ view }: { readonly view: OfficeView }) {
       onToggle={(event) => setOpen(event.currentTarget.open)}
     >
       <summary>{text.adjust}</summary>
+      {/* 入力は、収支シミュレーターの「1 数字」と同じ項目（2026-11-20。N-13・Issue #53）。出演料とアーティストの利益は「利益」に
+          まとめた（シミュレーターの M-26 と同じ考え方）。利益は手数料 10% を引いたあとの額で、core には adjust.ts で組み替えて渡す（案 X） */}
+      <p className={styles.adjustGrp}>{text.adjustCostGroup}</p>
       <div className={styles.condIn}>
-        {COST_ITEM_IDS.map((id) => {
-          const error = costErrors[id];
-          return (
-            <div key={id} className={styles.field}>
-              <label htmlFor={`in-${id}`}>{COST_LABELS[id]}</label>
-              <div className={styles.yenIn}>
-                <input
-                  id={`in-${id}`}
-                  inputMode="numeric"
-                  autoComplete="off"
-                  value={costInputs[id] ?? costs[id].toLocaleString('ja-JP')}
-                  aria-invalid={error !== undefined}
-                  aria-describedby={error !== undefined ? `err-${id}` : undefined}
-                  onChange={(event) => setCostInput(id, event.target.value)}
-                  onBlur={() => blurCost(id)}
-                />
-                <span>円</span>
-              </div>
-              {error !== undefined && (
-                <p className={styles.err} id={`err-${id}`} role="alert">
-                  {error}
-                </p>
-              )}
-            </div>
-          );
-        })}
+        {(['venue', 'prod', 'travel'] as const).map((id) => (
+          <CostField
+            key={id}
+            id={id}
+            value={costs[id]}
+            input={costInputs[id]}
+            error={costErrors[id]}
+            onInput={setCostInput}
+            onBlur={blurCost}
+          />
+        ))}
       </div>
-      <p className={styles.hint}>{text.adjustHint}</p>
+      <p className={styles.adjustGrp}>{text.adjustHopeGroup}</p>
+      <div className={styles.condIn}>
+        <CostField
+          id="hope"
+          value={hope}
+          input={costInputs.hope}
+          error={costErrors.hope}
+          onInput={setCostInput}
+          onBlur={blurCost}
+          noteId="note-hope"
+        />
+        {/* 添え書きは、欄の右の空いた所に置く（欄の幅だと 3 行に折れるため） */}
+        <p className={`${styles.help} ${styles.hopeNote}`} id="note-hope">
+          {text.adjustHopeNote}
+        </p>
+      </div>
       <div className={styles.minIn}>
         <label htmlFor="in-min">{text.minLabel}</label>
         <div className={styles.minRow}>
@@ -293,6 +346,8 @@ function Adjust({ view }: { readonly view: OfficeView }) {
 /** ⑤ 開催条件（損益の要約）: 到達ライン・成立の条件・上乗せ、条件を調整、収支シミュレーター・提案を見る */
 function Summary({ view }: { readonly view: OfficeView }) {
   const openModal = useOffice((s) => s.openModal);
+  const costs = useOffice((s) => s.costs);
+  const hope = useOffice((s) => s.hope);
   const { condition, low } = view;
   const { cap, unit } = condition.venue;
   const rule = ruleText(condition.line, condition.min);
@@ -363,11 +418,17 @@ function Summary({ view }: { readonly view: OfficeView }) {
         <Adjust view={view} />
         <div className={styles.footBtns}>
           {/* 選んだ会場の ID を付けて渡す。シミュレーターは、その会場の規模の人数から始め、その会場を一番上で選ぶ
-              （Issue #50・N-11。ID はシミュレーターの側で、会場の一覧と照らして、合ったときだけ使う） */}
+              （Issue #50・N-11。ID はシミュレーターの側で、会場の一覧と照らして、合ったときだけ使う）。
+              あわせて「条件を調整」の 4 つの値（cost）を渡し、移ったあとも同じ値で見せる（Issue #53・N-15） */}
           {condition.venue.simulatorVenueId !== undefined && (
             <a
               className={`${styles.btn} ${styles.secondary}`}
-              href={`/simulator.html?venue=${encodeURIComponent(condition.venue.simulatorVenueId)}`}
+              href={simulatorHref(condition.venue.simulatorVenueId, {
+                venue: costs.venue,
+                prod: costs.prod,
+                travel: costs.travel,
+                hope,
+              })}
             >
               {text.simulator}
             </a>
@@ -417,7 +478,12 @@ function DemandSource({ expected }: { readonly expected: number }) {
   return (
     <div className={styles.meetSourceRow}>
       <p className={styles.meetSource} data-testid="demand-source">
-        {line.lead} <b>{line.reg}</b> {line.mid} <b>{line.expected}</b>
+        {line.lead} <b>{line.reg}</b>{' '}
+        {/* 「→ 預金の支えがある熱いファン（見込み） 187人」はひとかたまり。折れるときは矢印の前で折れる（2026-11-20。N-10 で 16px にして、
+            「人」だけ・「187人」だけが次の行へ落ちていたため） */}
+        <span className={styles.meetTail}>
+          {line.mid} <b>{line.expected}</b>
+        </span>
       </p>
     </div>
   );
@@ -445,11 +511,14 @@ function Certainty({ view }: { readonly view: OfficeView }) {
             <span data-testid="expected">{expected}人</span>
           </Changed>
         </span>
-        <Changed k="level" now={level}>
-          <span className={`${styles.verdict} ${verdictClass}`} data-testid="verdict">
-            {verdictText(level)}
-          </span>
-        </Changed>
+        {/* 判定の札は、見出しの行の下の 1 行に置く（2026-11-20。N-10 で文字を 16px にして行が折れ、札だけが落ちていたため） */}
+        <div className={styles.verdictRow}>
+          <Changed k="level" now={level}>
+            <span className={`${styles.verdict} ${verdictClass}`} data-testid="verdict">
+              {verdictText(level)}
+            </span>
+          </Changed>
+        </div>
       </div>
       {/* ⑥ の横棒（必要 ／ 見込み）と凡例は、2026-11-19 に外した（統括の追加の修正依頼の N-7）。4 象限の図は残す */}
       {/* 需要の出どころ（R-03）。強調はしない（見込みの強調は、判定の札の横の「見込み」のほう） */}

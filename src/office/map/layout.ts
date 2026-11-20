@@ -29,7 +29,7 @@ export const CITY_POS: Readonly<
 export const LABEL_HIT_CITIES: readonly CityName[] = ['鹿児島市'];
 
 /** 市の名前の文字の大きさ（office.module.css の .cityLabel の font-size と同じ値） */
-export const LABEL_FONT = 18;
+export const LABEL_FONT = 21;
 /** 名前の 2 行目（数字）の行の送り（MapPanel の tspan の dy と同じ 1.25em） */
 const LABEL_LINE = 1.25;
 /** 名前の範囲の、字の外側の余白（px） */

@@ -21,6 +21,8 @@
   2026-11-18 の追加の直し（2）: 出演料を外した（出演料は利益に含まれる。M-26）。利益の初めの値は「出演料 ＋ それまでの利益」で、最低条件は変わらない。
   2026-11-19（Issue #50 の統括の了承）: 事務所向けの ⑤ のリンクから会場の ID（?venue=）を受け取り、その会場の規模の人数から始めて、
   その会場を一覧の一番上で選んだ状態にした（N-11）。ID は会場の一覧と照らして、合ったときだけ使う。計算とデータは変えていない。
+  2026-11-20（Issue #53 の統括の了承）: あわせて、事務所向けの「条件を調整」の会場費・制作費・移動・宿泊・利益（?cost=）を受け取り、
+  その会場の入力の初めの値にした（N-15）。値は数字として検査し、範囲に合ったときだけ使う。計算とデータは変えていない。
 -->
 <style>
   /* ===== デザイントークン（toB デザインの決まり。index.html の :root と同じ値） ===== */
@@ -538,9 +540,22 @@ function venueFromUrl(){
   try { const id = new URLSearchParams(location.search).get('venue'); return id === null ? null : (V.find(v => v.venue_id === id) ?? null); }
   catch { return null; }
 }
+// 事務所向けの ⑤「条件を調整」の値（?cost=会場費,制作費,移動・宿泊,利益。Issue #53・N-15）。会場を受け取れたときだけ読む。
+// 0〜999,999,999 の整数（数字だけ）が、ちょうど 4 つ、カンマで並んでいるときだけ使う。1 つでも合わなければ、4 つとも使わない
+// （区分の初めの値のまま）。使うのは数字に直した値だけで、URL の文字は画面に書き出さない
+function costFromUrl(){
+  try {
+    const raw = new URLSearchParams(location.search).get('cost');
+    if (raw === null || !/^\d{1,9}(,\d{1,9}){3}$/.test(raw)) return null;
+    const [venue, prod, travel, hope] = raw.split(',').map(Number);
+    return {venue, prod, travel, hope};
+  } catch { return null; }
+}
 const fromOffice = venueFromUrl();
 if (fromOffice){
   if (fromOffice.event_count === 0 && state.onlyEv){ state.onlyEv = false; $('#onlyev').setAttribute('aria-pressed', 'false'); }
+  const cost = costFromUrl();
+  if (cost) Object.assign(simFor(fromOffice), cost);   // その会場の入力の初めの値にする（ほかの会場には広げない）
   setN(fromOffice.capacity);
   fromId = fromOffice.venue_id;
   select(fromOffice.venue_id);

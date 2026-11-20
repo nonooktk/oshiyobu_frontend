@@ -10,9 +10,12 @@ export interface ArtistData {
   /** 市ごとの払える熱量 0〜100（CITIES と同じ並び）。 */
   readonly hot: readonly number[];
   readonly quad: {
-    /** 基準の市（久留米市）での、1 点あたりの人数。 */
+    /** 基準の市（久留米市）での、1 点あたりの人数。demandOf は使わない。刻みは合計から選ぶ。 */
     readonly perDot: number;
-    /** 基準の市（久留米市）の 4 象限の人数。hotRich が「払える熱いファンの見込み」。 */
+    /**
+     * 基準の市（久留米市）の hotRich と、ほかの 3 つ（hotPoor・coolRich・coolPoor）に残りを配る比。
+     * hotRich が「払える熱いファンの見込み」。残りの 3 つは、その市の登録者数 − hotRich を、この比で配る（demandOf）。
+     */
     readonly people: Readonly<Record<QuadKey, number>>;
     /** 点の位置を決める乱数の種（固定。毎回同じ並びにする）。点の生成そのものは frontend の仕事。 */
     readonly seed: number;
